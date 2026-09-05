@@ -303,20 +303,29 @@ make logs
 
 | Service | URL |
 |---|---|
-| Frontend | https://localhost:3042 (HTTPS auto — kamera butuh secure context) |
+| Frontend | `http://localhost:3042` (default) atau `https://<ip-host>:3042` saat `VITE_HTTPS=1` |
 | Backend (Swagger API) | http://localhost:8042/docs |
-| Health check | http://localhost:8042/api/health / https://localhost:3042/api/health (proxy) |
+| Health check | http://localhost:8042/api/health — proxy frontend: `<front-url>/api/health` |
 | PhpMyAdmin | http://localhost:8122 |
 
-> **Kamera (getUserMedia):** Browser hanya mengizinkan akses kamera pada *secure context* —
-> `https://` atau `http://localhost`. Jika aplikasi diakses lewat **IP host** (mis.
-> `192.168.1.42`) via HTTP, browser otomatis memblokir kamera dengan pesan seperti
-> *"Browser tidak mendukung akses kamera"* atau *"Kamera tidak diizinkan"*. Solusi:
-> container frontend sudah otomatis membuat sertifikat **self-signed**
-> (`frontend/scripts/gen-certs.sh`, SAN `localhost` + IP host terdeteksi + `CERT_HOSTS`) dan
-> serve **https://IP_HOST:3042**. Buka URL tersebut, klik *Advanced → Proceed*
-> (warning wajar untuk cert self-signed), aktivasi kamera akan muncul dialog izin biasa.
-> Dev tanpa Docker: `cd frontend && npm run certs && npm run dev -- --host 0.0.0.0`.
+> **Kamera (getUserMedia) — baca ini jika kamera diblokir / `ERR_EMPTY_RESPONSE`:**
+> Browser hanya mengizinkan kamera pada *secure context*: `https://…` atau
+> `http://localhost`. Di dalam project ini diatur lewat flag `.env` **VITE_HTTPS**:
+>
+> | `VITE_HTTPS` | URL yang jalan | Kamera |
+> |---|---|---|
+> | `0` / kosong (default) | `http://localhost:3042` | ✅ hanya di `localhost` (IP host via http: diblokir browser) |
+> | `1` | `https://localhost:3042` dan `https://<IP_HOST>:3042` | ✅ di semua perangkat LAN (accept warning self-signed sekali) |
+>
+> ⚠️ Saat `VITE_HTTPS=1`, container hanya bicara TLS — membuka `http://…:3042`
+> menghasilkan **ERR_EMPTY_RESPONSE** ("didn't send any data"). Itu **bukan** container
+> mati: gunakan `https://`, atau set `VITE_HTTPS=0` bila memang mau HTTP.
+>
+> Nyalakan HTTPS: isi di `.env` → `VITE_HTTPS=1` + `CERT_HOSTS="10.160.116.16"`
+> (IP yang diketik user), lalu `make up-detached` ulang (cert dibuat otomatis oleh
+> `frontend/scripts/gen-certs.sh`, di-*reuse* selama SAN & expiry cocok).
+> Regenerasi paksa: `make certs` (add `CERT_HOSTS` via arg). Dev tanpa Docker:
+> `cd frontend && npm run dev:https -- --host 0.0.0.0`.
 
 ### Command Makefile Berguna
 

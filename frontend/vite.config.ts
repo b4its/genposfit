@@ -11,16 +11,29 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 // VITE_API_PROXY: URL yang dituju oleh proxy dev server (default: Docker network).
 const proxyTarget = process.env.VITE_API_PROXY || 'http://backend:8042'
 
-// HTTPS opsional: jika certs/ ada, dev server serve HTTPS agar getUserMedia
-// (kamera) tersedia saat diakses lewat IP host — browser hanya mengizinkan
-// kamera di secure context (https / localhost).
+// HTTPS EKSPLISIT: set VITE_HTTPS=1 untuk serve https://:3042
+// (getUserMedia/kamera butuh secure context saat diakses lewat IP host).
+// Tanpa flag → server tetap HTTP murni: http://localhost:3042 normal.
+// Jika flag aktif tapi cert belum dibuat jalankan: make certs / npm run certs.
+const httpsEnabled = /^(1|true|yes)$/i.test(process.env.VITE_HTTPS || '')
 const certDir = path.resolve(__dirname, 'certs')
 const keyFile = path.join(certDir, 'dev-key.pem')
 const certFile = path.join(certDir, 'dev-cert.pem')
+const certOk = fs.existsSync(keyFile) && fs.existsSync(certFile)
+if (httpsEnabled && !certOk) {
+  console.warn(
+    '[genposfit] VITE_HTTPS=1 tetapi cert belum ada — jalankan "sh scripts/gen-certs.sh" ' +
+    'di folder frontend/. Serve tetap HTTP biasa.'
+  )
+}
 const https =
-  fs.existsSync(keyFile) && fs.existsSync(certFile)
+  httpsEnabled && certOk
     ? { key: fs.readFileSync(keyFile), cert: fs.readFileSync(certFile) }
     : undefined
+
+console.log(
+  `[genposfit] Vite dev server mode: ${https ? 'HTTPS — buka https://<ip-host>:3042 (http:// akan ERR_EMPTY_RESPONSE)' : 'HTTP — http://localhost:3042'}`
+)
 
 // https://vite.dev/config/
 export default defineConfig({

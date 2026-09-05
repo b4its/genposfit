@@ -61,7 +61,9 @@ up: ## [Docker] Build (jika perlu) + jalankan semua container di foreground
 up-detached: ## [Docker] Jalankan semua container di background (mode daemon)
 	$(COMPOSE) up -d
 	@echo "$(COLOR_GREEN)✔ Semua service GenPosFit berjalan$(COLOR_RESET)"
-	@echo "  Frontend   → https://localhost:3042 (HTTPS auto — kamera via IP host)"
+	@front_proto=$$(grep -Eq '^VITE_HTTPS=1' .env 2>/dev/null && echo https || echo http); \
+	echo "  Frontend   → $$front_proto://localhost:3042"; \
+	echo "               (kamera butuh HTTPS saat dibuka via IP host → set VITE_HTTPS=1 + CERT_HOSTS=<ip-anda> lalu 'make up-detached' lagi)"
 	@echo "  Backend    → http://localhost:8042/docs"
 	@echo "  PhpMyAdmin → http://localhost:8122"
 
@@ -243,17 +245,21 @@ repair: ## 🔧 Perbaiki otomatis: cleanup orphan containers, rebuild stale imag
 	@echo "$(COLOR_YELLOW)➜ Verifikasi frontend...$(COLOR_RESET)"
 	@$(eval FRONTEND_PORT := $(shell grep '^FRONTEND_PORT=' .env | cut -d= -f2))
 	@code=$$(curl -s -o /dev/null -w '%{http_code}' http://localhost:$(FRONTEND_PORT) 2>/dev/null); \
+	proto=http; \
+	if [ "$$code" != "200" ]; then \
+		proto=https; code=$$(curl -sk -o /dev/null -w '%{http_code}' https://localhost:$(FRONTEND_PORT) 2>/dev/null); \
+	fi; \
 	if [ "$$code" = "200" ]; then \
-		echo "  ✔ Frontend ready (HTTP $$code)"; \
+		echo "  ✔ Frontend ready ($$proto HTTP $$code) — buka $$proto://localhost:$(FRONTEND_PORT)"; \
 	else \
-		echo "  ⚠ Frontend HTTP $$code (mungkin butuh loading)"; \
+		echo "  ⚠ Frontend $$code (mungkin butuh loading; cek 'make logs-frontend')"; \
 	fi
 	@echo ""
 	@# 9. Laporan akhir
 	@echo "$(COLOR_GREEN)╔══════════════════════════════════════════════════════════════╗$(COLOR_RESET)"
 	@echo "$(COLOR_GREEN)║            Repair selesai — semua service berjalan            ║$(COLOR_RESET)"
 	@echo "$(COLOR_GREEN)╚══════════════════════════════════════════════════════════════╝$(COLOR_RESET)"
-	@echo "  Frontend   → https://localhost:3042 (HTTPS auto untuk kamera via IP host)"
+	@echo "  Frontend   → cek 'make logs-frontend' untuk URL http/https yang benar"
 	@echo "  Backend    → http://localhost:8042/docs"
 	@echo "  PhpMyAdmin → http://localhost:8122"
 
@@ -363,8 +369,9 @@ install-frontend: ## [Dev] Install ulang npm package di container frontend
 
 certs: ## [Dev] Generate self-signed cert HTTPS (kamera butuh secure context saat akses via IP host)
 	@cd frontend && sh scripts/gen-certs.sh $(HOST_IP)
-	@echo "Restart frontend agar Vite memuat cert baru:"
-	@echo "  make restart-frontend   (docker)   atau   cd frontend && npm run dev  (lokal)"
+	@echo "Agar container serve HTTPS: set VITE_HTTPS=1 di .env, lalu 'make up-detached'."
+	@echo "Akses: https://localhost:3042 (http://localhost:3042 → ERR_EMPTY_RESPONSE saat HTTPS aktif)."
+	@echo "Tanpa cert/HTTPS: kamera hanya jalan di http://localhost (bukan IP host)."
 
 lint-backend: ## [Dev] Cek kualitas kode backend (ruff)
 	$(COMPOSE) exec $(SERVICE_BACKEND) ruff check app/
