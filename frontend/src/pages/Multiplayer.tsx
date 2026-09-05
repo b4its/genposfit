@@ -11,6 +11,17 @@ import { usePoseDetector } from '../hooks/usePoseDetector';
 import { Button, Card, Input, Pill, PillIndicator, PillContent, Badge, Select } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { Crown } from 'lucide-react';
+import mascotGreen from '../assets/mascot/green-happy.webp';
+import mascotBlue from '../assets/mascot/blue-happy.webp';
+import mascotRed from '../assets/mascot/red-happy.webp';
+import mascotBlack from '../assets/mascot/black-happy.webp';
+
+const MASCOT_MAP: Record<string, string> = {
+  '#22c55e': mascotGreen,
+  '#3b82f6': mascotBlue,
+  '#ef4444': mascotRed,
+  '#000000': mascotBlack,
+};
 
 interface RemotePlayer {
   guest_key?: string | null;
@@ -103,7 +114,8 @@ export const Multiplayer: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [selectedColor, setSelectedColor] = useState('#22c55e');
+  const [createColor, setCreateColor] = useState('#22c55e');
+  const [joinColor, setJoinColor] = useState('#22c55e');
   const [maxScore, setMaxScore] = useState(10);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -199,7 +211,8 @@ const loadBattleMoves = async () => {
       if (res.ok) {
         const data = await res.json();
         colorPoolRef.current = data.colors;
-        setSelectedColor(data.colors[0]);
+        setCreateColor(data.colors[0]);
+        setJoinColor(data.colors[0]);
       }
     } catch { /* offline */ }
   };
@@ -372,7 +385,7 @@ const loadBattleMoves = async () => {
     // Gunakan nilai fresh (dari parameter) agar tidak stale saat join/create baru.
     const activeKey = key || guestKey;
     const activeName = name || displayName;
-    const activeColor = color || selectedColor;
+    const activeColor = color || '#22c55e';
     socket.onopen = () => {
       socket.send(JSON.stringify({
         guest_key: activeKey,
@@ -537,7 +550,7 @@ const loadBattleMoves = async () => {
       const res = await fetch(`${API_URL()}/api/multiplayer/rooms`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nama: roomName, password, display_name: displayName, warna: selectedColor, user_id: user?.user_id || null, max_score: maxScore, client_id: clientIdRef.current }),
+        body: JSON.stringify({ nama: roomName, password, display_name: displayName, warna: createColor, user_id: user?.user_id || null, max_score: maxScore, client_id: clientIdRef.current }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data?.detail || 'Gagal membuat room.'); return; }
@@ -546,7 +559,7 @@ const loadBattleMoves = async () => {
       setRoom(data);
       setMode('room');
       setChallengeIds(data.challenge_exercise_ids || []);
-      connectWS(data.room_code, data.guest_key, displayName, selectedColor);
+      connectWS(data.room_code, data.guest_key, displayName, createColor);
       loadBattleMoves();
     } catch { setError('Tidak dapat terhubung ke server.'); } finally { setLoading(false); }
   };
@@ -560,7 +573,7 @@ const loadBattleMoves = async () => {
       const res = await fetch(`${API_URL()}/api/multiplayer/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ room_code: roomCode, password, display_name: displayName, warna: selectedColor, user_id: user?.user_id || null, client_id: clientIdRef.current }),
+        body: JSON.stringify({ room_code: roomCode, password, display_name: displayName, warna: joinColor, user_id: user?.user_id || null, client_id: clientIdRef.current }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data?.detail || 'Gagal masuk room.'); return; }
@@ -569,7 +582,7 @@ const loadBattleMoves = async () => {
       setRoom(data);
       setMode('room');
       setChallengeIds(data.challenge_exercise_ids || []);
-      connectWS(data.room_code, data.guest_key, displayName, selectedColor);
+      connectWS(data.room_code, data.guest_key, displayName, joinColor);
       // Seed existing players from room response (key konsisten: guest_key dulu)
       const seed: Record<string, RemotePlayer> = {};
       data.players?.forEach((p: any) => {
@@ -587,7 +600,8 @@ const loadBattleMoves = async () => {
     // Self — status host diambil dari state room yang otoritatif (bukan selalu true)
     const myKey = currentKey();
     const selfIsHost = (room.players || []).some((p: any) => playerKey(p) === myKey && p.is_host);
-    participants.push({ display_name: `${displayName} (Anda)`, warna: selectedColor, is_host: selfIsHost, landmarks: localLandmarks });
+    const selfPlayer = (room.players || []).find((p: any) => playerKey(p) === myKey);
+    participants.push({ display_name: `${displayName} (Anda)`, warna: selfPlayer?.warna || createColor || joinColor, is_host: selfIsHost, landmarks: localLandmarks });
     // add remote players
     Object.entries(players).forEach(([key, p]) => {
       if (key === currentKey()) return;
@@ -884,8 +898,8 @@ const loadBattleMoves = async () => {
             </div>
 
             <ColorPickerColor
-              value={selectedColor}
-              onChange={setSelectedColor}
+              value={createColor}
+              onChange={setCreateColor}
               taken={room?.players?.map((p: any) => p.warna) || []}
             />
 
@@ -929,8 +943,8 @@ const loadBattleMoves = async () => {
             </div>
 
             <ColorPickerColor
-              value={selectedColor}
-              onChange={setSelectedColor}
+              value={joinColor}
+              onChange={setJoinColor}
               taken={room?.players?.map((p: any) => p.warna) || []}
             />
 
@@ -953,10 +967,10 @@ const loadBattleMoves = async () => {
 };
 
 function ColorPickerColor({ value, onChange, taken }: { value: string; onChange: (c: string) => void; taken: string[] }) {
-  const colors = ['#22c55e', '#3b82f6', '#ef4444', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
+  const colors = ['#22c55e', '#3b82f6', '#ef4444', '#000000'];
   return (
     <div>
-      <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1.5">Warna Persona (unik per room)</label>
+      <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1.5">Pilih Mascot</label>
       <div className="flex flex-wrap gap-2">
         {colors.map((c) => {
           const isTaken = taken.includes(c);
@@ -967,21 +981,22 @@ function ColorPickerColor({ value, onChange, taken }: { value: string; onChange:
               type="button"
               disabled={isTaken && !active}
               onClick={() => onChange(c)}
-              title={isTaken ? 'Warna sudah dipakai pemain lain' : 'Pilih warna ini'}
+              title={isTaken ? 'Sudah dipakai pemain lain' : 'Pilih mascot ini'}
               className={cn(
-                'w-10 h-10 rounded-xl border-2 transition-all cursor-pointer relative',
+                'w-14 h-14 rounded-xl border-2 transition-all cursor-pointer relative overflow-hidden',
                 active ? 'ring-2 ring-offset-2 ring-blue-500 scale-110' : 'hover:scale-105',
                 isTaken && !active && 'opacity-30 cursor-not-allowed'
               )}
-              style={{ backgroundColor: c, borderColor: active ? c : 'transparent' }}
+              style={{ borderColor: active ? c : 'transparent' }}
             >
+              <img src={MASCOT_MAP[c]} alt={`mascot ${c}`} className="w-full h-full object-cover" />
               {active && <Check size={16} className="absolute inset-0 m-auto text-white drop-shadow" />}
               {isTaken && !active && <X size={16} className="absolute inset-0 m-auto text-white drop-shadow" />}
             </button>
           );
         })}
       </div>
-      <p className="text-[10px] text-slate-400 mt-1.5">Warna yang dicoret sudah dipakai pemain lain dan tidak dapat digunakan.</p>
+      <p className="text-[10px] text-slate-400 mt-1.5">Mascot yang dicoret sudah dipakai pemain lain.</p>
     </div>
   );
 }
