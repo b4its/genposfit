@@ -15,6 +15,8 @@ class User(Base):
     __tablename__ = "users"
 
     user_id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String(50), unique=True, nullable=False, index=True)
+    hashed_password = Column(String(255), nullable=False)
     nama = Column(String(100), nullable=False)
     email = Column(String(150), unique=True, nullable=True)
     pekerjaan = Column(String(100), nullable=True)

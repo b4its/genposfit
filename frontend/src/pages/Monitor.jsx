@@ -7,6 +7,7 @@ import { SkeletonOverlay } from '../components/SkeletonOverlay';
 import { CameraPermission } from '../components/CameraPermission';
 import { useCamera } from '../hooks/useCamera';
 import { usePoseDetector } from '../hooks/usePoseDetector';
+import { useAuth } from '../context/AuthContext';
 import { Button, Card, Pill, PillIndicator, PillContent, Progress, Gauge } from '../components/ui';
 import { cn } from '../lib/utils';
 
@@ -37,6 +38,8 @@ function playAlertTone() {
 }
 
 export const Monitor = ({ onNavigateToExercises }) => {
+  const { user } = useAuth();
+  const currentUserId = user?.user_id || 1;
   const [isLive, setIsLive] = useState(true);
   const [audioAlerts, setAudioAlerts] = useState(true);
 
@@ -116,7 +119,7 @@ export const Monitor = ({ onNavigateToExercises }) => {
 
   // Connect WebSocket to FastAPI backend
   useEffect(() => {
-    const wsUrl = `ws://localhost:8042/api/monitoring/ws/1`;
+    const wsUrl = `ws://localhost:8042/api/monitoring/ws/${currentUserId}`;
     let ws;
 
     try {
@@ -166,7 +169,7 @@ export const Monitor = ({ onNavigateToExercises }) => {
         ws.close();
       }
     };
-  }, [audioAlerts]);
+  }, [audioAlerts, currentUserId]);
 
   // Start / Stop Webcam
   const toggleCamera = async () => {

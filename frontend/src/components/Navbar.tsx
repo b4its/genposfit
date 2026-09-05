@@ -1,7 +1,8 @@
 import React from 'react';
-import { Activity, ShieldCheck, Camera, BarChart3, Dumbbell, Home } from 'lucide-react';
+import { Activity, ShieldCheck, Camera, BarChart3, Dumbbell, Home, LogOut, User } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { Pill, PillIndicator, PillContent, Badge } from '@/components/ui';
+import { useAuth } from '@/context/AuthContext';
 
 export type PageTab = 'landing' | 'monitor' | 'register' | 'dashboard' | 'exercises';
 
@@ -16,6 +17,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   setActiveTab,
   apiOnline = true,
 }) => {
+  const { user, logout } = useAuth();
+
   const navItems = [
     { id: 'landing', label: 'Beranda', icon: Home },
     { id: 'monitor', label: 'Live Monitor', icon: Camera, badge: 'Live' },
@@ -79,9 +82,26 @@ export const Navbar: React.FC<NavbarProps> = ({
           })}
         </nav>
 
-        {/* Right Side: Health / Status + Theme Toggle */}
+        {/* Right Side: User Info + Health Status + Theme Toggle */}
         <div className="flex items-center gap-3 shrink-0">
-          {/* API / AI Engine Status indicator with Kibo UI Pill */}
+          {/* User Info */}
+          {user && (
+            <div className="hidden sm:flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700/60">
+              <User size={13} className="text-blue-500" />
+              <span className="font-semibold text-slate-900 dark:text-white max-w-[80px] truncate">{user.nama}</span>
+            </div>
+          )}
+
+          {/* Logout */}
+          <button
+            onClick={logout}
+            title="Keluar"
+            className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+          >
+            <LogOut size={16} />
+          </button>
+
+          {/* API / AI Engine Status */}
           <Pill
             variant={apiOnline ? "success" : "destructive"}
             size="md"
@@ -117,4 +137,3 @@ export const Navbar: React.FC<NavbarProps> = ({
     </header>
   );
 };
-

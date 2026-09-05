@@ -2,12 +2,15 @@
 GenPosFit — Router Pengguna (Users API)
 Manajemen profil pengguna, pengaturan jam kerja, dan pencarian profil.
 """
+import hashlib
+import secrets
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import User
+from app.security import hash_password as _hash_pwd
 
 router = APIRouter(prefix="/api/users", tags=["Users"])
 
@@ -44,7 +47,11 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db)):
         if existing:
             return existing
 
+    gen_username = (payload.email or payload.nama or f"user_{secrets.token_hex(4)}").replace(" ", "_").lower()[:50]
+    gen_password = _hash_pwd(hashlib.sha256(secrets.token_bytes(32)).hexdigest())
     user = User(
+        username=gen_username,
+        hashed_password=gen_password,
         nama=payload.nama,
         email=payload.email,
         pekerjaan=payload.pekerjaan,

@@ -13,8 +13,14 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "backend"))
 try:
     from app.database import SessionLocal
     from app.models import User, PoseBaseline, PostureLog, Exercise, ExerciseSession
+    from app.security import hash_password
 except ImportError:
     # Alternative direct PyMySQL or standalone if backend models not reachable
+    import hashlib
+
+    def hash_password(pwd):
+        return hashlib.sha256(pwd.encode()).hexdigest()
+
     import pymysql
     SessionLocal = None
 
@@ -29,6 +35,8 @@ def seed():
             user = db.query(User).filter_by(email="developer@genposfit.local").first()
             if not user:
                 user = User(
+                    username="demouser",
+                    hashed_password=hash_password("demo1234"),
                     nama="Alex Chandra (Dev Tester)",
                     email="developer@genposfit.local",
                     pekerjaan="Software Engineer",
@@ -37,7 +45,7 @@ def seed():
                 db.add(user)
                 db.commit()
                 db.refresh(user)
-                print(f"✔ User dibuat: ID {user.user_id} - {user.nama}")
+                print(f"✔ User dibuat: ID {user.user_id} - {user.nama} (username: demouser, password: demo1234)")
             else:
                 print(f"ℹ User sudah ada: ID {user.user_id} - {user.nama}")
 
@@ -174,10 +182,10 @@ def seed():
         )
         with conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO users (nama, email, pekerjaan, jam_kerja_hari)
-                VALUES ('Alex Chandra (Dev Tester)', 'developer@genposfit.local', 'Software Engineer', 8)
+                INSERT INTO users (username, hashed_password, nama, email, pekerjaan, jam_kerja_hari)
+                VALUES ('demouser', %s, 'Alex Chandra (Dev Tester)', 'developer@genposfit.local', 'Software Engineer', 8)
                 ON DUPLICATE KEY UPDATE user_id=LAST_INSERT_ID(user_id);
-            """)
+            """, (hash_password("demo1234"),))
             user_id = cur.lastrowid
             print(f"✔ User ID: {user_id}")
         conn.close()

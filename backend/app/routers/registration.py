@@ -2,12 +2,15 @@
 GenPosFit — Endpoint Registrasi Pose → simpan ke MySQL
 Mencatat kalibrasi postur referensi personal user (Frontal, Lateral Kiri, Lateral Kanan).
 """
+import hashlib
+import secrets
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import User, PoseBaseline
+from app.security import hash_password as _hash_pwd
 
 router = APIRouter(prefix="/api/registration", tags=["Registrasi Pose"])
 
@@ -45,7 +48,11 @@ def submit_registrasi(payload: PoseBaselineIn, db: Session = Depends(get_db)):
         user = db.query(User).filter_by(email=payload.email).first()
 
     if not user:
+        gen_username = (payload.email or payload.nama or f"user_{secrets.token_hex(4)}").replace(" ", "_").lower()[:50]
+        gen_password = _hash_pwd(hashlib.sha256(secrets.token_bytes(32)).hexdigest())
         user = User(
+            username=gen_username,
+            hashed_password=gen_password,
             nama=payload.nama,
             email=payload.email,
             pekerjaan=payload.pekerjaan,

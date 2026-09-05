@@ -9,12 +9,15 @@ USE genposfit;
 -- ------------------------- USERS ----------------------------
 CREATE TABLE IF NOT EXISTS users (
     user_id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    hashed_password VARCHAR(255) NOT NULL,
     nama VARCHAR(100) NOT NULL,
     email VARCHAR(150) UNIQUE,
     pekerjaan VARCHAR(100),
     jam_kerja_hari TINYINT DEFAULT 8,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_username (username)
 ) ENGINE=InnoDB;
 
 -- --------------------- POSE BASELINE ------------------------

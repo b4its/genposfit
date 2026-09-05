@@ -9,11 +9,13 @@ import { useCamera } from '../hooks/useCamera';
 import { usePoseDetector } from '../hooks/usePoseDetector';
 import { Button, Card, Pill, PillIndicator, PillContent, Input, Select, Progress } from '../components/ui';
 import { cn } from '../lib/utils';
+import { useAuth } from '../context/AuthContext';
 
 export const RegisterPose = ({ onFinishCalibration }) => {
-  const [nama, setNama] = useState('Alex Chandra');
-  const [email, setEmail] = useState('developer@genposfit.local');
-  const [pekerjaan, setPekerjaan] = useState('Software Engineer');
+  const { user } = useAuth();
+  const [nama, setNama] = useState(user?.nama || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [pekerjaan, setPekerjaan] = useState(user?.pekerjaan || '');
   const [orientasi, setOrientasi] = useState('lateral_kiri');
   const [tipePose, setTipePose] = useState('duduk_tegak');
 
@@ -203,6 +205,7 @@ export const RegisterPose = ({ onFinishCalibration }) => {
 
     try {
       const payload = {
+        user_id: user?.user_id || undefined,
         nama,
         email,
         pekerjaan,

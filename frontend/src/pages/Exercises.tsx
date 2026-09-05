@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { Button, Card, Badge, Progress, Pill, PillContent } from '../components/ui';
 import { cn } from '../lib/utils';
+import { useAuth } from '../context/AuthContext';
 
 interface ExerciseItem {
   exercise_id: number;
@@ -81,6 +82,8 @@ const DEFAULT_EXERCISES: ExerciseItem[] = [
 ];
 
 export const Exercises: React.FC = () => {
+  const { user } = useAuth();
+  const currentUserId = user?.user_id || 1;
   const [exercises, setExercises] = useState<ExerciseItem[]>(DEFAULT_EXERCISES);
   const [activeExercise, setActiveExercise] = useState<ExerciseItem | null>(DEFAULT_EXERCISES[0]);
   const [isRunning, setIsRunning] = useState<boolean>(false);
@@ -112,7 +115,7 @@ export const Exercises: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          user_id: 1,
+          user_id: currentUserId,
           exercise_id: exerciseId,
           total_reps: totalReps,
           avg_skor: 94.5,

@@ -4,8 +4,11 @@ import {
   Calendar, Download, RefreshCw, FileText, Dumbbell, Shield
 } from 'lucide-react';
 import { Button, Card, Badge, Progress, Pill, PillContent } from '../components/ui';
+import { useAuth } from '../context/AuthContext';
 
 export const Dashboard = () => {
+  const { user } = useAuth();
+  const currentUserId = user?.user_id || 1;
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('7d');
   const [stats, setStats] = useState({
@@ -36,30 +39,31 @@ export const Dashboard = () => {
     const apiUrl = import.meta.env?.VITE_API_URL || 'http://localhost:8042';
 
     try {
-      const res = await fetch(`${apiUrl}/api/analytics/1/summary?days=7`);
+      const res = await fetch(`${apiUrl}/api/monitoring/summary/${currentUserId}?days=7`);
       if (res.ok) {
         const data = await res.json();
-        setStats(prev => ({
-          ...prev,
-          total_logs: data.total_evaluasi || prev.total_logs,
-          avg_skor: data.rata_rata_skor || prev.avg_skor,
-          avg_leher: data.rata_rata_leher || prev.avg_leher,
-          avg_punggung: data.rata_rata_punggung || prev.avg_punggung,
-          distribusi: data.distribusi || prev.distribusi,
-          persentase_bagus: data.persentase_bagus || prev.persentase_bagus,
-        }));
+setStats(prev => ({
+        ...prev,
+        total_logs: data.total_logs ?? prev.total_logs,
+        avg_skor: data.avg_skor ?? prev.avg_skor,
+        avg_leher: data.avg_leher ?? prev.avg_leher,
+        avg_punggung: data.avg_punggung ?? prev.avg_punggung,
+        distribusi: data.distribusi || prev.distribusi,
+        persentase_bagus: data.persentase_bagus ?? prev.persentase_bagus,
+      }));
       }
 
       // Fetch timeline logs
-      const tlRes = await fetch(`${apiUrl}/api/analytics/1/timeline?limit=24`);
+      const tlRes = await fetch(`${apiUrl}/api/monitoring/summary/${currentUserId}?days=7`);
       if (tlRes.ok) {
         const tlData = await tlRes.json();
-        if (Array.isArray(tlData) && tlData.length > 0) {
+        const timelineRaw = tlData.timeline ?? [];
+        if (Array.isArray(timelineRaw) && timelineRaw.length > 0) {
           setStats(prev => ({
             ...prev,
-            timeline: tlData.map(item => ({
-              time: new Date(item.waktu_catat).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-              skor: Math.round(item.skor_deviasi || 80),
+            timeline: timelineRaw.map(item => ({
+              time: new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              skor: Math.round(item.skor ?? item.skor_deviasi ?? 80),
               status: item.status,
             }))
           }));

@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import CORS_ORIGINS
 from app.database import engine, Base, check_db_connection
-from app.routers import users, registration, monitoring, exercises
+from app.routers import users, registration, monitoring, exercises, auth
 
 logging.basicConfig(
     level=logging.INFO,
@@ -53,6 +53,7 @@ app.add_middleware(
 )
 
 # Include Routers
+app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(registration.router)
 app.include_router(monitoring.router)
