@@ -78,5 +78,84 @@ PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 CALL add_col('rooms', 'max_score', 'INT NOT NULL DEFAULT 10 AFTER status');
 CALL add_col('rooms', 'exercises_json', 'JSON NULL AFTER max_score');
 
+-- ====================== GAMIFIKASI (misi, ledger poin, battle) ======================
+CREATE TABLE IF NOT EXISTS point_ledger (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    delta INT NOT NULL,
+    alasan VARCHAR(120) NOT NULL,
+    periode VARCHAR(7) NOT NULL,
+    ref_tipe VARCHAR(30),
+    ref_id INT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_ledger_user_periode (user_id, periode),
+    INDEX idx_ledger_periode (periode),
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS quests (
+    quest_id INT AUTO_INCREMENT PRIMARY KEY,
+    kode VARCHAR(50) NOT NULL UNIQUE,
+    judul VARCHAR(120) NOT NULL,
+    deskripsi TEXT,
+    kategori VARCHAR(12) NOT NULL,
+    metrik VARCHAR(50) NOT NULL,
+    target INT NOT NULL DEFAULT 5,
+    reward_poin INT NOT NULL DEFAULT 10,
+    aktif TINYINT NOT NULL DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_quest_kode (kode)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS user_quests (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    quest_id INT NOT NULL,
+    periode VARCHAR(10) NOT NULL,
+    progres INT NOT NULL DEFAULT 0,
+    status VARCHAR(12) NOT NULL DEFAULT 'aktif',
+    diklaim_pada DATETIME NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_user_quest_periode (user_id, quest_id, periode),
+    INDEX idx_userquest_user (user_id, periode),
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (quest_id) REFERENCES quests(quest_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS battle_results (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    battle_id VARCHAR(64) NOT NULL,
+    room_code VARCHAR(20) NOT NULL,
+    user_id INT NOT NULL,
+    display_name VARCHAR(100),
+    score_akhir INT NOT NULL DEFAULT 0,
+    is_winner TINYINT NOT NULL DEFAULT 0,
+    awarded_poin INT NOT NULL DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_battle_participant (battle_id, user_id),
+    INDEX idx_battle_room (room_code),
+    INDEX idx_battle_user_time (user_id, created_at),
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Backfill ledger dari total poin lama supaya peringkat musim berjalan adil:
+-- poin historis dianggap earned di periode sekarang, TANPA duplikasi.
+INSERT INTO point_ledger (user_id, delta, alasan, periode, ref_tipe)
+SELECT u.user_id, u.poin, 'backfill_lama', DATE_FORMAT(NOW(), '%Y-%m'), 'legacy'
+FROM users u
+WHERE u.poin > 0
+  AND NOT EXISTS (SELECT 1 FROM point_ledger pl WHERE pl.user_id = u.user_id);
+
+
+
+-- ================= SEED MISI DEFAULT (idempoten via kode unik) =================
+INSERT IGNORE INTO quests (kode, judul, deskripsi, kategori, metrik, target, reward_poin, aktif) VALUES
+ ('postur_prima_harian','Postur Prima Harian','Kumpulkan 12 sampel postur berkualitas berstatus BAGUS hari ini.','harian','postur_bagus',12,10,1),
+ ('terapi_bergerak_harian','Terapi Bergerak Harian','Selesaikan 2 sesi latihan terapi postur hari ini.','harian','latihan_selesai',2,10,1),
+ ('kalibrasi_ulang','Baseline Segar','Perbarui kalibrasi pose baseline-mu minggu ini.','mingguan','kalibrasi',1,15,1),
+ ('konsistensi_pekan','Konsistensi Sepekan','Pantau postur minimal 40 sampel berkualitas di pekan ini.','mingguan','postur_qty',40,30,1),
+ ('duel_pilar','Duel Pilar Postur','Menangkan 1 battle multiplayer minggu ini.','mingguan','battle_menang',1,25,1);
+
 -- Bersihkan prosedur temporary
 DROP PROCEDURE IF EXISTS add_col;
