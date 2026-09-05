@@ -104,7 +104,7 @@ function AppContent() {
         {activeTab === 'register' && <RegisterPose onFinishCalibration={() => setActiveTab('monitor')} />}
         {activeTab === 'monitor' && <Monitor onNavigateToExercises={() => setActiveTab('exercises')} />}
         {activeTab === 'dashboard' && <Dashboard />}
-        {activeTab === 'exercises' && <Exercises />}
+        {activeTab === 'exercises' && <Exercises setActiveTab={setActiveTab} />}
         {activeTab === 'skeleton' && <SkeletonPreview />}
         {activeTab === 'multiplayer' && <Multiplayer />}
         {activeTab === 'admin' && <AdminPage />}

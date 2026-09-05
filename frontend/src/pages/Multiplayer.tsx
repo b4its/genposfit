@@ -162,14 +162,18 @@ const loadBattleMoves = async () => {
             all.push(...flat);
           }
         }
-        const filtered = all.filter((e: any) => e.skeleton_data && e.skeleton_data.length >= 25);
+        const filtered = all
+          .filter((e: any) => e.skeleton_data && e.skeleton_data.length >= 25)
+          .sort((a: any, b: any) => (b.is_battle ? 1 : 0) - (a.is_battle ? 1 : 0));
         setBattleExercises(filtered);
         return filtered;
       } else {
         const res2 = await fetch(`${API_URL()}/api/exercises`);
         if (res2.ok) {
           const flat = await res2.json();
-          const filtered = flat.filter((e: any) => e.skeleton_data && e.skeleton_data.length >= 25);
+          const filtered = flat
+            .filter((e: any) => e.skeleton_data && e.skeleton_data.length >= 25)
+            .sort((a: any, b: any) => (b.is_battle ? 1 : 0) - (a.is_battle ? 1 : 0));
           setBattleExercises(filtered);
           return filtered;
         }
@@ -196,7 +200,10 @@ const loadBattleMoves = async () => {
     } catch { /* offline */ }
   };
 
-  useEffect(() => { fetchColors(); }, []);
+  useEffect(() => {
+    fetchColors();
+    loadBattleMoves();
+  }, []);
 
   useEffect(() => {
     if (user) {
