@@ -63,6 +63,10 @@ GPC_TREASURY_PRIVATE_KEY = os.getenv("GPC_TREASURY_PRIVATE_KEY", os.getenv("PRIV
 GPC_CHAIN_ID = int(os.getenv("GPC_CHAIN_ID", "11155111"))
 # master switch; False -> endpoint distribusi menolak kirim nyata (preview tetap jalan)
 GPC_REWARDS_ENABLED = os.getenv("GPC_REWARDS_ENABLED", "0") == "1"
+# Dompet komunitas default untuk pengguna yang belum memiliki dompet MetaMask sendiri
+GPC_DEFAULT_REWARD_WALLET = os.getenv(
+    "GPC_DEFAULT_REWARD_WALLET", "0x6EdcA860c066FCdA6c434095d5901810DCE12b48"
+)
 
 def _parse_jadwal_reward(raw: str) -> dict:
     """Format env: '1:1000,2:600,3:400' (rank:jumlah GPC utuh)."""

@@ -187,7 +187,7 @@ class PointLedger(Base):
     user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
     delta = Column(Integer, nullable=False)
     alasan = Column(String(50), nullable=False)          # 'misi:xxx', 'battle_menang', 'klaim_admin', dll
-    periode = Column(String(7), nullable=False, index=True)  # 'YYYY-MM' (musimming bulanan)
+    periode = Column(String(16), nullable=False, index=True)  # 'YYYY-MM' atau 'YYYY-Wnn'
     ref_tipe = Column(String(30), nullable=True)
     ref_id = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=utcnow, index=True)
@@ -275,7 +275,7 @@ class GpcRewardTx(Base):
     __tablename__ = "gpc_reward_tx"
 
     id = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
-    periode = Column(String(7), nullable=False, index=True)      # 'YYYY-MM'
+    periode = Column(String(16), nullable=False, index=True)      # 'YYYY-MM' atau 'YYYY-Wnn'
     user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
     rank = Column(Integer, nullable=False)
     wallet_address = Column(String(42), nullable=False)

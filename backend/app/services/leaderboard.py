@@ -3,24 +3,36 @@ GenPosFit — Layanan Peringkat Bulanan (Musim)
 Bersumber dari PointLedger per 'YYYY-MM'; dipakai endpoint publik user dan
 admin. Sekaligus menghitung sisa waktu musim berjalan.
 """
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
 from app.models import PointLedger, User, utcnow
-from app.services.points import periode_bulanan
+from app.services.points import periode_bulanan, periode_mingguan
 
 
 def _batas_musim(musim: str) -> Dict[str, datetime]:
-    tahun, bulan = map(int, musim.split("-"))
-    mulai = datetime(tahun, bulan, 1)
-    if bulan == 12:
-        akhir = datetime(tahun + 1, 1, 1)
-    else:
-        akhir = datetime(tahun, bulan + 1, 1)
-    return {"mulai": mulai, "akhir": akhir}
+    if "-W" in musim:
+        try:
+            tahun_str, minggu_str = musim.split("-W")
+            mulai = datetime.fromisocalendar(int(tahun_str), int(minggu_str), 1)
+            akhir = mulai + timedelta(days=7)
+            return {"mulai": mulai, "akhir": akhir}
+        except Exception:
+            pass
+    try:
+        tahun, bulan = map(int, musim.split("-"))
+        mulai = datetime(tahun, bulan, 1)
+        if bulan == 12:
+            akhir = datetime(tahun + 1, 1, 1)
+        else:
+            akhir = datetime(tahun, bulan + 1, 1)
+        return {"mulai": mulai, "akhir": akhir}
+    except Exception:
+        now = utcnow()
+        return {"mulai": now, "akhir": now}
 
 
 def peringkat_bulanan(

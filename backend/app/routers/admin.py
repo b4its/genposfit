@@ -476,16 +476,37 @@ ExerciseTypeOut.model_rebuild()
 # ---------------- DISTRIBUTION REWARD GPC (MANUAL, ADMIN ONLY) ----------------
 
 class DistribusiGpcRequest(BaseModel):
-    periode: Optional[str] = None  # 'YYYY-MM' default musim berjalan
+    periode: Optional[str] = None  # 'YYYY-MM' atau 'YYYY-Wnn', default musim berjalan
     kering: bool = True            # True = simulasi/preview; False = kirim nyata
+    hanya_role_user: bool = False  # True = filter hanya role pengguna (non-admin)
+    use_default_wallet: bool = False  # True = alihkan user tanpa wallet ke dompet komunitas default
+    custom_wallet: Optional[str] = None
 
 
 @router.get("/rewards/preview")
-def admin_preview_rewards(periode: Optional[str] = None, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
-    """Pratinjau penerima GPC bulan berjalan (tanpa mengirim on-chain apa pun)."""
-    from app.services.points import periode_bulanan
+def admin_preview_rewards(
+    periode: Optional[str] = None,
+    tipe: Optional[str] = None,
+    hanya_role_user: bool = False,
+    use_default_wallet: bool = False,
+    custom_wallet: Optional[str] = None,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Pratinjau penerima GPC bulan/musim berjalan (tanpa mengirim on-chain apa pun)."""
+    from app.services.points import periode_bulanan, periode_mingguan
     from app.services.rewards import pratinjau
-    return pratinjau(db, periode or periode_bulanan())
+
+    if not periode:
+        periode = periode_mingguan() if tipe == "mingguan" else periode_bulanan()
+
+    return pratinjau(
+        db,
+        periode,
+        hanya_role_user=hanya_role_user,
+        use_default_wallet=use_default_wallet,
+        custom_default_wallet=custom_wallet,
+    )
 
 
 @router.post("/rewards/distribute")
@@ -498,7 +519,41 @@ def admin_distribusi_rewards(payload: DistribusiGpcRequest, admin: User = Depend
     from app.services.rewards import RewardError, distribusikan
     try:
         hasil = distribusikan(
-            db, admin.user_id, payload.periode or periode_bulanan(), kering=payload.kering
+            db,
+            admin.user_id,
+            payload.periode or periode_bulanan(),
+            kering=payload.kering,
+            hanya_role_user=payload.hanya_role_user,
+            use_default_wallet=payload.use_default_wallet,
+            custom_default_wallet=payload.custom_wallet,
+        )
+    except RewardError as exc:
+        raise HTTPException(exc.status, exc.pesan)
+    return hasil
+
+
+@router.post("/rewards/distribute-users")
+def admin_distribusi_users_shortcut(
+    payload: Optional[DistribusiGpcRequest] = None,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """
+    Shortcut Admin: Kirim reward khusus role pengguna (non-admin) dengan
+    otomatis fallback ke dompet komunitas default jika user belum memiliki MetaMask.
+    """
+    from app.services.points import periode_bulanan
+    from app.services.rewards import RewardError, distribusikan
+    req = payload or DistribusiGpcRequest()
+    try:
+        hasil = distribusikan(
+            db,
+            admin.user_id,
+            req.periode or periode_bulanan(),
+            kering=req.kering,
+            hanya_role_user=True,
+            use_default_wallet=True,
+            custom_default_wallet=req.custom_wallet,
         )
     except RewardError as exc:
         raise HTTPException(exc.status, exc.pesan)

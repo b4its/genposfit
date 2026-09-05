@@ -19,6 +19,13 @@ def periode_bulanan(at: Optional[datetime] = None) -> str:
     return f"{at.year:04d}-{at.month:02d}"
 
 
+def periode_mingguan(at: Optional[datetime] = None) -> str:
+    """Kunci musim peringkat mingguan, format 'YYYY-Wnn' (UTC)."""
+    at = at or utcnow()
+    year, week, _ = at.isocalendar()
+    return f"{year:04d}-W{week:02d}"
+
+
 def tambah_poin(
     db: Session,
     user_id: int,

@@ -126,3 +126,101 @@ def test_history_endpoint(client, admin, admin_headers):
 def test_reward_hanya_untuk_admin(client, auth_headers):
     assert client.get("/api/admin/rewards/preview", headers=auth_headers).status_code == 403
     assert client.post("/api/admin/rewards/distribute", json={}, headers=auth_headers).status_code == 403
+    assert client.post("/api/admin/rewards/distribute-users", json={}, headers=auth_headers).status_code == 403
+
+
+def test_preview_dengan_default_wallet(client, admin, admin_headers, user, db_session):
+    _seed_ranking(client, db_session, user, admin)
+    r = client.get(
+        "/api/admin/rewards/preview?use_default_wallet=true",
+        headers=admin_headers,
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert len(body["tanpa_wallet"]) == 0
+    assert body["total_penerima_siap"] == 3
+    # Semua user tanpa wallet dialihkan ke GPC_DEFAULT_REWARD_WALLET
+    for p in body["penerima"]:
+        assert p["siap"] is True
+        assert p["wallet_address"] == rewards.GPC_DEFAULT_REWARD_WALLET
+        assert p["is_default_wallet"] is True
+
+    # Agregasi dompet_ringkasan
+    ringkasan = body["dompet_ringkasan"]
+    assert len(ringkasan) == 1
+    assert ringkasan[0]["wallet_address"] == rewards.GPC_DEFAULT_REWARD_WALLET
+    assert ringkasan[0]["jumlah_user"] == 3
+    assert ringkasan[0]["total_gpc_periode"] == sum(rewards.GPC_REWARD_SCHEDULE.values())
+    assert len(ringkasan[0]["user_ids"]) == 3
+
+
+def test_preview_filter_hanya_role_user(client, admin, admin_headers, user, db_session):
+    _seed_ranking(client, db_session, user, admin)
+    r = client.get(
+        "/api/admin/rewards/preview?hanya_role_user=true",
+        headers=admin_headers,
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    # admin (rank 2) harus dilewati
+    user_ids = [p["user_id"] for p in body["penerima"]]
+    assert admin.user_id not in user_ids
+    assert user.user_id in user_ids
+
+
+def test_distribute_users_shortcut_dryrun(client, admin, admin_headers, user, db_session):
+    _seed_ranking(client, db_session, user, admin)
+    r = client.post(
+        "/api/admin/rewards/distribute-users",
+        json={"kering": True},
+        headers=admin_headers,
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["hanya_role_user"] is True
+    assert body["use_default_wallet"] is True
+    simulasi = body["simulasi"]
+    # Admin dilewati, hanya 2 user role 'user'
+    assert len(simulasi) == 2
+    for s in simulasi:
+        assert s["wallet_address"] == rewards.GPC_DEFAULT_REWARD_WALLET
+        assert s["siap"] is True
+    # Tidak ada baris yang ditulis saat kering
+    assert db_session.query(GpcRewardTx).count() == 0
+
+
+def test_distribute_users_shortcut_onchain(client, admin, admin_headers, user, db_session, monkeypatch):
+    _seed_ranking(client, db_session, user, admin)
+    monkeypatch.setattr(rewards, "GPC_REWARDS_ENABLED", True)
+    monkeypatch.setattr(rewards, "SEPOLIA_RPC_URL", "http://rpc.test")
+    monkeypatch.setattr(rewards, "GPC_CONTRACT_ADDRESS", W1)
+    monkeypatch.setattr(rewards, "GPC_TREASURY_PRIVATE_KEY", "0x" + "11" * 30)
+
+    dipanggil = []
+
+    def fake_mint(kontak, wallet, jumlah, pk, nonce=None):
+        dipanggil.append((wallet, int(jumlah), nonce))
+        return "0xUSER" + format(len(dipanggil), "04x")
+
+    monkeypatch.setattr(rewards, "kirim_mint", fake_mint)
+    monkeypatch.setattr(rewards, "_contract", lambda: ("w3", "contract"))
+
+    r = client.post(
+        "/api/admin/rewards/distribute-users",
+        json={"kering": False},
+        headers=admin_headers,
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert len(body["dikirim"]) == 2  # 2 user role 'user'
+    assert len(dipanggil) == 2
+    # Semua dikirim ke default community wallet
+    for item in body["dikirim"]:
+        assert item["wallet_address"] == rewards.GPC_DEFAULT_REWARD_WALLET
+    # Memastikan tabel GpcRewardTx mencatat setiap user_id secara terpisah
+    tx_records = db_session.query(GpcRewardTx).all()
+    assert len(tx_records) == 2
+    for tx in tx_records:
+        assert tx.status == "sukses"
+        assert tx.wallet_address == rewards.GPC_DEFAULT_REWARD_WALLET
+        assert tx.user_id in [user.user_id, tx_records[1].user_id]
