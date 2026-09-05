@@ -5,6 +5,8 @@ import {
 } from 'lucide-react';
 import { type PageTab } from '../components/Navbar';
 import { SkeletonOverlay } from '../components/SkeletonOverlay';
+import { Button, Card, Pill, PillIndicator, PillContent } from '@/components/ui';
+import { cn } from '@/lib/utils';
 
 interface LandingPageProps {
   setActiveTab: (tab: PageTab) => void;
@@ -75,16 +77,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           {/* Left Column: Heading & CTAs */}
           <div className="lg:col-span-7 flex flex-col items-start text-left">
-            {/* Tag / Category Badge */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold mb-6 border shadow-xs"
-              style={{
-                backgroundColor: 'rgba(37, 99, 235, 0.08)',
-                borderColor: 'rgba(37, 99, 235, 0.3)',
-                color: 'var(--accent-blue)',
-              }}>
+            {/* Tag / Category Badge with Kibo UI Pill */}
+            <Pill variant="info" size="md" className="mb-6 font-semibold shadow-xs">
               <Sparkles size={14} className="text-blue-600 dark:text-blue-400" />
-              <span>SISTEM MONITORING BIOMEKANIKA & KESEHATAN POSTUR</span>
-            </div>
+              <PillContent>SISTEM MONITORING BIOMEKANIKA & KESEHATAN POSTUR</PillContent>
+            </Pill>
 
             <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-[1.15] mb-5 max-w-xl text-slate-900 dark:text-white">
               Optimalkan postur sehat dengan{' '}
@@ -99,68 +96,82 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
               100% privasi terlindungi dengan ekstraksi landmark lokal, kalibrasi baseline ergonomis personal, serta latihan terapi korektif otomatis.
             </p>
 
-            {/* CTA Buttons */}
+            {/* CTA Buttons with Kibo UI Button */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-              <button
+              <Button
+                variant="default"
+                size="lg"
                 onClick={() => setActiveTab('monitor')}
-                className="btn-primary whitespace-nowrap"
+                className="whitespace-nowrap shadow-md shadow-blue-500/20"
               >
                 <Play size={16} className="fill-current" />
                 <span>Mulai Live Monitor</span>
                 <ChevronRight size={16} />
-              </button>
+              </Button>
 
-              <button
+              <Button
+                variant="outline"
+                size="lg"
                 onClick={() => setActiveTab('register')}
-                className="btn-outline whitespace-nowrap hover:border-emerald-500/50"
+                className="whitespace-nowrap hover:border-emerald-500/50"
               >
                 <Shield size={16} className="text-emerald-500" />
                 <span>Kalibrasi Baseline</span>
-              </button>
+              </Button>
 
-              <button
+              <Button
+                variant="outline"
+                size="lg"
                 onClick={() => setActiveTab('exercises')}
-                className="btn-outline whitespace-nowrap text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
+                className="whitespace-nowrap text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
               >
                 <HeartPulse size={16} />
                 <span>Latihan Terapi</span>
-              </button>
+              </Button>
             </div>
 
             {/* Quick Metrics Bar */}
-            <div className="grid grid-cols-3 gap-4 sm:gap-8 pt-8 mt-8 border-t w-full"
-              style={{ borderColor: 'var(--border)' }}>
+            <div className="grid grid-cols-3 gap-4 sm:gap-8 pt-8 mt-8 border-t border-border w-full">
               <div>
                 <div className="text-2xl sm:text-3xl font-extrabold font-mono text-blue-600 dark:text-blue-400">30 FPS</div>
-                <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Biometrik Real-time</div>
+                <div className="text-xs text-muted-foreground mt-1">Biometrik Real-time</div>
               </div>
               <div>
                 <div className="text-2xl sm:text-3xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">0.1°</div>
-                <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Presisi Sub-derajat</div>
+                <div className="text-xs text-muted-foreground mt-1">Presisi Sub-derajat</div>
               </div>
               <div>
-                <div className="text-2xl sm:text-3xl font-extrabold font-mono text-slate-800 dark:text-slate-200">100%</div>
-                <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Privasi Edge Lokal</div>
+                <div className="text-2xl sm:text-3xl font-extrabold font-mono text-foreground">100%</div>
+                <div className="text-xs text-muted-foreground mt-1">Privasi Edge Lokal</div>
               </div>
             </div>
           </div>
 
           {/* Right Column: Interactive Biomechanical Simulator */}
           <div className="lg:col-span-5">
-            <div className="app-card p-5 relative overflow-hidden"
-              style={{
-                boxShadow: status === 'bagus' ? 'var(--glow-green)' : status === 'ringan' ? '0 4px 20px rgba(245, 158, 11, 0.15)' : '0 4px 20px rgba(239, 68, 68, 0.2)'
-              }}>
+            <Card
+              className={cn(
+                "p-5 relative overflow-hidden transition-all duration-300",
+                status === 'bagus'
+                  ? 'border-emerald-500/40 shadow-lg shadow-emerald-500/10'
+                  : status === 'ringan'
+                  ? 'border-amber-500/40 shadow-lg shadow-amber-500/10'
+                  : 'border-rose-500/40 shadow-lg shadow-rose-500/10'
+              )}
+            >
               {/* Header Bar */}
-              <div className="flex items-center justify-between pb-3.5 mb-3.5 border-b"
-                style={{ borderColor: 'var(--border)' }}>
+              <div className="flex items-center justify-between pb-3.5 mb-3.5 border-b border-border">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">Simulasi Biomekanika Interaktif</span>
+                  <span className="text-xs font-semibold text-foreground">Simulasi Biomekanika Interaktif</span>
                 </div>
-                <div className={`status-pill status-pill-${status}`}>
-                  <span>{status}</span> · <span>{score}%</span>
-                </div>
+                <Pill
+                  variant={status === 'bagus' ? 'success' : status === 'ringan' ? 'warning' : 'destructive'}
+                  size="sm"
+                >
+                  <PillIndicator variant={status === 'bagus' ? 'success' : status === 'ringan' ? 'warning' : 'destructive'} />
+                  <PillContent className="capitalize font-semibold">{status} · {score}%</PillContent>
+                </Pill>
               </div>
 
               {/* Canvas Preview Area */}
@@ -189,9 +200,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
               {/* Interactive Sliders */}
               <div className="mt-4 space-y-3.5 text-xs">
                 <div>
-                  <div className="flex justify-between text-slate-700 dark:text-slate-300 font-medium mb-1.5">
+                  <div className="flex justify-between text-foreground font-medium mb-1.5">
                     <span>Forward Head / Sudut Leher:</span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-bold font-mono">{demoNeck}° <span className="text-slate-400 font-normal">(Base: 165°)</span></span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold font-mono">{demoNeck}° <span className="text-muted-foreground font-normal">(Base: 165°)</span></span>
                   </div>
                   <input
                     type="range"
@@ -205,9 +216,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
                 </div>
 
                 <div>
-                  <div className="flex justify-between text-slate-700 dark:text-slate-300 font-medium mb-1.5">
+                  <div className="flex justify-between text-foreground font-medium mb-1.5">
                     <span>Trunk Angle / Sudut Punggung:</span>
-                    <span className="text-blue-600 dark:text-blue-400 font-bold font-mono">{demoBack}° <span className="text-slate-400 font-normal">(Base: 170°)</span></span>
+                    <span className="text-blue-600 dark:text-blue-400 font-bold font-mono">{demoBack}° <span className="text-muted-foreground font-normal">(Base: 170°)</span></span>
                   </div>
                   <input
                     type="range"
@@ -222,65 +233,67 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
               </div>
 
               {/* Reset to Ergonomic State */}
-              <div className="mt-4 pt-3 border-t flex justify-between items-center text-xs"
-                style={{ borderColor: 'var(--border)' }}>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400">Geser slider untuk simulasi deviasi postur</span>
-                <button
+              <div className="mt-4 pt-3 border-t border-border flex justify-between items-center text-xs">
+                <span className="text-[11px] text-muted-foreground">Geser slider untuk simulasi deviasi postur</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
                   type="button"
                   onClick={() => { setDemoNeck(165); setDemoBack(172); }}
-                  className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 flex items-center gap-1 cursor-pointer transition-colors"
+                  className="h-auto p-0 text-blue-600 dark:text-blue-400 hover:text-blue-500 hover:bg-transparent flex items-center gap-1 font-medium text-xs"
                 >
                   <RefreshCw size={12} /> Reset Kalibrasi
-                </button>
+                </Button>
               </div>
-            </div>
+            </Card>
           </div>
         </div>
       </section>
 
       {/* Feature Grid: Biomechanics & Healthcare */}
-      <section className="app-container py-12 border-t" style={{ borderColor: 'var(--border)' }}>
+      <section className="app-container py-12 border-t border-border">
         <div className="text-center max-w-2xl mx-auto mb-10">
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3 text-slate-900 dark:text-white">
             Fitur Unggulan Ergonomi Modern
           </h2>
-          <p className="text-slate-600 dark:text-slate-400 text-sm sm:text-base leading-relaxed">
+          <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
             Teknologi computer vision berstandar medis yang dirancang khusus untuk kenyamanan dan kesehatan tulang belakang pekerja meja.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="app-card p-6">
+          <Card hoverEffect className="p-6">
             <div className="w-11 h-11 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400 mb-4 shadow-xs">
               <Cpu size={22} />
             </div>
-            <h3 className="text-base font-bold mb-2 text-slate-900 dark:text-white">33-Point MediaPipe Extraction</h3>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+            <h3 className="text-base font-bold mb-2 text-foreground">33-Point MediaPipe Extraction</h3>
+            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
               Ekstraksi kinematik lengkap secara real-time via WebAssembly & akselerasi GPU. Melacak sudut servikal, thoraks, dan simetri bahu tanpa latensi.
             </p>
-          </div>
+          </Card>
 
-          <div className="app-card p-6">
+          <Card hoverEffect className="p-6">
             <div className="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-4 shadow-xs">
               <Shield size={22} />
             </div>
-            <h3 className="text-base font-bold mb-2 text-slate-900 dark:text-white">Kalibrasi Baseline Personal</h3>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+            <h3 className="text-base font-bold mb-2 text-foreground">Kalibrasi Baseline Personal</h3>
+            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
               Menyesuaikan standar deviasi berdasarkan anatomi unik dan kenyamanan setiap pengguna, bukan memaksakan standar kaku satu ukuran untuk semua.
             </p>
-          </div>
+          </Card>
 
-          <div className="app-card p-6">
+          <Card hoverEffect className="p-6">
             <div className="w-11 h-11 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-600 dark:text-teal-400 mb-4 shadow-xs">
               <HeartPulse size={22} />
             </div>
-            <h3 className="text-base font-bold mb-2 text-slate-900 dark:text-white">Terapi & Peregangan Terarah</h3>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+            <h3 className="text-base font-bold mb-2 text-foreground">Terapi & Peregangan Terarah</h3>
+            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
               Program latihan korektif terintegrasi (Chin Tuck, Shoulder Squeeze, Wall Angel) dengan panduan repetisi dan aktivasi kelompok otot target.
             </p>
-          </div>
+          </Card>
         </div>
       </section>
     </div>
   );
 };
+
