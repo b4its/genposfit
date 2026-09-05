@@ -51,8 +51,10 @@ CREATE TABLE IF NOT EXISTS posture_logs (
     level_bahu DECIMAL(6,4),
     skor_deviasi DECIMAL(5,2) NOT NULL,
     status ENUM('bagus','ringan','buruk') NOT NULL,
+    kualitas_data DECIMAL(5,2) NULL,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-    INDEX idx_user_time (user_id, timestamp)
+    INDEX idx_user_time (user_id, timestamp),
+    INDEX idx_posture_status (status)
 ) ENGINE=InnoDB;
 
 -- ------------------- JENIS LATIHAN (Parent) ------------------

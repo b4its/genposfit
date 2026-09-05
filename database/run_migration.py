@@ -111,6 +111,15 @@ def run():
         else:
             print("  · tabel exercises belum ada — migrasi dilewati")
 
+        if table_exists(db, "posture_logs"):
+            add_column(db, "posture_logs", "kualitas_data", "DECIMAL(5,2) NULL AFTER status")
+            if not index_exists(db, "posture_logs", "idx_posture_status"):
+                db.execute(text("ALTER TABLE posture_logs ADD INDEX idx_posture_status (status)"))
+                db.commit()
+                print("  ✔ posture_logs.idx_posture_status ditambahkan")
+        else:
+            print("  · tabel posture_logs belum ada - migrasi dilewati")
+
         if table_exists(db, "rooms"):
             add_column(db, "rooms", "max_score", "INT NOT NULL DEFAULT 10 AFTER status")
             add_column(db, "rooms", "exercises_json", "JSON NULL AFTER max_score")

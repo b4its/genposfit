@@ -66,6 +66,14 @@ CALL add_col('exercises', 'sudut_leher', 'DECIMAL(6,2) NULL AFTER skeleton_data'
 CALL add_col('exercises', 'sudut_punggung', 'DECIMAL(6,2) NULL AFTER sudut_leher');
 CALL add_col('exercises', 'is_battle', "TINYINT DEFAULT 0 AFTER tingkat");
 
+-- ====================== POSTURE LOGS (kualitas data) ======================
+CALL add_col('posture_logs', 'kualitas_data', 'DECIMAL(5,2) NULL AFTER status');
+-- Index status untuk agregasi dashboard (idempotent via cek STATISTICS)
+SET @has_qidx = (SELECT COUNT(*) FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'posture_logs' AND INDEX_NAME = 'idx_posture_status');
+SET @sql = IF(@has_qidx = 0, 'ALTER TABLE posture_logs ADD INDEX idx_posture_status (status)', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
 -- ====================== ROOMS ======================
 CALL add_col('rooms', 'max_score', 'INT NOT NULL DEFAULT 10 AFTER status');
 CALL add_col('rooms', 'exercises_json', 'JSON NULL AFTER max_score');

@@ -72,6 +72,9 @@ class PostureLog(Base):
     level_bahu = Column(DECIMAL(6, 4), nullable=True)
     skor_deviasi = Column(DECIMAL(5, 2), nullable=False)
     status = Column(String(20), nullable=False)  # 'bagus', 'ringan', 'buruk'
+    # Skor kualitas data telemetri frame ini (0-100) dari analisis_kualitas_landmarks.
+    # NULL berarti log dibuat sebelum sistem kualitas data aktif.
+    kualitas_data = Column(DECIMAL(5, 2), nullable=True)
 
     user = relationship("User", back_populates="posture_logs")
 
