@@ -32,7 +32,7 @@ function AppContent() {
 
   // Check backend health on mount
   useEffect(() => {
-    const apiUrl = import.meta.env?.VITE_API_URL || 'http://localhost:8042';
+    const apiUrl = import.meta.env?.VITE_API_URL || '';
     const checkHealth = () => {
       fetch(`${apiUrl}/api/health`)
         .then(res => res.json())

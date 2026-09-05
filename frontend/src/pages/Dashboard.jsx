@@ -36,7 +36,7 @@ export const Dashboard = () => {
   // Fetch real analytics from backend
   const fetchData = async () => {
     setLoading(true);
-    const apiUrl = import.meta.env?.VITE_API_URL || 'http://localhost:8042';
+    const apiUrl = import.meta.env?.VITE_API_URL || '';
 
     // timeRange: '7d' → 7, '30d' → 30, '1d' → 1
     const days = timeRange === '1d' ? 1 : timeRange === '30d' ? 30 : 7;

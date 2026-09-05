@@ -63,8 +63,8 @@ services:
     depends_on:
       - backend
     environment:
-      VITE_API_URL: http://localhost:${BACKEND_PORT}
-      NEXT_PUBLIC_API_URL: http://localhost:${BACKEND_PORT}
+      VITE_API_PROXY: http://backend:8042
+      NEXT_PUBLIC_API_URL: http://backend:8042
     ports:
       - "${FRONTEND_PORT}:3042"
     volumes:

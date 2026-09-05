@@ -17,7 +17,7 @@ interface RemotePlayer {
   landmarks: Landmark[] | null;
 }
 
-const API_URL = () => import.meta.env?.VITE_API_URL || 'http://localhost:8042';
+const API_URL = () => import.meta.env?.VITE_API_URL || '';
 
 // Fallback / demo skeleton so lobby is alive even before camera data arrives
 function generateIdleLandmarks(time: number): Landmark[] {

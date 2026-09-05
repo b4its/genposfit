@@ -10,7 +10,7 @@ import {
 } from 'recharts';
 import { Button, Card, Badge, Pill, PillContent } from '../components/ui';
 
-const apiUrl = () => import.meta.env?.VITE_API_URL || 'http://localhost:8042';
+const apiUrl = () => import.meta.env?.VITE_API_URL || '';
 
 const PIE_COLORS = ['#10b981', '#f59e0b', '#ef4444'];
 
