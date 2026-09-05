@@ -135,3 +135,42 @@ def test_websocket_presence_and_battle_broadcast(client):
             assert got == {"type": "battle_score", "guest_key": gk_guest,
                            "display_name": "Guest B", "warna": GUEST_HEADERS["warna"],
                            "score": 1, "points": 60, "move_name": "Chin Tuck"} or got
+
+
+def test_websocket_exercise_lifecycle(client):
+    room = create_room(client)
+    code = room["room_code"]
+    gk_host = room["guest_key"]
+
+    joined = client.post("/api/multiplayer/join", json={
+        "room_code": code, "password": "rahasia4", **GUEST_HEADERS,
+    }).json()
+    gk_guest = joined["guest_key"]
+
+    with client.websocket_connect(f"/api/multiplayer/ws/{code}") as ws_host:
+        ws_host.send_json({"guest_key": gk_host, "display_name": "Host A", "warna": HOST_HEADERS["warna"]})
+        # drain initial room_update on host
+        _ = ws_host.receive_json()
+
+        with client.websocket_connect(f"/api/multiplayer/ws/{code}") as ws_guest:
+            ws_guest.send_json({"guest_key": gk_guest, "display_name": "Guest B", "warna": GUEST_HEADERS["warna"]})
+            # guest receives initial room_update
+            _ = ws_guest.receive_json()
+
+            # Host broadcasts exercise start
+            ws_host.send_json({
+                "type": "exercise_start",
+                "exercise_id": 7,
+                "exercise_name": "Chin Tuck Alignment",
+                "reps": 5,
+                "durasi_detik": 5,
+            })
+
+            # Guest receives exercise_start
+            m = ws_guest.receive_json()
+            assert m.get("type") == "exercise_start"
+            assert m.get("exercise_id") == 7
+            assert m.get("exercise_name") == "Chin Tuck Alignment"
+            assert m.get("guest_key") == gk_host
+
+

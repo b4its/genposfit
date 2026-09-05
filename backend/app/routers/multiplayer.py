@@ -408,6 +408,13 @@ async def multiplayer_ws(websocket: WebSocket, room_code: str):
                     "challenge_exercise_ids": ids,
                 })
                 continue
+            if msg_type in ("exercise_start", "exercise_stop", "exercise_rep", "exercise_sync"):
+                payload = dict(msg)
+                payload["guest_key"] = guest_key
+                payload["display_name"] = name
+                payload["warna"] = warna
+                await hub.broadcast(code, payload)
+                continue
             landmarks = msg.get("landmarks", [])
             if landmarks:
                 await hub.broadcast(code, {

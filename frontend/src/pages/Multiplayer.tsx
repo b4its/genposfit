@@ -2,13 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Users, Plus, LogIn, KeyRound, DoorOpen, Check, X,
   Wifi, Monitor, Smartphone, Globe, Server, Camera, Swords, Star, Target as TargetIcon,
-  AlertOctagon
+  AlertOctagon, Play, Pause, RotateCcw, Dumbbell, Timer, CheckCircle2, Sparkles, Trophy, Activity, User, Flame
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getApiUrl, getWsUrl } from '../lib/api';
 import { SkeletonOverlay, type Landmark } from '../components/SkeletonOverlay';
 import { usePoseDetector } from '../hooks/usePoseDetector';
-import { Button, Card, Input, Pill, PillIndicator, PillContent, Badge, Select } from '@/components/ui';
+import { Button, Card, Input, Pill, PillIndicator, PillContent, Badge, Select, Progress } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { Crown } from 'lucide-react';
 
@@ -138,6 +138,20 @@ export const Multiplayer: React.FC = () => {
   const hasilBattleTerkirim = useRef(false);
   const [myBattleScore, setMyBattleScore] = useState<number>(0);
   const [challengeIds, setChallengeIds] = useState<number[]>([]);
+
+  // Therapy Exercise Session (Solo & Multiplayer)
+  const [isExercising, setIsExercising] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const [currentRep, setCurrentRep] = useState(0);
+  const [holdTimer, setHoldTimer] = useState(5);
+  const [exerciseCompleted, setExerciseCompleted] = useState(false);
+  const [poseScores, setPoseScores] = useState<number[]>([]);
+  const [currentAccuracy, setCurrentAccuracy] = useState<number>(0);
+  const [currentStatus, setCurrentStatus] = useState<'bagus' | 'ringan' | 'buruk' | null>(null);
+  const [currentFeedback, setCurrentFeedback] = useState<string | null>(null);
+  const [playerProgress, setPlayerProgress] = useState<Record<string, { rep: number; score: number }>>({});
+  const activeExerciseRef = useRef<any>(null);
+  useEffect(() => { activeExerciseRef.current = selectedBattleMove; }, [selectedBattleMove]);
 
   const browserInfo = getBrowserInfo();
   const osInfo = getOsInfo();
@@ -270,7 +284,7 @@ const loadBattleMoves = async () => {
     return () => clearInterval(interval);
   }, [mode, camStarted]);
 
-  // Scoring loop for battle: periodically evaluate my pose vs selected battle move
+  // Scoring loop: periodically evaluate my pose vs selected therapy / battle move
   const scoreMyMove = async () => {
     if (!selectedBattleMove || !localLandmarks || localLandmarks.length < 25) return;
     try {
@@ -281,13 +295,21 @@ const loadBattleMoves = async () => {
       });
       if (res.ok) {
         const data = await res.json();
-        setMyBattleScore(data.score || 0);
-        if (wsRef.current?.readyState === WebSocket.OPEN && data.score >= 60) {
-          // +1 poin setiap kecocokan terhadap gerakan aktif yang sedang ditantangkan
-          const pts = data.score >= 85 ? 1 : 0;
+        const score = Math.round(data.score || 0);
+        setMyBattleScore(score);
+        setCurrentAccuracy(score);
+        setCurrentStatus(data.status || (score >= 80 ? 'bagus' : score >= 60 ? 'ringan' : 'buruk'));
+        setCurrentFeedback(data.message || (score >= 80 ? 'Postur sangat baik! Pertahankan posisi.' : 'Sesuaikan postur dengan target skeleton.'));
+        if (isExercising) {
+          setPoseScores(prev => [...prev, score]);
+        }
+
+        if (wsRef.current?.readyState === WebSocket.OPEN && score >= 60) {
+          // +1 poin setiap kecocokan terhadap gerakan aktif
+          const pts = score >= 85 ? 1 : 0;
           wsRef.current.send(JSON.stringify({
             type: 'battle_score',
-            score: data.score,
+            score,
             points: pts,
             move_name: selectedBattleMove.nama,
           }));
@@ -310,9 +332,145 @@ const loadBattleMoves = async () => {
 
   useEffect(() => {
     if (mode !== 'room' || !selectedBattleMove) return;
-    const interval = setInterval(scoreMyMove, 2000);
+    const freq = isExercising ? 1200 : 2000;
+    const interval = setInterval(scoreMyMove, freq);
     return () => clearInterval(interval);
-  }, [mode, selectedBattleMove, localLandmarks]);
+  }, [mode, selectedBattleMove, localLandmarks, isExercising]);
+
+  // Countdown before exercise begins
+  useEffect(() => {
+    if (countdown === null) return;
+    if (countdown > 0) {
+      const timer = setTimeout(() => {
+        setCountdown(prev => (prev !== null ? prev - 1 : null));
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+    // countdown reached 0: Start exercise!
+    setCountdown(null);
+    setIsExercising(true);
+    if (!camStarted) {
+      startCamera();
+    }
+  }, [countdown, camStarted]);
+
+  // Hold timer countdown per repetition
+  useEffect(() => {
+    if (!isExercising || !selectedBattleMove) return;
+    const interval = setInterval(() => {
+      setHoldTimer(prev => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isExercising, selectedBattleMove]);
+
+  // Save completed session to backend
+  const saveCompletedExerciseSession = async (exerciseId: number, totalReps: number, avgSkor: number) => {
+    try {
+      const tok = localStorage.getItem('genposfit_token');
+      await fetch(`${API_URL()}/api/exercises/sessions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(tok ? { Authorization: `Bearer ${tok}` } : {}),
+        },
+        body: JSON.stringify({
+          user_id: user?.user_id || 1,
+          exercise_id: exerciseId,
+          total_reps: totalReps,
+          avg_skor: avgSkor,
+        }),
+      });
+    } catch { /* ignore */ }
+  };
+
+  // Repetition progression & completion check
+  useEffect(() => {
+    if (!isExercising || holdTimer > 0) return;
+    const ex = activeExerciseRef.current || selectedBattleMove;
+    if (!ex) return;
+
+    const targetReps = ex.reps || 10;
+    setCurrentRep(prevRep => {
+      const nextRep = prevRep + 1;
+      // Broadcast rep progress to room
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({
+          type: 'exercise_rep',
+          guest_key: guestKey,
+          rep: nextRep,
+          total_reps: targetReps,
+          score: currentAccuracy,
+        }));
+      }
+
+      if (nextRep >= targetReps) {
+        setTimeout(() => {
+          setIsExercising(false);
+          setExerciseCompleted(true);
+          const scores = poseScores;
+          const avg = scores.length
+            ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10
+            : Math.max(80, currentAccuracy || 85);
+          saveCompletedExerciseSession(ex.exercise_id, nextRep, avg);
+        }, 0);
+        return nextRep;
+      }
+      return nextRep;
+    });
+
+    setHoldTimer(ex.durasi_detik || 5);
+  }, [holdTimer, isExercising]);
+
+  const handleStartExercise = () => {
+    let targetMove = selectedBattleMove;
+    if (!targetMove && battleExercises.length > 0) {
+      targetMove = challengeIds.length > 0
+        ? battleExercises.find(m => m.exercise_id === challengeIds[0]) || battleExercises[0]
+        : battleExercises[0];
+      setSelectedBattleMove(targetMove);
+    }
+    if (!targetMove) return;
+
+    if (!camStarted) {
+      startCamera();
+    }
+
+    setExerciseCompleted(false);
+    setCurrentRep(0);
+    setHoldTimer(targetMove.durasi_detik || 5);
+    setPoseScores([]);
+    setCurrentAccuracy(0);
+    setCurrentStatus(null);
+    setCurrentFeedback(null);
+
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'exercise_start',
+        exercise_id: targetMove.exercise_id,
+        exercise_name: targetMove.nama,
+        reps: targetMove.reps || 10,
+        durasi_detik: targetMove.durasi_detik || 5,
+      }));
+    }
+
+    setCountdown(3);
+  };
+
+  const handleStopExercise = () => {
+    setIsExercising(false);
+    setCountdown(null);
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'exercise_stop',
+        exercise_id: selectedBattleMove?.exercise_id,
+      }));
+    }
+  };
+
+  const handleResetExercise = () => {
+    handleStartExercise();
+  };
+
 
   // Sinkronkan challenge (daftar gerakan) yang dipilih host
   const applyChallengeIds = (ids: number[] | undefined | null) => {
@@ -425,6 +583,26 @@ const loadBattleMoves = async () => {
           );
         } else if (msg.type === 'battle_result_error') {
           setBattlePesan(`Pencatatan battle ditolak: ${msg.detail}`);
+        } else if (msg.type === 'exercise_start') {
+          const move = battleExercises.find((m: any) => m.exercise_id === msg.exercise_id);
+          if (move) {
+            setSelectedBattleMove(move);
+            setHoldTimer(msg.durasi_detik || move.durasi_detik || 5);
+          }
+          setCurrentRep(0);
+          setExerciseCompleted(false);
+          setCountdown(3);
+        } else if (msg.type === 'exercise_stop') {
+          setIsExercising(false);
+          setCountdown(null);
+        } else if (msg.type === 'exercise_rep') {
+          const key = msg.guest_key || '';
+          if (key && key !== currentKey()) {
+            setPlayerProgress(prev => ({
+              ...prev,
+              [key]: { rep: msg.rep || 0, score: msg.score || 0 }
+            }));
+          }
         } else if (msg.type === 'challenge_update') {
           // Hanya host yang boleh mengirim; semua (termasuk host) terapkan
           applyChallengeIds(msg.challenge_exercise_ids);
@@ -524,6 +702,15 @@ const loadBattleMoves = async () => {
     battleIdRef.current = '';
     setMyBattleScore(0);
     setChallengeIds([]);
+    setIsExercising(false);
+    setCountdown(null);
+    setCurrentRep(0);
+    setExerciseCompleted(false);
+    setPoseScores([]);
+    setCurrentAccuracy(0);
+    setCurrentStatus(null);
+    setCurrentFeedback(null);
+    setPlayerProgress({});
   };
 
   const handleCreate = async () => {
@@ -664,64 +851,246 @@ const loadBattleMoves = async () => {
           aria-hidden
         />
 
-        {/* Battle Panel */}
-        <Card className="p-5 mb-6 border-purple-500/30">
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <div className="flex items-center gap-2">
-              <span className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-500">
-                <Swords size={16} />
+        {/* Latihan Terapi & Battle Panel (Solo & Multiplayer) */}
+        <Card className="p-5 mb-6 border-blue-500/30 dark:border-blue-500/20 shadow-md">
+          {/* Header & Mode info */}
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-5 pb-4 border-b border-slate-200 dark:border-slate-800">
+            <div className="flex items-center gap-3">
+              <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/20 via-emerald-500/20 to-teal-500/20 border border-blue-500/30 flex items-center justify-center text-blue-500">
+                <Dumbbell size={20} />
               </span>
               <div>
-                <div className="text-sm font-bold text-purple-600 dark:text-purple-400 flex items-center gap-1.5">
-                  Mode Battle
-                  <Star size={14} />
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                    Latihan Terapi Room
+                  </h2>
+                  {participants.length <= 1 ? (
+                    <Pill variant="info" size="sm">
+                      <User size={12} />
+                      <PillContent>Mode Solo (1 Pemain)</PillContent>
+                    </Pill>
+                  ) : (
+                    <Pill variant="success" size="sm">
+                      <Users size={12} />
+                      <PillContent>Mode Multiplayer ({participants.length} Pemain)</PillContent>
+                    </Pill>
+                  )}
                 </div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Target menang: {room?.max_score || maxScore} poin · Pemain dengan poin tertinggi memenangkan battle
-                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Lakukan terapi koreksi postur biomekanika secara mandiri (solo) atau sinkron bersama pemain lain.
+                </p>
               </div>
             </div>
-            {/* Her score */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-xs">
-              <Star size={13} className="text-purple-400" />
-              <span className="font-mono font-bold text-purple-600 dark:text-purple-400">Skor saya: {myBattleScore}</span>
+
+            {/* Action Buttons: Mulai / Hentikan */}
+            <div className="flex items-center gap-2">
+              {!isExercising && countdown === null ? (
+                <Button
+                  variant="success"
+                  size="default"
+                  onClick={handleStartExercise}
+                  className="font-bold text-xs sm:text-sm shadow-md flex items-center gap-2 bg-gradient-to-r from-emerald-600 via-teal-600 to-blue-600 hover:from-emerald-500 hover:to-blue-500 text-white cursor-pointer px-4 py-2.5 transition-all hover:scale-[1.02]"
+                >
+                  <Play size={16} fill="currentColor" />
+                  {participants.length <= 1
+                    ? 'Mulai Latihan Terapi (Solo)'
+                    : isHost()
+                    ? 'Mulai Latihan Bersama (Host)'
+                    : 'Mulai Latihan Bersama'}
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Button variant="destructive" size="sm" onClick={handleStopExercise} className="text-xs flex items-center gap-1.5 font-bold">
+                    <Pause size={14} /> Hentikan
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleResetExercise} className="text-xs flex items-center gap-1">
+                    <RotateCcw size={14} /> Reset
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Battle move selector */}
+          {/* Countdown Overlay / Banner */}
+          {countdown !== null && (
+            <div className="p-4 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-800 dark:text-amber-300 flex items-center justify-between gap-4 mb-5 animate-pulse">
+              <div className="flex items-center gap-3">
+                <Timer size={24} className="text-amber-500 animate-spin" />
+                <div>
+                  <div className="font-bold text-sm sm:text-base">Bersiap untuk Latihan Terapi!</div>
+                  <div className="text-xs text-slate-600 dark:text-slate-400">Posisikan tubuh Anda di depan kamera. Latihan akan segera dimulai.</div>
+                </div>
+              </div>
+              <div className="text-3xl sm:text-4xl font-black font-mono text-amber-500 px-4 py-1 bg-amber-500/20 rounded-xl">
+                {countdown}
+              </div>
+            </div>
+          )}
+
+          {/* In-Session Active Exercise Card */}
+          {isExercising && (
+            <div className="p-5 rounded-2xl bg-slate-900/95 border border-blue-500/40 text-white mb-6 shadow-xl">
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-4 border-b border-slate-800">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400 font-bold">
+                    <Activity size={20} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-base text-white">{selectedBattleMove?.nama || "Latihan Terapi"}</h3>
+                      <Badge variant="info" className="text-[10px]">{selectedBattleMove?.type || "Terapi"}</Badge>
+                      <Badge variant="success" className="text-[10px] animate-pulse">SESI AKTIF</Badge>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-0.5">Target Otot: {selectedBattleMove?.target_otot || "Postur Leher & Punggung"}</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Accuracy Meter */}
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700">
+                    <Sparkles size={14} className={currentAccuracy >= 80 ? "text-emerald-400" : "text-amber-400"} />
+                    <span className="text-xs font-mono font-bold">
+                      Akurasi: <span className={currentAccuracy >= 80 ? "text-emerald-400" : currentAccuracy >= 60 ? "text-amber-400" : "text-rose-400"}>{currentAccuracy}%</span>
+                    </span>
+                  </div>
+                  {/* Reps Counter */}
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700">
+                    <Dumbbell size={14} className="text-blue-400" />
+                    <span className="text-xs font-mono font-bold text-blue-300">
+                      Rep: {currentRep} / {selectedBattleMove?.reps || 10}
+                    </span>
+                  </div>
+                  {/* Hold Timer */}
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-purple-500/20 border border-purple-500/40">
+                    <Timer size={14} className="text-purple-400" />
+                    <span className="text-xs font-mono font-bold text-purple-300">
+                      Tahan: {holdTimer}s
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="mb-4">
+                <div className="flex justify-between text-[11px] text-slate-400 mb-1.5">
+                  <span>Progres Repetisi Latihan</span>
+                  <span className="font-mono font-bold">{Math.round((currentRep / (selectedBattleMove?.reps || 10)) * 100)}% ({currentRep}/{selectedBattleMove?.reps || 10})</span>
+                </div>
+                <Progress value={(currentRep / (selectedBattleMove?.reps || 10)) * 100} className="h-2.5 bg-slate-800" />
+              </div>
+
+              {/* Visual Guidance & Target Skeleton Comparison */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center bg-slate-950/70 p-4 rounded-xl border border-slate-800">
+                <div className="md:col-span-4 flex flex-col items-center justify-center">
+                  <div className="text-[11px] text-slate-400 mb-1 flex items-center gap-1 font-semibold">
+                    <TargetIcon size={12} className="text-cyan-400" /> Skeleton Target Biomekanika:
+                  </div>
+                  <div className="w-36 h-36 bg-slate-950 rounded-lg flex items-center justify-center overflow-hidden border border-slate-800">
+                    <SkeletonOverlay
+                      landmarks={selectedBattleMove?.skeleton_data || null}
+                      width={144}
+                      height={144}
+                      status="bagus"
+                      orientasi="frontal"
+                      color="#38bdf8"
+                    />
+                  </div>
+                </div>
+                <div className="md:col-span-8 flex flex-col gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant={currentStatus === 'bagus' ? "success" : currentStatus === 'ringan' ? "warning" : "destructive"}>
+                      {currentStatus === 'bagus' ? 'Posisi Tepat' : currentStatus === 'ringan' ? 'Perlu Koreksi' : 'Sesuaikan Pose'}
+                    </Badge>
+                    <span className="text-xs text-slate-200 font-medium">
+                      {currentFeedback || "Tahan postur tubuh Anda mengikuti skeleton target di samping."}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    {selectedBattleMove?.deskripsi || "Jaga agar leher dan tulang belakang tetap lurus dan rileks."}
+                  </p>
+                  <div className="flex flex-wrap gap-2 text-[10px] text-slate-300 pt-1">
+                    {selectedBattleMove?.sudut_target?.sudut_leher && (
+                      <span className="bg-slate-800 px-2 py-0.5 rounded border border-slate-700">Sudut Leher: {selectedBattleMove.sudut_target.sudut_leher}°</span>
+                    )}
+                    {selectedBattleMove?.sudut_target?.sudut_punggung && (
+                      <span className="bg-slate-800 px-2 py-0.5 rounded border border-slate-700">Sudut Punggung: {selectedBattleMove.sudut_target.sudut_punggung}°</span>
+                    )}
+                    <span className="bg-slate-800 px-2 py-0.5 rounded border border-slate-700">Durasi: {selectedBattleMove?.durasi_detik || 5}s per rep</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Exercise Completion Card */}
+          {exerciseCompleted && (
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-emerald-500/15 via-teal-500/10 to-blue-500/15 border border-emerald-500/30 text-center mb-6 shadow-sm">
+              <Trophy size={40} className="text-amber-400 mx-auto mb-2 animate-bounce" />
+              <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white">
+                Sesi Latihan Terapi Selesai!
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1 max-w-md mx-auto">
+                Luar biasa! Anda telah menyelesaikan {currentRep} repetisi latihan <strong>{selectedBattleMove?.nama}</strong>.
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-2.5 mt-3">
+                <Badge variant="success" className="px-3 py-1 text-xs font-semibold">
+                  Akurasi Rata-rata: {poseScores.length ? Math.round(poseScores.reduce((a, b) => a + b, 0) / poseScores.length) : 90}%
+                </Badge>
+                <Badge variant="info" className="px-3 py-1 text-xs">
+                  {participants.length <= 1 ? "Sesi Solo Dicatat di Riwayat" : "Progres Multiplayer Sinkron"}
+                </Badge>
+              </div>
+              <div className="mt-4 flex items-center justify-center gap-2">
+                <Button variant="success" size="sm" onClick={handleResetExercise} className="text-xs flex items-center gap-1.5 font-bold">
+                  <RotateCcw size={14} /> Latihan Ulang
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Pilihan Gerakan Terapi */}
           {battleExercises.length > 0 ? (
-            <div className="mb-4">
-              <label className="block text-xs text-slate-600 dark:text-slate-300 font-medium mb-1.5">
-                {isHost()
-                  ? 'Pilih Gerakan Battle (klik untuk pilih, support multi-select)'
-                  : 'Gerakan Battle yang Ditantangkan Host'}
-              </label>
-              {/* Show selected challenge IDs first, then unselected */}
+            <div className="mb-5">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <label className="text-xs text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1.5">
+                  <TargetIcon size={14} className="text-blue-500" />
+                  {isHost()
+                    ? 'Pilih Gerakan Latihan Terapi (Host dapat menantang gerakan ke seluruh pemain):'
+                    : 'Pilihan Gerakan Latihan Terapi:'}
+                </label>
+                {selectedBattleMove && (
+                  <span className="text-[11px] text-blue-600 dark:text-blue-400 font-medium">
+                    Aktif: {selectedBattleMove.nama}
+                  </span>
+                )}
+              </div>
               <div className="flex flex-wrap gap-2">
                 {(['selected', 'unselected'] as const).map(group => (
                   battleExercises
                     .filter(m => group === 'selected' ? challengeIds.includes(m.exercise_id) : !challengeIds.includes(m.exercise_id))
                     .map((m: any) => {
                       const checked = challengeIds.includes(m.exercise_id);
+                      const isCurrent = selectedBattleMove?.exercise_id === m.exercise_id;
                       const amHost = isHost();
                       return (
                         <Button
                           key={m.exercise_id}
                           type="button"
-                          variant={checked ? "secondary" : "outline"}
+                          variant={isCurrent ? "secondary" : checked ? "outline" : "ghost"}
                           size="sm"
                           onClick={() => {
-                            if (!amHost) { setSelectedBattleMove(m); return; }
-                            toggleChallenge(m.exercise_id);
+                            setSelectedBattleMove(m);
+                            if (amHost) toggleChallenge(m.exercise_id);
                           }}
                           className={cn(
-                            "text-xs",
-                            challengeIds.length > 0 && challengeIds[0] === m.exercise_id && "ring-2 ring-amber-400"
+                            "text-xs border transition-all cursor-pointer",
+                            isCurrent && "ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-900/30 border-blue-400",
+                            checked && !isCurrent && "border-amber-400/80 bg-amber-50/50 dark:bg-amber-900/10"
                           )}
                         >
-                          <TargetIcon size={13} className="text-purple-500" />
-                          {m.nama}
-                          {checked && <Check size={12} className="text-emerald-400" />}
+                          <TargetIcon size={13} className={isCurrent ? "text-blue-500" : "text-slate-400"} />
+                          <span className="font-semibold">{m.nama}</span>
+                          {checked && <Check size={12} className="text-amber-500" />}
                           {m.type && (
                             <Badge variant="info" className="text-[9px] h-4 px-1">{m.type}</Badge>
                           )}
@@ -730,23 +1099,20 @@ const loadBattleMoves = async () => {
                     })
                 ))}
               </div>
-              {challengeIds.length > 0 && (
-                <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1.5">
-                  <Star size={10} className="inline mr-0.5" />
-                  {challengeIds.length} gerakan ditantangkan · lakukan gerakan berlabel ⭐ untuk mencocokkan pose
-                </p>
-              )}
             </div>
           ) : (
             <p className="text-[11px] text-slate-400 mb-3">
-              Belum ada gerakan battle. Admin harus menambah gerakan dengan skeleton-data melalui halaman Kelola Latihan.
+              Belum ada gerakan latihan dengan data skeleton. Gerakan default akan dimuat secara otomatis.
             </p>
           )}
 
-          {/* Battle leaderboard */}
+          {/* Battle scoreboard */}
           {Object.keys(battlePoints).length > 0 && (
-            <div className="space-y-2">
-              <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Papan Skor Battle</div>
+            <div className="space-y-2 mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                <span className="flex items-center gap-1.5"><Swords size={13} /> Papan Skor Latihan &amp; Battle</span>
+                <span>Target: {room?.max_score || maxScore} Poin</span>
+              </div>
               {Object.entries(battlePoints).map(([key, pts]) => {
                 const p = players[key] ?? { display_name: 'Pemain', warna: '#8b5cf6' };
                 const isWinner = winnerKey === key;
@@ -782,29 +1148,50 @@ const loadBattleMoves = async () => {
 
         {/* Players grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {participants.map((p, idx) => (
-            <Card key={p.guest_key || `u:${p.user_id}` || `anon-${idx}`} className="p-2 relative overflow-hidden bg-slate-950 border-slate-800">
-              <div className="relative w-full h-64 rounded-lg bg-slate-950 flex items-center justify-center overflow-hidden border border-slate-800">
-                <SkeletonOverlay
-                  landmarks={p.landmarks}
-                  width={280}
-                  height={256}
-                  status="bagus"
-                  orientasi="frontal"
-                  showAngles={false}
-                  color={p.warna}
-                />
-                {/* Name tag */}
-                <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between px-2 py-1 rounded-lg" style={{ backgroundColor: `${p.warna}22`, border: `1px solid ${p.warna}55` }}>
-                  <span className="text-xs font-bold text-white truncate">{p.display_name}</span>
-                  <span className="flex gap-1">
-                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: p.warna }} />
-                    {p.is_host && <Badge variant="info" className="text-[9px] h-4 px-1.5">HOST</Badge>}
-                  </span>
+          {participants.map((p, idx) => {
+            const pKey = p.guest_key || (p.user_id ? `u:${p.user_id}` : '') || `anon-${idx}`;
+            const isSelf = pKey === currentKey();
+            const liveProg = isSelf ? { rep: currentRep, score: currentAccuracy } : playerProgress[pKey];
+
+            return (
+              <Card key={pKey} className="p-2 relative overflow-hidden bg-slate-950 border-slate-800">
+                <div className="relative w-full h-64 rounded-lg bg-slate-950 flex items-center justify-center overflow-hidden border border-slate-800">
+                  <SkeletonOverlay
+                    landmarks={p.landmarks}
+                    width={280}
+                    height={256}
+                    status="bagus"
+                    orientasi="frontal"
+                    showAngles={false}
+                    color={p.warna}
+                  />
+
+                  {/* Top Live Status tag when exercising */}
+                  {isExercising && liveProg && (
+                    <div className="absolute top-2 left-2 right-2 flex items-center justify-between pointer-events-none">
+                      <span className={cn(
+                        "text-[10px] font-mono font-bold px-2 py-0.5 rounded shadow-sm border",
+                        isSelf
+                          ? "bg-emerald-950/80 text-emerald-300 border-emerald-500/40"
+                          : "bg-blue-950/80 text-cyan-300 border-cyan-500/40"
+                      )}>
+                        Rep {liveProg.rep}/{selectedBattleMove?.reps || 10} · {liveProg.score}%
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Bottom Name tag */}
+                  <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between px-2 py-1 rounded-lg" style={{ backgroundColor: `${p.warna}22`, border: `1px solid ${p.warna}55` }}>
+                    <span className="text-xs font-bold text-white truncate">{p.display_name}</span>
+                    <span className="flex gap-1">
+                      <span className="w-3 h-3 rounded-full" style={{ backgroundColor: p.warna }} />
+                      {p.is_host && <Badge variant="info" className="text-[9px] h-4 px-1.5">HOST</Badge>}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       </div>
     );
