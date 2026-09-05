@@ -110,8 +110,9 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 
 
 @router.get("/me", response_model=UserInfoResponse)
-def get_current_user_info(request: Request, token: str = "", db: Session = Depends(get_db)):
-    """Mengembalikan informasi akun berdasarkan JWT token dari header Authorization (Bearer) atau query string."""
+def get_current_user_info(request: Request, authorization: str = "", db: Session = Depends(get_db)):
+    """Mengembalikan informasi akun berdasarkan JWT token dari header Authorization (Bearer)."""
+    token = authorization.replace("Bearer ", "") if authorization else ""
     if not token:
         auth_header = request.headers.get("authorization", "")
         if auth_header.startswith("Bearer "):

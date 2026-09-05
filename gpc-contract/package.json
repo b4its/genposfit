@@ -1,0 +1,27 @@
+{
+  "name": "genposfit-gpc",
+  "version": "1.0.0",
+  "description": "GenPosFit Coin (GPC) — ERC-1155 token on Sepolia",
+  "private": true,
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy": "hardhat run scripts/deploy.js --network sepolia",
+    "test:local": "hardhat test --network hardhat"
+  },
+  "keywords": [
+    "erc1155",
+    "token",
+    "gpc",
+    "sepolia"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.22.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.2",
+    "dotenv": "^16.4.5"
+  }
+}

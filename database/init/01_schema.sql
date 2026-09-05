@@ -122,7 +122,9 @@ CREATE TABLE IF NOT EXISTS room_players (
     FOREIGN KEY (room_id) REFERENCES rooms(room_id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
     UNIQUE KEY uq_room_color (room_id, warna),
+    UNIQUE KEY uq_room_guest (room_id, guest_key),
     INDEX idx_guest_key (guest_key)
 ) ENGINE=InnoDB;
 
-ALTER TABLE rooms ADD FOREIGN KEY (host_player_id) REFERENCES room_players(player_id);
+ALTER TABLE rooms ADD FOREIGN KEY (host_player_id) REFERENCES room_players(player_id)
+    ON DELETE SET NULL;

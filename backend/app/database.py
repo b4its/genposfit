@@ -15,6 +15,8 @@ DATABASE_URL = os.getenv(
     f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}?charset=utf8mb4"
 )
 
+DEV_MODE = os.getenv("DEV_MODE", "0") == "1"
+
 try:
     engine = create_engine(
         DATABASE_URL,
@@ -24,9 +26,16 @@ try:
         max_overflow=20,
     )
 except Exception as exc:
-    logger.warning(f"Gagal inisialisasi engine MySQL: {exc}. Menggunakan fallback SQLite in-memory untuk dev.")
-    DATABASE_URL = "sqlite:///:memory:"
-    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+    if DATABASE_URL.startswith("sqlite"):
+        # SQLite (in-memory) tidak mendukung opsi pooling MySQL
+        engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+    elif DEV_MODE:
+        logger.warning(f"Gagal koneksi MySQL ({exc}). Fallback SQLite in-memory (DEV_MODE).")
+        DATABASE_URL = "sqlite:///:memory:"
+        engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+    else:
+        logger.error(f"Gagal inisialisasi engine MySQL: {exc}")
+        raise
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()

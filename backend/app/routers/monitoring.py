@@ -6,7 +6,10 @@ serta menyimpan log berkala ke MySQL.
 import json
 import logging
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+
+def utcnow() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 from typing import List, Optional, Literal
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, HTTPException
 from pydantic import BaseModel
@@ -141,7 +144,7 @@ def get_user_posture_summary(user_id: int, days: int = 7, db: Session = Depends(
     - Distribusi waktu status (bagus, ringan, buruk)
     - Timeline log harian
     """
-    since_date = datetime.utcnow() - timedelta(days=days)
+    since_date = utcnow() - timedelta(days=days)
     logs = (
         db.query(PostureLog)
         .filter(PostureLog.user_id == user_id, PostureLog.timestamp >= since_date)
@@ -248,7 +251,7 @@ async def websocket_monitor_endpoint(websocket: WebSocket, user_id: int):
             # Persist ke DB setiap 60 frame atau 5 detik agar tidak membebani database
             frame_counter += 1
             now_time = time.time()
-            if (now_time - last_db_save_time >= 5.0 or frame_counter % 60 == 0) and user:
+            if (now_time - last_db_save_time >= 5.0 or (frame_counter > 0 and frame_counter % 60 == 0)) and user:
                 try:
                     entry = PostureLog(
                         user_id=user_id,

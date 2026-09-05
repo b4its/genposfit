@@ -134,30 +134,35 @@ export const Exercises: React.FC = () => {
   useEffect(() => {
     if (!isRunning || !activeExerciseRef.current) return;
     const interval = setInterval(() => {
-      setHoldTimer(prev => {
-        if (prev <= 1) {
-          setCurrentRep(r => {
-            const nextR = r + 1;
-            const ex = activeExerciseRef.current;
-            scorePose().then(s => {
-              setLastScore(s);
-              setPoseScores(prev => [...prev, s]);
-            });
-            if (ex && nextR >= (ex.reps || 10)) {
-              setIsRunning(false);
-              setSessionCompleted(true);
-              saveCompletedSession(ex.exercise_id, nextR);
-              return nextR;
-            }
-            return nextR;
-          });
-          return activeExerciseRef.current?.durasi_detik || 5;
-        }
-        return prev - 1;
-      });
+      setHoldTimer(prev => prev - 1);
     }, 1000);
     return () => clearInterval(interval);
-  }, [isRunning, activeExercise]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isRunning, activeExercise]);
+
+  useEffect(() => {
+    if (!isRunning || holdTimer > 1) return;
+    const ex = activeExerciseRef.current;
+    if (!ex) return;
+
+    setCurrentRep(r => {
+      const nextR = r + 1;
+      if (ex && nextR >= (ex.reps || 10)) {
+        setTimeout(() => {
+          setIsRunning(false);
+          setSessionCompleted(true);
+          saveCompletedSession(ex.exercise_id, nextR);
+        }, 0);
+        return nextR;
+      }
+      return nextR;
+    });
+    setHoldTimer(ex.durasi_detik || 5);
+
+    scorePose().then(s => {
+      setLastScore(s);
+      setPoseScores(prev => [...prev, s]);
+    }).catch(() => {});
+  }, [holdTimer, isRunning, activeExercise]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSelectExercise = (ex: ExerciseItem) => {
     setActiveExercise(ex);

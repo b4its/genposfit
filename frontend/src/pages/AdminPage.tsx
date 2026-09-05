@@ -255,7 +255,7 @@ export const AdminPage = () => {
                 </div>
                 <div className="text-right">
                   <div className="text-sm font-extrabold font-mono text-emerald-600 dark:text-emerald-400">
-                    {u.saldo.toLocaleString('id-ID', { minimumFractionDigits: 2 })}
+                    {(u.saldo ?? 0).toLocaleString('id-ID', { minimumFractionDigits: 2 })}
                   </div>
                   <div className="text-[10px] text-slate-400 font-medium">Saldo</div>
                 </div>

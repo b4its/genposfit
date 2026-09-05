@@ -169,7 +169,7 @@ def set_room_challenges(room_code: str, payload: SetChallengeRequest, request: R
     guest_key = guest_key_from_request(request)
     # Verifikasi bahwa yang request adalah host
     host_player = db.query(RoomPlayer).filter_by(room_id=room.room_id, player_id=room.host_player_id).first()
-    if not host_player or (host_player.guest_key != guest_key and host_player.user_id is None):
+    if not host_player or host_player.guest_key != guest_key:
         raise HTTPException(403, "Hanya host room yang bisa mengatur tantangan.")
     # Validasi exercise_ids exist
     if payload.challenge_exercise_ids:

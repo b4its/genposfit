@@ -33,6 +33,7 @@ export function useCamera(options: CameraOptions = {}) {
   // Baca status izin awal secara pasif (tanpa memicu dialog browser).
   useEffect(() => {
     let cancelled = false;
+    let cleanup: (() => void) | null = null;
 
     const applyStatus = (state: PermissionState) => {
       if (cancelled) return;
@@ -47,15 +48,20 @@ export function useCamera(options: CameraOptions = {}) {
 
     const query = async () => {
       if (!navigator.mediaDevices || !('permissions' in navigator)) {
-        // Fitur query permissions tidak tersedia → default ke idle,
-        // izin akan diminta saat pertama kali getUserMedia dipanggil.
         return;
       }
       try {
         const status = await navigator.permissions.query({ name: 'camera' as PermissionName });
+        if (cancelled) return;
         permissionRef.current = status;
         applyStatus(status.state);
-        status.addEventListener('change', () => applyStatus(status.state));
+        const handleChange = () => applyStatus(status.state);
+        status.addEventListener('change', handleChange);
+        cleanup = () => {
+          cancelled = true;
+          status.removeEventListener('change', handleChange);
+          permissionRef.current = null;
+        };
       } catch {
         // Query tidak didukung → biarkan 'idle'.
       }
@@ -65,8 +71,7 @@ export function useCamera(options: CameraOptions = {}) {
 
     return () => {
       cancelled = true;
-      permissionRef.current?.removeEventListener('change', () => {});
-      permissionRef.current = null;
+      if (cleanup) cleanup();
     };
   }, []);
 
