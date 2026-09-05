@@ -84,15 +84,19 @@ export const Monitor = ({ onNavigateToExercises }) => {
   const audioAlertsRef = useRef(audioAlerts);
   audioAlertsRef.current = audioAlerts;
 
-  // MediaPipe pose detection — runs on live camera frames and returns
-  // real per-user landmarks, so the skeleton matches the user's anatomy.
-  const { landmarks: realLandmarks } = usePoseDetector(videoRef, camStarted);
+  // MediaPipe pose detection berjalan di atas stream useCamera (noCamera mode)
+  // — hanya SATU getUserMedia sehingga tidak ada konflik perangkat kamera.
+  const { landmarks: realLandmarks, errorMsg: poseError } = usePoseDetector(
+    videoRef,
+    camStarted,
+    { noCamera: true }
+  );
 
   // Attach camera stream to <video> when it changes
   useEffect(() => {
     if (videoRef.current && camStream) {
       videoRef.current.srcObject = camStream;
-      videoRef.current.play();
+      videoRef.current.play().catch(() => {});
     }
   }, [camStream]);
 

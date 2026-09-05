@@ -34,6 +34,14 @@ interface PoseDetectorOptions {
   minTrackingConfidence?: number;
   cameraWidth?: number;
   cameraHeight?: number;
+  /**
+   * true  → JANGAN buka getUserMedia sendiri (MediaPipe window.Camera).
+   *         Deteksi berjalan di atas elemen <video> yang sudah dialiri stream
+   *         lain (mis. dari useCamera) — memakai loop requestAnimationFrame.
+   *         Mencegah dua panggilan getUserMedia ke perangkat yang sama yang
+   *         memicu NotReadableError / konflik kamera.
+   */
+  noCamera?: boolean;
 }
 
 const DEFAULT_OPTIONS: Required<PoseDetectorOptions> = {
@@ -43,6 +51,7 @@ const DEFAULT_OPTIONS: Required<PoseDetectorOptions> = {
   minTrackingConfidence: 0.5,
   cameraWidth: 640,
   cameraHeight: 480,
+  noCamera: false,
 };
 
 type PoseDetectorStatus = 'idle' | 'loading' | 'ready' | 'error';
@@ -57,6 +66,8 @@ export function usePoseDetector(
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const poseRef = useRef<{ setOptions: (opts: Record<string, unknown>) => void; onResults: (cb: (results: { poseLandmarks: PoseLandmark[] | null }) => void) => void; send: (input: { image: HTMLVideoElement }) => Promise<void>; close: () => void } | null>(null);
   const cameraRef = useRef<{ start: () => Promise<void>; stop: () => void } | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const loopActiveRef = useRef(false);
   const initializedRef = useRef(false);
 
   const opts = { ...DEFAULT_OPTIONS, ...options };
@@ -72,8 +83,13 @@ export function usePoseDetector(
       setStatus('error');
       return;
     }
-    if (!video || !window.Pose || !window.Camera) {
+    if (!video || !window.Pose) {
       setErrorMsg('Motor pendeteksi pose (MediaPipe) belum termuat.');
+      setStatus('error');
+      return;
+    }
+    if (!opts.noCamera && !window.Camera) {
+      setErrorMsg('Util kamera MediaPipe (window.Camera) belum termuat.');
       setStatus('error');
       return;
     }
@@ -104,6 +120,22 @@ export function usePoseDetector(
         }
       });
 
+      if (opts.noCamera) {
+        // Video sudah memiliki srcObject dari sumber lain (useCamera).
+        // Kirim frame manual via rAF — TANPA memanggil getUserMedia kedua kali.
+        loopActiveRef.current = true;
+        const tick = async () => {
+          if (!loopActiveRef.current) return;
+          if (poseRef.current && video.readyState >= 2) {
+            try { await poseRef.current.send({ image: video }); } catch { /* frame diabaikan */ }
+          }
+          if (loopActiveRef.current) rafRef.current = requestAnimationFrame(tick);
+        };
+        rafRef.current = requestAnimationFrame(tick);
+        setStatus('ready');
+        return;
+      }
+
       const camera = new window.Camera(video, {
         onFrame: async () => {
           if (poseRef.current && video.readyState >= 2) {
@@ -121,11 +153,16 @@ export function usePoseDetector(
       setErrorMsg('Gagal mengakses kamera melalui MediaPipe. Pastikan kamera tersedia dan izin diberikan.');
       setStatus('error');
     }
-  }, [videoRef, opts.modelComplexity, opts.smoothLandmarks,
+  }, [videoRef, opts.modelComplexity, opts.smoothLandmarks, opts.noCamera,
       opts.minDetectionConfidence, opts.minTrackingConfidence,
       opts.cameraWidth, opts.cameraHeight]);
 
   const stop = useCallback(() => {
+    loopActiveRef.current = false;
+    if (rafRef.current != null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
     if (cameraRef.current) {
       cameraRef.current.stop();
       cameraRef.current = null;

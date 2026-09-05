@@ -52,8 +52,9 @@ export const RegisterPose = ({ onFinishCalibration }) => {
   const frameBufferRef = useRef([]);
   const animFrameIdRef = useRef(null);
 
-  // MediaPipe pose detection — real per-user landmarks for the skeleton.
-  const { landmarks: realLandmarks } = usePoseDetector(videoRef, camStarted);
+  // MediaPipe pose detection berjalan di atas stream useCamera (noCamera mode)
+  // — hanya SATU getUserMedia, mencegah konflik/NotReadableError perangkat kamera.
+  const { landmarks: realLandmarks } = usePoseDetector(videoRef, camStarted, { noCamera: true });
 
   // Sync real landmarks from MediaPipe when camera is live.
   const realLandmarksRef = useRef(realLandmarks);
