@@ -68,7 +68,12 @@ def get_exercises(tingkat: Optional[str] = None, db: Session = Depends(get_db)):
 @router.get("/types", response_model=List[ExerciseTypeOut])
 def get_exercise_types(db: Session = Depends(get_db)):
     """Mengambil semua jenis latihan (parent) beserta gerakan anaknya (children)."""
-    return db.query(ExerciseType).order_by(ExerciseType.nama).all()
+    types = db.query(ExerciseType).order_by(ExerciseType.nama).all()
+    if not types:
+        from app.services.default_exercises import seed_default_exercises
+        seed_default_exercises(db)
+        types = db.query(ExerciseType).order_by(ExerciseType.nama).all()
+    return types
 
 
 ExerciseTypeOut.model_rebuild()
@@ -170,6 +175,8 @@ def score_pose(payload: ScorePoseRequest, db: Session = Depends(get_db)):
     total = 0.0
     count = 0
     for i in KEY:
+        if i >= len(lms) or i >= len(ref):
+            continue
         a, b = lms[i], ref[i]
         if a is None or b is None:
             continue

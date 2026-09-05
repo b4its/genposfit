@@ -233,7 +233,12 @@ def admin_delete_exercise(exercise_id: int, admin: User = Depends(require_admin)
         raise HTTPException(404, "Latihan tidak ditemukan.")
     db.delete(ex)
     db.commit()
-
+@router.post("/exercises/seed-defaults")
+def admin_seed_default_exercises(admin: User = Depends(require_admin), db: Session = Depends(get_db)):
+    """Memuat atau mereset set latihan default dengan skeleton data lengkap."""
+    from app.services.default_exercises import seed_default_exercises
+    result = seed_default_exercises(db, force=True)
+    return {"message": "Data latihan standar berhasil dimuat.", **result}
 
 @router.post("/users/{user_id}/set-admin")
 def set_user_admin(user_id: int, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
