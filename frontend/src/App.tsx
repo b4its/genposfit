@@ -5,7 +5,7 @@ import { RegisterPose } from './pages/RegisterPose';
 import { Monitor } from './pages/Monitor';
 import { Dashboard } from './pages/Dashboard';
 import { Exercises } from './pages/Exercises';
-import { Database, Terminal } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<PageTab>('landing');
@@ -67,47 +67,33 @@ export function App() {
         {activeTab === 'exercises' && <Exercises />}
       </main>
 
-      {/* Minimal Developer Tools Footer */}
+      {/* Product Footer */}
       <footer
-        className="mt-auto border-t py-6 text-xs font-mono transition-colors"
+        className="mt-auto border-t py-6 text-xs transition-colors"
         style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-surface)' }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <span className="font-bold text-blue-500">GenPosFit</span>
-            <span className="text-slate-400 dark:text-slate-500">|</span>
-            <span className="text-slate-500 dark:text-slate-400">
-              Genryphem Posture and Fit · Biomechanical Health Engine
+            <span className="font-bold text-blue-600 dark:text-blue-400">GenPosFit</span>
+            <span className="text-slate-300 dark:text-slate-700">|</span>
+            <span className="text-slate-600 dark:text-slate-400">
+              Biomechanical Posture & Ergonomics Health Engine
             </span>
           </div>
 
-          {/* Quick links to dev environment */}
-          <div className="flex items-center gap-4 text-slate-400">
-            <a
-              href="http://localhost:8042/docs"
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-blue-400 flex items-center gap-1 transition-colors"
-            >
-              <Terminal size={12} />
-              <span>Swagger API (:8042)</span>
-            </a>
+          <div className="flex flex-wrap items-center gap-4 text-slate-500 dark:text-slate-400">
+            <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+              <ShieldCheck size={14} />
+              <span>100% On-device Privacy</span>
+            </div>
 
-            <a
-              href="http://localhost:8122"
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-emerald-400 flex items-center gap-1 transition-colors"
-            >
-              <Database size={12} />
-              <span>PhpMyAdmin (:8122)</span>
-            </a>
-
-            <div className="hidden md:flex items-center gap-1 text-[10px] text-slate-500 bg-slate-800/40 px-2 py-0.5 rounded border border-slate-700/50">
-              <span>Shortcuts:</span>
-              <kbd className="px-1 bg-slate-700 rounded text-slate-300">[M]</kbd> Monitor
-              <kbd className="px-1 bg-slate-700 rounded text-slate-300">[C]</kbd> Calibrate
-              <kbd className="px-1 bg-slate-700 rounded text-slate-300">[D]</kbd> Stats
+            <div className="hidden lg:flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/60 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700/60">
+              <span className="font-medium">Pintasan:</span>
+              <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-700 rounded text-slate-700 dark:text-slate-200 font-mono shadow-xs">H</kbd> Beranda
+              <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-700 rounded text-slate-700 dark:text-slate-200 font-mono shadow-xs">M</kbd> Monitor
+              <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-700 rounded text-slate-700 dark:text-slate-200 font-mono shadow-xs">C</kbd> Kalibrasi
+              <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-700 rounded text-slate-700 dark:text-slate-200 font-mono shadow-xs">D</kbd> Dashboard
+              <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-700 rounded text-slate-700 dark:text-slate-200 font-mono shadow-xs">E</kbd> Terapi
             </div>
           </div>
         </div>
