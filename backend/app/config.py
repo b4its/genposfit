@@ -43,8 +43,20 @@ if not CORS_ORIGINS or CORS_ORIGINS == ["*"]:
 # Backend memakai RPC + private key treasury yang sama dgn konfigurasi
 # hardhat gpc-contract (.env root). Nilai di-overridable utk docker/tests.
 SEPOLIA_RPC_URL = os.getenv("SEPOLIA_RPC_URL", "")
-# kontrak GPC (ERC-1155) hasil deploy via `make deploy-gpc` / npx hardhat run
+# kontrak GPC (ERC-1155) hasil deploy via `make gpc-publish` / npx hardhat run
 GPC_CONTRACT_ADDRESS = os.getenv("GPC_CONTRACT_ADDRESS", "")
+if not GPC_CONTRACT_ADDRESS:
+    import json
+    for _p in ["/app/gpc-contract/deployment.json", "gpc-contract/deployment.json", "../gpc-contract/deployment.json"]:
+        if os.path.exists(_p):
+            try:
+                with open(_p, "r", encoding="utf-8") as _f:
+                    _data = json.load(_f)
+                    GPC_CONTRACT_ADDRESS = _data.get("contractAddress", "")
+                if GPC_CONTRACT_ADDRESS:
+                    break
+            except Exception:
+                pass
 # kunci treasury = owner kontrak (yg boleh panggil mint)
 GPC_TREASURY_PRIVATE_KEY = os.getenv("GPC_TREASURY_PRIVATE_KEY", os.getenv("PRIVATE_KEY", ""))
 # chainId target reward (default 11155111 Sepolia, lihat hardhat.config.js)

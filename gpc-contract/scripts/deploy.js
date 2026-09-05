@@ -25,10 +25,11 @@ async function main() {
   console.log("Contract address saved to deployment.json");
 
   const initialMint = ethers.parseEther("1000000");
-  await gpc.mint(deployer.address, initialMint);
-  console.log("Minted 1,000,000 GPC to deployer");
+  const mintTx = await gpc.mint(deployer.address, initialMint);
+  await mintTx.wait();
+  console.log("Minted 1,000,000 GPC to deployer (tx:", mintTx.hash, ")");
 
-  const totalSupply = await gpc.totalSupply(0);
+  const totalSupply = await gpc["totalSupply(uint256)"](0);
   console.log("Total supply:", ethers.formatEther(totalSupply), "GPC");
 }
 

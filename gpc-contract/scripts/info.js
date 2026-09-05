@@ -18,7 +18,7 @@ async function main() {
   const name = await gpc.name();
   const symbol = await gpc.symbol();
   const maxSupply = await gpc.MAX_SUPPLY();
-  const totalSupply = await gpc.totalSupply(0);
+  const totalSupply = await gpc["totalSupply(uint256)"](0);
 
   console.log("Contract:", contractAddress);
   console.log("Name:", name);

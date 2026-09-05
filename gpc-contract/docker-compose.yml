@@ -8,10 +8,17 @@ services:
       context: ./gpc-contract
       dockerfile: Dockerfile
     container_name: genposfit-gpc
+    env_file:
+      - path: ./gpc-contract/.env
+        required: false
+      - path: ./.env
+        required: false
     environment:
-      SEPOLIA_RPC_URL: ${SEPOLIA_RPC_URL}
-      PRIVATE_KEY: ${PRIVATE_KEY}
-      ETHERSCAN_API_KEY: ${ETHERSCAN_API_KEY}
+      - SEPOLIA_RPC_URL
+      - PRIVATE_KEY
+      - ETHERSCAN_API_KEY
+      - TARGET
+      - AMOUNT
     volumes:
       - ./gpc-contract:/app
       - gpc_node_modules:/app/node_modules

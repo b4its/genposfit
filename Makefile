@@ -479,7 +479,8 @@ ngrok-url: ## 🔗 [Ngrok] Tampilkan URL publik ngrok yang sedang aktif
 # GPC — GenPosFit Coin (ERC-1155, Sepolia) | stack TERPISAH
 # ════════════════════════════════════════════════════════════════
 
-GPC_COMPOSE := $(COMPOSE) -f gpc-contract/docker-compose.yml --env-file .env --project-directory .
+GPC_ENV_FLAGS := $(shell [ -f .env ] && echo "--env-file .env") $(shell [ -f gpc-contract/.env ] && echo "--env-file gpc-contract/.env")
+GPC_COMPOSE := $(COMPOSE) -f gpc-contract/docker-compose.yml $(GPC_ENV_FLAGS) --project-directory .
 
 gpc-up: ## [GPC] Build image + jalankan container Hardhat (daemon)
 	$(GPC_COMPOSE) up -d --build
