@@ -50,6 +50,7 @@ export default defineConfig({
     server: {
       host: '0.0.0.0',
       port: 3042,
+      allowedHosts: true,
       https,
       // Proxy API ke backend: browser hanya melihat origin yang sama (relatif '/api'),
       // sehingga tidak ada masalah CORS dan tidak bergantung pada localhost browser.

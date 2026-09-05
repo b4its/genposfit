@@ -97,6 +97,37 @@ services:
     networks:
       - genposfit-net
 
+  # ------------------------- NGROK (PUBLIC TUNNEL) ------------
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: genposfit-ngrok
+    restart: unless-stopped
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        target="frontend:3042"
+        extra_args=""
+        config_arg="--config=/var/lib/ngrok/ngrok.yml"
+        if [ "$$VITE_HTTPS" = "1" ] || [ "$$VITE_HTTPS" = "true" ]; then
+          target="https://frontend:3042"
+          extra_args="--upstream-tls-verify=false"
+        fi
+        if [ -n "$$NGROK_URL" ]; then
+          exec ngrok $$config_arg http "$$target" --url "$$NGROK_URL" $$extra_args --log=stdout
+        else
+          exec ngrok $$config_arg http "$$target" $$extra_args --log=stdout
+        fi
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-3IuzLXEMuqqYOOvKV87DydDfWAM_84J5ekeRFfF2Lmpt6c9cn}
+      NGROK_URL: ${NGROK_URL:-https://default.internal}
+      VITE_HTTPS: ${VITE_HTTPS:-0}
+    ports:
+      - "${NGROK_PORT:-4040}:4040"
+    depends_on:
+      - frontend
+    networks:
+      - genposfit-net
+
 # ========================= VOLUMES & NETWORK ==================
 volumes:
   db_data:

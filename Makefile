@@ -11,12 +11,14 @@ SERVICE_DB       := db
 SERVICE_BACKEND  := backend
 SERVICE_FRONTEND := frontend
 SERVICE_PMA      := phpmyadmin
+SERVICE_NGROK    := ngrok
 
 DB_NAME          := genposfit
 DB_USER          := genposfit_user
 DB_PASSWORD      := genposfit_secret
 DB_ROOT_PASSWORD := root_secret
 DB_CONTAINER     := genposfit-db
+NGROK_CONTAINER  := genposfit-ngrok
 
 BACKUP_DIR       := ./backups
 SEED_DIR         := ./database/seed
@@ -28,7 +30,8 @@ COLOR_CYAN   := \033[36m
 
 .DEFAULT_GOAL := help
 .PHONY: help up up-detached down restart stop start build rebuild ps logs \
-        logs-backend logs-frontend logs-db health \
+        logs-backend logs-frontend logs-db logs-ngrok ngrok-logs health \
+        ngrok public ngrok-up ngrok-down restart-ngrok ngrok-url \
         db db-root db-create db-drop db-tables db-count db-dump db-restore \
         migrate seed reseed seed-dummy \
         shell-backend shell-frontend shell-db \
@@ -66,6 +69,10 @@ up-detached: ## [Docker] Jalankan semua container di background (mode daemon)
 	echo "               (kamera butuh HTTPS saat dibuka via IP host → set VITE_HTTPS=1 + CERT_HOSTS=<ip-anda> lalu 'make up-detached' lagi)"
 	@echo "  Backend    → http://localhost:8042/docs"
 	@echo "  PhpMyAdmin → http://localhost:8122"
+	@pub_url=$$(grep '^NGROK_PUBLIC_URL=' .env 2>/dev/null | cut -d= -f2); \
+	if [ -n "$$pub_url" ]; then \
+		echo "  Ngrok      → $$pub_url (jalankan 'make ngrok-url' untuk status)"; \
+	fi
 
 down: ## [Docker] Stop dan hapus semua container (data volume tetap aman)
 	$(COMPOSE) down
@@ -132,6 +139,9 @@ logs-frontend: ## [Docker] Lihat log frontend saja
 logs-db: ## [Docker] Lihat log database saja
 	$(COMPOSE) logs -f --tail=100 $(SERVICE_DB)
 
+logs-ngrok: ## [Docker] Lihat log container ngrok saja
+	$(COMPOSE) logs -f --tail=100 $(SERVICE_NGROK)
+
 health: ## [Docker] Cek health status semua service
 	@echo "$(COLOR_CYAN)── Health Check GenPosFit ──$(COLOR_RESET)"
 	@docker inspect --format='{{.Name}}: {{.State.Health.Status}}' $(DB_CONTAINER) 2>/dev/null || \
@@ -165,7 +175,7 @@ doctor: ## 🔍 Diagnostik menyeluruh: port, image, container, env, konfigurasi
 	@echo ""
 	@# ── 2. Port conflict (apakah port sudah dipakai container lain) ──
 	@echo "$(COLOR_YELLOW)── 2. Port Conflict ──$(COLOR_RESET)"
-	@for port in 3348 8042 3042 8122; do \
+	@for port in 3348 8042 3042 8122 4040; do \
 		used=$$(docker ps --format '{{.Names}} {{.Ports}}' 2>/dev/null | grep -E ":$$port->|:$$port-" | head -1); \
 		if [ -n "$$used" ]; then \
 			echo "  ✔ :$$port → $$used"; \
@@ -180,18 +190,29 @@ doctor: ## 🔍 Diagnostik menyeluruh: port, image, container, env, konfigurasi
 	@echo ""
 	@# ── 4. Image freshness ──
 	@echo "$(COLOR_YELLOW)── 4. Image Freshness ──$(COLOR_RESET)"
-	@echo "  backend:   dicek via hash perubahan kode"
-	@echo "  frontend:  dicek via hash perubahan kode"
-	@echo "  mysql:8.0  $(shell docker images --format '{{.Repository}}:{{.Tag}} ({{.CreatedAt}})' mysql:8.0 2>/dev/null || echo 'tidak ada')"
-	@echo "  phpmyadmin:latest $(shell docker images --format '{{.Repository}}:{{.Tag}} ({{.CreatedAt}})' phpmyadmin:latest 2>/dev/null || echo 'tidak ada')"
+	@echo "  backend:    dicek via hash perubahan kode"
+	@echo "  frontend:   dicek via hash perubahan kode"
+	@echo "  mysql:8.0   $(shell docker images --format '{{.Repository}}:{{.Tag}} ({{.CreatedAt}})' mysql:8.0 2>/dev/null || echo 'tidak ada')"
+	@echo "  phpmyadmin: $(shell docker images --format '{{.Repository}}:{{.Tag}} ({{.CreatedAt}})' phpmyadmin:latest 2>/dev/null || echo 'tidak ada')"
+	@echo "  ngrok:      $(shell docker images --format '{{.Repository}}:{{.Tag}} ({{.CreatedAt}})' ngrok/ngrok:latest 2>/dev/null || echo 'tidak ada')"
 	@echo ""
 	@# ── 5. Docker Compose config ──
 	@echo "$(COLOR_YELLOW)── 5. Docker Compose Config ──$(COLOR_RESET)"
-	@$(COMPOSE) config 2>&1 | grep -E 'image:|container_name:|ports:' | head -12
+	@$(COMPOSE) config 2>&1 | grep -E 'image:|container_name:|ports:' | head -16
 	@echo ""
 	@# ── 6. Backend health ──
 	@echo "$(COLOR_YELLOW)── 6. Backend API Health ──$(COLOR_RESET)"
 	@curl -s -o /dev/null -w "  HTTP %{http_code}" http://localhost:$(BACKEND_PORT)/api/health 2>/dev/null && echo " ✔" || echo "  ❌ Tidak dapat dijangkau"
+	@echo ""
+	@# ── 7. Ngrok Public Tunnel ──
+	@echo "$(COLOR_YELLOW)── 7. Ngrok Public Tunnel ──$(COLOR_RESET)"
+	@pub_url=$$(curl -s http://localhost:4040/api/tunnels 2>/dev/null | grep -o '"public_url":"[^"]*"' | head -1 | cut -d'"' -f4); \
+	env_pub=$$(grep '^NGROK_PUBLIC_URL=' .env 2>/dev/null | cut -d= -f2); \
+	if [ -n "$$pub_url" ]; then \
+		echo "  ✔ Tunnel aktif : $$pub_url ($$env_pub)"; \
+	else \
+		echo "  ⚠ Tunnel ngrok belum aktif / tidak merespons di port 4040"; \
+	fi
 	@echo ""
 	@echo "$(COLOR_GREEN)✔ Diagnostik selesai$(COLOR_RESET)"
 
@@ -399,6 +420,59 @@ destroy: ## [Clean] Total wipe: container + volume + image (dari nol lagi)
 		[ "$$ok" = "y" ] && $(COMPOSE) down -v --rmi all --remove-orphans && \
 		echo "$(COLOR_GREEN)✔ Environment GenPosFit dihapus total$(COLOR_RESET)" || \
 		echo "Dibatalkan."
+
+
+# ════════════════════════════════════════════════════════════════
+# DEPLOY / HOSTING PUBLIK — NGROK TUNNEL (DOCKER)
+# ════════════════════════════════════════════════════════════════
+
+public: ngrok ## 🌐 [Ngrok] Alias untuk 'make ngrok' (deploy / hosting publik)
+
+ngrok: ## 🌐 [Ngrok] Jalankan tunnel publik ngrok di Docker container
+	@$(COMPOSE) up -d $(SERVICE_NGROK)
+	@echo "$(COLOR_GREEN)✔ Container ngrok ($(NGROK_CONTAINER)) berjalan$(COLOR_RESET)"
+	@sleep 2
+	@$(MAKE) ngrok-url
+
+ngrok-up: ngrok ## 🌐 [Ngrok] Alias untuk 'make ngrok'
+
+ngrok-down: ## 🛑 [Ngrok] Hentikan container ngrok
+	$(COMPOSE) stop $(SERVICE_NGROK)
+	@echo "$(COLOR_GREEN)✔ Container ngrok dihentikan$(COLOR_RESET)"
+
+restart-ngrok: ## 🔄 [Ngrok] Restart container ngrok
+	$(COMPOSE) restart $(SERVICE_NGROK)
+	@echo "$(COLOR_GREEN)✔ Container ngrok di-restart$(COLOR_RESET)"
+	@sleep 2
+	@$(MAKE) ngrok-url
+
+ngrok-logs: logs-ngrok ## 📋 [Ngrok] Alias untuk 'make logs-ngrok'
+
+ngrok-url: ## 🔗 [Ngrok] Tampilkan URL publik ngrok yang sedang aktif
+	@echo ""
+	@echo "$(COLOR_CYAN)╔══════════════════════════════════════════════════════════════╗$(COLOR_RESET)"
+	@echo "$(COLOR_CYAN)║          GenPosFit — Public Ngrok Tunnel Status              ║$(COLOR_RESET)"
+	@echo "$(COLOR_CYAN)╚══════════════════════════════════════════════════════════════╝$(COLOR_RESET)"
+	@pub_url=$$(curl -s http://localhost:4040/api/tunnels 2>/dev/null | grep -o '"public_url":"[^"]*"' | head -1 | cut -d'"' -f4); \
+	env_pub=$$(grep '^NGROK_PUBLIC_URL=' .env 2>/dev/null | cut -d= -f2); \
+	if [ -n "$$pub_url" ]; then \
+		if [ "$$pub_url" = "https://default.internal" ] && [ -n "$$env_pub" ]; then \
+			echo "  🌐 URL Publik : $(COLOR_GREEN)$$env_pub$(COLOR_RESET)"; \
+		else \
+			echo "  🌐 URL Publik : $(COLOR_GREEN)$$pub_url$(COLOR_RESET)"; \
+		fi; \
+		echo "  📊 Dashboard  : http://localhost:4040"; \
+		echo "  📸 Kamera     : ✅ HTTPS otomatis (secure context valid di semua browser & HP)"; \
+		echo "  🚀 API Proxy  : Terhubung langsung ke backend:8042"; \
+	else \
+		if [ -n "$$env_pub" ]; then \
+			echo "  🌐 URL Terdaftar : $(COLOR_GREEN)$$env_pub$(COLOR_RESET)"; \
+			echo "  (Container ngrok mungkin belum up atau sedang inisialisasi. Cek 'make logs-ngrok')"; \
+		else \
+			echo "  ❌ Container ngrok belum aktif. Jalankan 'make ngrok' untuk menyalakan."; \
+		fi; \
+	fi
+	@echo ""
 
 
 # ════════════════════════════════════════════════════════════════

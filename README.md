@@ -60,7 +60,7 @@ Setiap pengguna baru **wajib melewati proses registrasi pose** sebelum bisa meng
 | **Backend (FastAPI)** | REST API + WebSocket | Mengelola registrasi baseline, menghitung skor deviasi personal, menyimpan log, menyajikan laporan |
 | **Database (MySQL 8.0)** | 8 tabel: `users`, `pose_baseline`, `posture_logs`, `exercise_types`, `exercises`, `exercise_sessions`, `rooms`, `room_players` | Penyimpanan persisten (via Docker volume `genposfit-db-data`) |
 
-> Proyek kini berjalan penuh di **Docker Compose** (4 container: `db`, `backend`, `frontend`, `phpmyadmin`) sebagai pengganti stand-alone SQLite.
+> Proyek kini berjalan penuh di **Docker Compose** (5 container: `db`, `backend`, `frontend`, `phpmyadmin`, `ngrok`) sebagai pengganti stand-alone SQLite.
 
 **Alur komunikasi:**
 
@@ -84,7 +84,8 @@ Setiap pengguna baru **wajib melewati proses registrasi pose** sebelum bisa meng
 | | MediaPipe + OpenCV + NumPy | Analisis sudut biomekanika landmark |
 | | Pydantic | Validasi skema data baseline & log |
 | **Database** | MySQL 8.0 | Penyimpanan persisten, InnoDB, FK + index |
-| **Infra** | Docker Compose | Orchestrasi 4 container (db, backend, frontend, phpmyadmin) |
+| **Infra** | Docker Compose | Orchestrasi 5 container (db, backend, frontend, phpmyadmin, ngrok) |
+| | Ngrok (Docker) | Public HTTPS reverse tunnel untuk deploy remote & testing kamera mobile |
 | | GitHub Actions (CI) | Backend unit test (`unittest`) + frontend build (`tsc` + Vite) |
 
 ---
@@ -304,9 +305,26 @@ make logs
 | Service | URL |
 |---|---|
 | Frontend | `http://localhost:3042` (default) atau `https://<ip-host>:3042` saat `VITE_HTTPS=1` |
+| Ngrok Public Tunnel | `https://unseen-liable-agreeable.ngrok-free.dev` (cek status: `make ngrok-url`) |
+| Ngrok Web Inspector | `http://localhost:4040` |
 | Backend (Swagger API) | http://localhost:8042/docs |
 | Health check | http://localhost:8042/api/health — proxy frontend: `<front-url>/api/health` |
 | PhpMyAdmin | http://localhost:8122 |
+
+### 🌐 Deploy & Hosting Publik via Ngrok (Docker)
+
+GenPosFit dilengkapi container **ngrok** resmi (`ngrok/ngrok:latest`) untuk mengekspos aplikasi ke publik/internet secara aman:
+
+```bash
+make public        # nyalakan tunnel ngrok di Docker container
+make ngrok-url     # tampilkan URL publik aktif & status koneksi
+make logs-ngrok    # pantau log container ngrok secara live
+make ngrok-down    # hentikan container ngrok
+```
+
+- **Kamera Mobile & Remote Testing Langsung Aktif:** Ngrok menyediakan koneksi **HTTPS resmi** (trusted CA) sehingga API browser `navigator.mediaDevices.getUserMedia` (kamera & MediaPipe) otomatis aktif di semua smartphone atau laptop tanpa konfigurasi sertifikat manual.
+- **Traffic Inspection:** Akses dashboard inspeksi ngrok di `http://localhost:4040` untuk memantau request REST dan frame WebSocket.
+- **Authtoken & URL:** Dikonfigurasi di file `.env` melalui `NGROK_AUTHTOKEN`, `NGROK_URL`, dan `NGROK_PORT`.
 
 > **Kamera (getUserMedia) — baca ini jika kamera diblokir / `ERR_EMPTY_RESPONSE`:**
 > Browser hanya mengizinkan kamera pada *secure context*: `https://…` atau
@@ -316,6 +334,7 @@ make logs
 > |---|---|---|
 > | `0` / kosong (default) | `http://localhost:3042` | ✅ hanya di `localhost` (IP host via http: diblokir browser) |
 > | `1` | `https://localhost:3042` dan `https://<IP_HOST>:3042` | ✅ di semua perangkat LAN (accept warning self-signed sekali) |
+> | **Via Ngrok** | `https://unseen-liable-agreeable.ngrok-free.dev` | ✅ **Aktif di mana saja (HTTPS terpercaya)** |
 >
 > ⚠️ Saat `VITE_HTTPS=1`, container hanya bicara TLS — membuka `http://…:3042`
 > menghasilkan **ERR_EMPTY_RESPONSE** ("didn't send any data"). Itu **bukan** container
@@ -332,6 +351,9 @@ make logs
 ```bash
 make up           # jalankan semua container (foreground)
 make up-detached  # jalankan di background (detached)
+make public       # 🌐 jalankan hosting publik ngrok di Docker
+make ngrok-url    # 🔗 lihat status & link publik ngrok
+make logs-ngrok   # 📋 lihat log container ngrok
 make down         # stop container
 make restart      # restart container
 make ps           # status container
@@ -355,7 +377,7 @@ make nuke         # bersihkan termasuk volume db
 ```
 genposfit/
 ├── .env.example                  # Template environment
-├── docker-compose.yml            # Orchestrasi: db, backend, frontend, phpmyadmin
+├── docker-compose.yml            # Orchestrasi: db, backend, frontend, phpmyadmin, ngrok
 ├── Makefile                      # Command operasional (Docker, DB, seed, lint, GPC)
 ├── .github/workflows/ci.yml      # CI: backend test + frontend build
 │
