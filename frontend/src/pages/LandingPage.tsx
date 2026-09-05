@@ -73,7 +73,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
   return (
     <div className="w-full pb-16">
       {/* Hero Section */}
-      <section className="app-container pt-10 sm:pt-16 pb-12">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-10 sm:pt-16 pb-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           {/* Left Column: Heading & CTAs */}
           <div className="lg:col-span-7 flex flex-col items-start text-left">
@@ -131,18 +131,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
             </div>
 
             {/* Quick Metrics Bar */}
-            <div className="grid grid-cols-3 gap-4 sm:gap-8 pt-8 mt-8 border-t border-border w-full">
+            <div className="grid grid-cols-3 gap-4 sm:gap-8 pt-8 mt-8 border-t border-slate-200 dark:border-slate-800 w-full">
               <div>
                 <div className="text-2xl sm:text-3xl font-extrabold font-mono text-blue-600 dark:text-blue-400">30 FPS</div>
-                <div className="text-xs text-muted-foreground mt-1">Biometrik Real-time</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Biometrik Real-time</div>
               </div>
               <div>
                 <div className="text-2xl sm:text-3xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">0.1°</div>
-                <div className="text-xs text-muted-foreground mt-1">Presisi Sub-derajat</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Presisi Sub-derajat</div>
               </div>
               <div>
-                <div className="text-2xl sm:text-3xl font-extrabold font-mono text-foreground">100%</div>
-                <div className="text-xs text-muted-foreground mt-1">Privasi Edge Lokal</div>
+                <div className="text-2xl sm:text-3xl font-extrabold font-mono text-slate-900 dark:text-white">100%</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Privasi Edge Lokal</div>
               </div>
             </div>
           </div>
@@ -160,10 +160,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
               )}
             >
               {/* Header Bar */}
-              <div className="flex items-center justify-between pb-3.5 mb-3.5 border-b border-border">
+              <div className="flex items-center justify-between pb-3.5 mb-3.5 border-b border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <span className="text-xs font-semibold text-foreground">Simulasi Biomekanika Interaktif</span>
+                  <span className="text-xs font-semibold text-slate-900 dark:text-white">Simulasi Biomekanika Interaktif</span>
                 </div>
                 <Pill
                   variant={status === 'bagus' ? 'success' : status === 'ringan' ? 'warning' : 'destructive'}
@@ -200,9 +200,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
               {/* Interactive Sliders */}
               <div className="mt-4 space-y-3.5 text-xs">
                 <div>
-                  <div className="flex justify-between text-foreground font-medium mb-1.5">
+                  <div className="flex justify-between text-slate-700 dark:text-slate-200 font-medium mb-1.5">
                     <span>Forward Head / Sudut Leher:</span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-bold font-mono">{demoNeck}° <span className="text-muted-foreground font-normal">(Base: 165°)</span></span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold font-mono">{demoNeck}° <span className="text-slate-400 font-normal">(Base: 165°)</span></span>
                   </div>
                   <input
                     type="range"
@@ -216,9 +216,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
                 </div>
 
                 <div>
-                  <div className="flex justify-between text-foreground font-medium mb-1.5">
+                  <div className="flex justify-between text-slate-700 dark:text-slate-200 font-medium mb-1.5">
                     <span>Trunk Angle / Sudut Punggung:</span>
-                    <span className="text-blue-600 dark:text-blue-400 font-bold font-mono">{demoBack}° <span className="text-muted-foreground font-normal">(Base: 170°)</span></span>
+                    <span className="text-blue-600 dark:text-blue-400 font-bold font-mono">{demoBack}° <span className="text-slate-400 font-normal">(Base: 170°)</span></span>
                   </div>
                   <input
                     type="range"
@@ -233,8 +233,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
               </div>
 
               {/* Reset to Ergonomic State */}
-              <div className="mt-4 pt-3 border-t border-border flex justify-between items-center text-xs">
-                <span className="text-[11px] text-muted-foreground">Geser slider untuk simulasi deviasi postur</span>
+              <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center text-xs">
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">Geser slider untuk simulasi deviasi postur</span>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -251,12 +251,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
       </section>
 
       {/* Feature Grid: Biomechanics & Healthcare */}
-      <section className="app-container py-12 border-t border-border">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-12 border-t border-slate-200 dark:border-slate-800">
         <div className="text-center max-w-2xl mx-auto mb-10">
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3 text-slate-900 dark:text-white">
             Fitur Unggulan Ergonomi Modern
           </h2>
-          <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
+          <p className="text-slate-600 dark:text-slate-400 text-sm sm:text-base leading-relaxed">
             Teknologi computer vision berstandar medis yang dirancang khusus untuk kenyamanan dan kesehatan tulang belakang pekerja meja.
           </p>
         </div>
@@ -266,8 +266,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
             <div className="w-11 h-11 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400 mb-4 shadow-xs">
               <Cpu size={22} />
             </div>
-            <h3 className="text-base font-bold mb-2 text-foreground">33-Point MediaPipe Extraction</h3>
-            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+            <h3 className="text-base font-bold mb-2 text-slate-900 dark:text-white">33-Point MediaPipe Extraction</h3>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
               Ekstraksi kinematik lengkap secara real-time via WebAssembly & akselerasi GPU. Melacak sudut servikal, thoraks, dan simetri bahu tanpa latensi.
             </p>
           </Card>
@@ -276,8 +276,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
             <div className="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-4 shadow-xs">
               <Shield size={22} />
             </div>
-            <h3 className="text-base font-bold mb-2 text-foreground">Kalibrasi Baseline Personal</h3>
-            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+            <h3 className="text-base font-bold mb-2 text-slate-900 dark:text-white">Kalibrasi Baseline Personal</h3>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
               Menyesuaikan standar deviasi berdasarkan anatomi unik dan kenyamanan setiap pengguna, bukan memaksakan standar kaku satu ukuran untuk semua.
             </p>
           </Card>
@@ -286,8 +286,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
             <div className="w-11 h-11 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-600 dark:text-teal-400 mb-4 shadow-xs">
               <HeartPulse size={22} />
             </div>
-            <h3 className="text-base font-bold mb-2 text-foreground">Terapi & Peregangan Terarah</h3>
-            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+            <h3 className="text-base font-bold mb-2 text-slate-900 dark:text-white">Terapi & Peregangan Terarah</h3>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
               Program latihan korektif terintegrasi (Chin Tuck, Shoulder Squeeze, Wall Angel) dengan panduan repetisi dan aktivasi kelompok otot target.
             </p>
           </Card>

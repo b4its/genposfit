@@ -233,17 +233,17 @@ export const RegisterPose = ({ onFinishCalibration }) => {
   };
 
   return (
-    <div className="app-container py-10">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-10">
       {/* Header */}
       <div className="max-w-4xl mx-auto mb-8 text-left">
         <Pill variant="success" size="md" className="mb-3 font-mono">
           <PillIndicator variant="success" pulse={false} />
           <PillContent>STEP 1: PERSONAL POSTURE CALIBRATION</PillContent>
         </Pill>
-        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-2 text-foreground">
+        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-2 text-slate-900 dark:text-white">
           Registrasi & Kalibrasi Baseline Postur
         </h1>
-        <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+        <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 leading-relaxed">
           Setiap individu memiliki struktur anatomi dan ergonomi yang unik. Rekam pose postur ideal Anda
           (posisi duduk/berdiri tegak) selama 3 detik untuk membangun model referensi personal di MySQL.
         </p>
@@ -254,14 +254,14 @@ export const RegisterPose = ({ onFinishCalibration }) => {
         <div className="lg:col-span-5 flex flex-col gap-6">
           {/* User Profile Card */}
           <Card className="p-5">
-            <h3 className="text-sm font-bold text-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
               <UserCheck size={16} className="text-blue-500" />
               <span>Profil Pengguna</span>
             </h3>
 
             <div className="space-y-4 text-xs">
               <div>
-                <label className="block text-foreground font-medium mb-1.5">Nama Lengkap</label>
+                <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1.5">Nama Lengkap</label>
                 <Input
                   type="text"
                   value={nama}
@@ -271,7 +271,7 @@ export const RegisterPose = ({ onFinishCalibration }) => {
               </div>
 
               <div>
-                <label className="block text-foreground font-medium mb-1.5">Email (Opsional)</label>
+                <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1.5">Email (Opsional)</label>
                 <Input
                   type="email"
                   value={email}
@@ -281,7 +281,7 @@ export const RegisterPose = ({ onFinishCalibration }) => {
               </div>
 
               <div>
-                <label className="block text-foreground font-medium mb-1.5">Pekerjaan</label>
+                <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1.5">Pekerjaan</label>
                 <Input
                   type="text"
                   value={pekerjaan}
@@ -294,13 +294,13 @@ export const RegisterPose = ({ onFinishCalibration }) => {
 
           {/* Calibration Config */}
           <Card className="p-5">
-            <h3 className="text-sm font-bold text-foreground uppercase tracking-wider mb-4">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4">
               Pilih Orientasi & Tipe Pose
             </h3>
 
             <div className="space-y-4 text-xs">
               <div>
-                <label className="block text-foreground font-medium mb-1.5">Sudut Kamera (Orientasi):</label>
+                <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1.5">Sudut Kamera (Orientasi):</label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { id: 'frontal', label: 'Frontal' },
@@ -325,7 +325,7 @@ export const RegisterPose = ({ onFinishCalibration }) => {
               </div>
 
               <div>
-                <label className="block text-foreground font-medium mb-1.5">Tipe Pose Target:</label>
+                <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1.5">Tipe Pose Target:</label>
                 <Select
                   value={tipePose}
                   onChange={(e) => setTipePose(e.target.value)}
@@ -488,7 +488,7 @@ export const RegisterPose = ({ onFinishCalibration }) => {
               <div className="overflow-x-auto">
                 <table className="w-full text-xs font-mono text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-border text-muted-foreground font-semibold">
+                    <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold">
                       <th className="py-2">Orientasi</th>
                       <th className="py-2">Tipe Pose</th>
                       <th className="py-2">Rata2 Leher</th>
@@ -498,12 +498,12 @@ export const RegisterPose = ({ onFinishCalibration }) => {
                   </thead>
                   <tbody>
                     {collectedBaselines.map((b, idx) => (
-                      <tr key={idx} className="border-b border-border/60">
+                      <tr key={idx} className="border-b border-slate-100 dark:border-slate-800/60">
                         <td className="py-2.5 font-bold text-blue-600 dark:text-blue-400">{b.orientasi}</td>
-                        <td className="py-2.5 text-foreground">{b.tipe_pose}</td>
+                        <td className="py-2.5 text-slate-900 dark:text-slate-100">{b.tipe_pose}</td>
                         <td className="py-2.5 text-emerald-600 dark:text-emerald-400 font-bold">{b.sudut_leher}°</td>
                         <td className="py-2.5 text-blue-600 dark:text-blue-300 font-bold">{b.sudut_punggung}°</td>
-                        <td className="py-2.5 text-muted-foreground">±{b.std_leher}°</td>
+                        <td className="py-2.5 text-slate-500 dark:text-slate-400">±{b.std_leher}°</td>
                       </tr>
                     ))}
                   </tbody>

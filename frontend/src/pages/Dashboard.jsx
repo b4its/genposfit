@@ -101,7 +101,7 @@ export const Dashboard = () => {
   const timelineData = stats.timeline.length > 0 ? stats.timeline : [];
 
   return (
-    <div className="app-container py-10">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-10">
       {/* Page Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
         <div>
@@ -109,10 +109,10 @@ export const Dashboard = () => {
             <BarChart3 size={13} />
             <PillContent>METRIK & ANALITIK POSTUR</PillContent>
           </Pill>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
             Dashboard Progres Postur
           </h1>
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Ringkasan analitik dan telemetri kesehatan ergonomis pengguna (Alex Chandra)
           </p>
         </div>
@@ -144,13 +144,13 @@ export const Dashboard = () => {
         {/* Card 1: Ergonomic Health Score */}
         <Card className="p-5">
           <div className="flex justify-between items-start mb-2">
-            <span className="text-xs font-semibold text-muted-foreground">Rata-rata Skor Postur</span>
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Rata-rata Skor Postur</span>
             <Badge variant="success">7 HARI</Badge>
           </div>
           <div className="text-3xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400 my-1">
-            {stats.avg_skor} <span className="text-sm font-normal text-muted-foreground">/ 100</span>
+            {stats.avg_skor} <span className="text-sm font-normal text-slate-500 dark:text-slate-400">/ 100</span>
           </div>
-          <div className="text-[11px] text-muted-foreground flex items-center gap-1">
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
             <TrendingUp size={13} className="text-emerald-500" />
             <span>+3.4% peningkatan vs minggu lalu</span>
           </div>
@@ -159,13 +159,13 @@ export const Dashboard = () => {
         {/* Card 2: Bagus Compliance */}
         <Card className="p-5">
           <div className="flex justify-between items-start mb-2">
-            <span className="text-xs font-semibold text-muted-foreground">Kepatuhan Ergonomis</span>
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Kepatuhan Ergonomis</span>
             <CheckCircle2 size={15} className="text-emerald-500" />
           </div>
           <div className="text-3xl font-extrabold font-mono text-blue-600 dark:text-blue-400 my-1">
             {stats.persentase_bagus}%
           </div>
-          <div className="text-[11px] text-muted-foreground">
+          <div className="text-[11px] text-slate-500 dark:text-slate-400">
             {stats.distribusi.bagus} dari {stats.total_logs} interval evaluasi
           </div>
         </Card>
@@ -173,13 +173,13 @@ export const Dashboard = () => {
         {/* Card 3: Neck Angle Deviation */}
         <Card className="p-5">
           <div className="flex justify-between items-start mb-2">
-            <span className="text-xs font-semibold text-muted-foreground">Rata-rata Sudut Leher</span>
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Rata-rata Sudut Leher</span>
             <Shield size={15} className="text-teal-500" />
           </div>
-          <div className="text-3xl font-extrabold font-mono text-foreground my-1">
+          <div className="text-3xl font-extrabold font-mono text-slate-900 dark:text-white my-1">
             {stats.avg_leher}°
           </div>
-          <div className="text-[11px] text-muted-foreground">
+          <div className="text-[11px] text-slate-500 dark:text-slate-400">
             Deviasi rata-rata: ±1.8° dari baseline ideal
           </div>
         </Card>
@@ -187,13 +187,13 @@ export const Dashboard = () => {
         {/* Card 4: Posture Logs Recorded */}
         <Card className="p-5">
           <div className="flex justify-between items-start mb-2">
-            <span className="text-xs font-semibold text-muted-foreground">Total Telemetri Tersimpan</span>
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Telemetri Tersimpan</span>
             <Clock size={15} className="text-amber-500" />
           </div>
-          <div className="text-3xl font-extrabold font-mono text-foreground my-1">
+          <div className="text-3xl font-extrabold font-mono text-slate-900 dark:text-white my-1">
             {stats.total_logs.toLocaleString()}
           </div>
-          <div className="text-[11px] text-muted-foreground">
+          <div className="text-[11px] text-slate-500 dark:text-slate-400">
             Sampel telemetri biometrik aktif
           </div>
         </Card>
@@ -201,12 +201,12 @@ export const Dashboard = () => {
 
       {/* Main Chart Section: Timeline Fluctuation */}
       <Card className="p-6 mb-8">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-border">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-200 dark:border-slate-800">
           <div>
-            <h3 className="text-sm font-bold font-mono text-foreground">
+            <h3 className="text-sm font-bold font-mono text-slate-900 dark:text-white">
               Fluktuasi Skor Ergonomi Sepanjang Sesi
             </h3>
-            <span className="text-xs font-mono text-muted-foreground">
+            <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
               Evaluasi landmark continuous time-series (Hijau: &gt;=85, Kuning: 60-84, Merah: &lt;60)
             </span>
           </div>
@@ -254,7 +254,7 @@ export const Dashboard = () => {
           })}
         </div>
 
-        <div className="flex justify-between text-[10px] font-mono text-muted-foreground mt-2 px-2 border-t border-border pt-2">
+        <div className="flex justify-between text-[10px] font-mono text-slate-500 dark:text-slate-400 mt-2 px-2 border-t border-slate-200 dark:border-slate-800 pt-2">
           <span>Awal Sesi</span>
           <span>Pertengahan Kerja</span>
           <span>Sekarang</span>
@@ -266,26 +266,26 @@ export const Dashboard = () => {
         {/* Left Column: Therapy Sessions */}
         <Card className="lg:col-span-6 p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <Dumbbell size={16} className="text-emerald-500" />
               <span>Riwayat Sesi Terapi Postur</span>
             </h3>
-            <span className="text-xs text-muted-foreground font-medium">Terverifikasi AI</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Terverifikasi AI</span>
           </div>
 
           <div className="space-y-3">
             {exerciseHistory.map(ex => (
               <div
                 key={ex.id}
-                className="flex items-center justify-between p-3.5 rounded-xl bg-muted/60 border border-border/80 text-xs"
+                className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 text-xs"
               >
                 <div>
-                  <div className="font-bold text-foreground">{ex.nama}</div>
-                  <div className="text-[11px] text-muted-foreground mt-0.5">{ex.time} · {ex.reps} Repetisi</div>
+                  <div className="font-bold text-slate-900 dark:text-white">{ex.nama}</div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{ex.time} · {ex.reps} Repetisi</div>
                 </div>
                 <div className="text-right">
                   <div className="text-emerald-600 dark:text-emerald-400 font-bold font-mono text-sm">{ex.avg_skor}%</div>
-                  <div className="text-[10px] text-muted-foreground">Skor Akurasi</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400">Skor Akurasi</div>
                 </div>
               </div>
             ))}
@@ -295,17 +295,17 @@ export const Dashboard = () => {
         {/* Right Column: Posture Distribution & Ergonomic Health Insights */}
         <Card className="lg:col-span-6 p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <CheckCircle2 size={16} className="text-blue-500" />
               <span>Distribusi & Rekomendasi Ergonomi</span>
             </h3>
-            <span className="text-xs text-muted-foreground font-medium">Model 7 Hari</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Model 7 Hari</span>
           </div>
 
           <div className="space-y-4 text-xs">
             {/* Bagus Distribution */}
             <div>
-              <div className="flex justify-between text-foreground font-medium mb-1.5">
+              <div className="flex justify-between text-slate-900 dark:text-white font-medium mb-1.5">
                 <span className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                   <span>Postur Bagus (Ideal)</span>
@@ -317,7 +317,7 @@ export const Dashboard = () => {
 
             {/* Ringan Distribution */}
             <div>
-              <div className="flex justify-between text-foreground font-medium mb-1.5">
+              <div className="flex justify-between text-slate-900 dark:text-white font-medium mb-1.5">
                 <span className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-amber-500"></span>
                   <span>Deviasi Ringan</span>
@@ -335,7 +335,7 @@ export const Dashboard = () => {
 
             {/* Buruk Distribution */}
             <div>
-              <div className="flex justify-between text-foreground font-medium mb-1.5">
+              <div className="flex justify-between text-slate-900 dark:text-white font-medium mb-1.5">
                 <span className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-rose-500"></span>
                   <span>Postur Buruk (Slouching)</span>
@@ -352,9 +352,9 @@ export const Dashboard = () => {
             </div>
 
             {/* AI Ergonomics Tip Banner */}
-            <div className="mt-4 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-foreground leading-relaxed">
+            <div className="mt-4 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-slate-900 dark:text-white leading-relaxed">
               <strong className="text-blue-600 dark:text-blue-400">Rekomendasi Ergonomis:</strong>
-              <p className="mt-1 text-[11px] text-muted-foreground">
+              <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
                 Konsistensi postur Anda berada di atas 70%. Untuk mengurangi ketegangan leher pada sore hari, lakukan peregangan <em>Chin Tuck</em> setiap 60 menit kerja.
               </p>
             </div>

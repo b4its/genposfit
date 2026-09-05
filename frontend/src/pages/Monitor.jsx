@@ -265,7 +265,7 @@ export const Monitor = ({ onNavigateToExercises }) => {
   };
 
   return (
-    <div className="app-container py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-8">
       {/* Header & Control Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
@@ -397,7 +397,7 @@ export const Monitor = ({ onNavigateToExercises }) => {
           {/* Simulator manual sliders for testing & presentation */}
           <Card className="p-5">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+              <span className="text-xs font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
                 <Sliders size={14} className="text-blue-500" />
                 <span>Simulasi Gerakan & Deviasi Biomekanika</span>
               </span>
@@ -413,7 +413,7 @@ export const Monitor = ({ onNavigateToExercises }) => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div>
-                <div className="flex justify-between text-muted-foreground font-medium mb-1.5">
+                <div className="flex justify-between text-slate-600 dark:text-slate-400 font-medium mb-1.5">
                   <span>Sudut Leher (Forward Head):</span>
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold font-mono">{simNeck}°</span>
                 </div>
@@ -431,7 +431,7 @@ export const Monitor = ({ onNavigateToExercises }) => {
               </div>
 
               <div>
-                <div className="flex justify-between text-muted-foreground font-medium mb-1.5">
+                <div className="flex justify-between text-slate-600 dark:text-slate-400 font-medium mb-1.5">
                   <span>Sudut Punggung (Trunk Slope):</span>
                   <span className="text-blue-600 dark:text-blue-400 font-bold font-mono">{simBack}°</span>
                 </div>
@@ -464,7 +464,7 @@ export const Monitor = ({ onNavigateToExercises }) => {
                 : 'border-rose-500/40 shadow-lg shadow-rose-500/10'
             )}
           >
-            <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
+            <div className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
               Skor Kualitas Ergonomi
             </div>
 
@@ -491,21 +491,21 @@ export const Monitor = ({ onNavigateToExercises }) => {
               </Pill>
             </div>
 
-            <p className="text-xs text-foreground mt-4 leading-relaxed bg-muted p-3.5 rounded-xl border border-border/80">
+            <p className="text-xs text-slate-800 dark:text-slate-200 mt-4 leading-relaxed bg-slate-100 dark:bg-slate-800/70 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700/60">
               {feedback}
             </p>
           </Card>
 
           {/* Joint Breakdown Card with Kibo UI Progress */}
           <Card className="p-5">
-            <h3 className="text-xs font-bold text-foreground uppercase tracking-wider mb-4">
+            <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4">
               Biomechanical Telemetry
             </h3>
 
             <div className="space-y-4 text-xs font-mono">
               <div>
                 <div className="flex justify-between mb-1.5">
-                  <span className="text-muted-foreground">Sudut Leher (Craniovertebral):</span>
+                  <span className="text-slate-500 dark:text-slate-400">Sudut Leher (Craniovertebral):</span>
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">{neckAngle}° (Base 165°)</span>
                 </div>
                 <Progress
@@ -517,7 +517,7 @@ export const Monitor = ({ onNavigateToExercises }) => {
 
               <div>
                 <div className="flex justify-between mb-1.5">
-                  <span className="text-muted-foreground">Sudut Punggung (Trunk):</span>
+                  <span className="text-slate-500 dark:text-slate-400">Sudut Punggung (Trunk):</span>
                   <span className="text-blue-600 dark:text-blue-400 font-bold">{backAngle}° (Base 170°)</span>
                 </div>
                 <Progress
@@ -529,8 +529,8 @@ export const Monitor = ({ onNavigateToExercises }) => {
 
               <div>
                 <div className="flex justify-between mb-1.5">
-                  <span className="text-muted-foreground">Kemiringan Bahu (Symmetry):</span>
-                  <span className="text-foreground font-bold">{(shoulderLevel * 100).toFixed(1)}%</span>
+                  <span className="text-slate-500 dark:text-slate-400">Kemiringan Bahu (Symmetry):</span>
+                  <span className="text-slate-900 dark:text-white font-bold">{(shoulderLevel * 100).toFixed(1)}%</span>
                 </div>
                 <Progress
                   value={Math.min(100, shoulderLevel * 1000)}
@@ -547,7 +547,7 @@ export const Monitor = ({ onNavigateToExercises }) => {
               <Dumbbell size={16} />
               <span>Rekomendasi Terapi Postur</span>
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed mb-4">
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
               Lakukan latihan <strong>Chin Tuck</strong> selama 5 detik untuk menguatkan fleksor leher dalam dan mengurangi ketegangan servikal.
             </p>
             {onNavigateToExercises && (

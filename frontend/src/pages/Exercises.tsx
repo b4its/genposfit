@@ -175,17 +175,17 @@ export const Exercises: React.FC = () => {
   };
 
   return (
-    <div className="app-container py-10">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-10">
       {/* Header */}
       <div className="max-w-4xl mx-auto mb-8 text-left">
         <Pill variant="success" size="md" className="mb-2">
           <HeartPulse size={14} />
           <PillContent>PROGRAM TERAPI & PEREGANGAN POSTUR</PillContent>
         </Pill>
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
           Latihan Terapi & Koreksi Postur
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
           Gerakan terapeutik terbukti secara klinis meredakan forward head syndrome dan ketegangan punggung atas.
         </p>
       </div>
@@ -193,7 +193,7 @@ export const Exercises: React.FC = () => {
       <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Column: Menu Latihan */}
         <div className="lg:col-span-5 flex flex-col gap-3">
-          <h3 className="text-xs font-bold text-foreground uppercase tracking-wider mb-1">
+          <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-1">
             Pilihan Gerakan Terapi
           </h3>
 
@@ -214,7 +214,7 @@ export const Exercises: React.FC = () => {
                 <div className="flex items-center justify-between mb-1">
                   <span className={cn(
                     "text-sm font-bold",
-                    isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground'
+                    isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'
                   )}>
                     {ex.nama}
                   </span>
@@ -222,11 +222,11 @@ export const Exercises: React.FC = () => {
                     {ex.tingkat}
                   </Badge>
                 </div>
-                <p className="text-xs text-muted-foreground leading-relaxed mb-2 line-clamp-2">
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-2 line-clamp-2">
                   {ex.deskripsi}
                 </p>
-                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                  <span>Target: <strong className="text-foreground">{ex.target_otot}</strong></span>
+                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                  <span>Target: <strong className="text-slate-900 dark:text-white">{ex.target_otot}</strong></span>
                   <span className="font-mono">{ex.reps} Reps × {ex.durasi_detik}s</span>
                 </div>
               </Card>
@@ -239,9 +239,9 @@ export const Exercises: React.FC = () => {
           {activeExercise && (
             <Card className="p-6 relative overflow-hidden">
               {/* Exercise Header */}
-              <div className="flex items-center justify-between pb-4 mb-4 border-b border-border">
+              <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-200 dark:border-slate-800">
                 <div>
-                  <h2 className="text-xl font-bold text-foreground mb-1">
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-1">
                     {activeExercise.nama}
                   </h2>
                   <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
@@ -254,9 +254,9 @@ export const Exercises: React.FC = () => {
               </div>
 
               {/* Instructions Box */}
-              <div className="p-4 rounded-xl bg-muted/70 border border-border/80 text-xs leading-relaxed text-foreground mb-6">
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-800 text-xs leading-relaxed text-slate-900 dark:text-white mb-6">
                 <strong>Instruksi Gerakan:</strong>
-                <p className="mt-1 text-muted-foreground">{activeExercise.deskripsi}</p>
+                <p className="mt-1 text-slate-500 dark:text-slate-400">{activeExercise.deskripsi}</p>
                 {activeExercise.sudut_target && (
                   <div className="mt-2 text-blue-600 dark:text-blue-400">
                     Sudut Target Ergonomis: <strong className="font-mono">{JSON.stringify(activeExercise.sudut_target)}</strong>
@@ -266,17 +266,17 @@ export const Exercises: React.FC = () => {
 
               {/* Repetition and Hold Timer Display */}
               <div className="grid grid-cols-2 gap-4 text-center my-6">
-                <div className="p-5 rounded-xl bg-muted/60 border border-border/80">
-                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                <div className="p-5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">
+                  <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
                     Repetisi
                   </div>
                   <div className="text-4xl font-extrabold font-mono text-blue-600 dark:text-blue-400">
-                    {currentRep} <span className="text-lg text-muted-foreground font-normal">/ {activeExercise.reps}</span>
+                    {currentRep} <span className="text-lg text-slate-500 dark:text-slate-400 font-normal">/ {activeExercise.reps}</span>
                   </div>
                 </div>
 
-                <div className="p-5 rounded-xl bg-muted/60 border border-border/80">
-                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                <div className="p-5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">
+                  <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
                     Tahan Posisi
                   </div>
                   <div className="text-4xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">
@@ -287,9 +287,9 @@ export const Exercises: React.FC = () => {
 
               {/* Progress Bar with Kibo UI Progress */}
               <div className="mb-6">
-                <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+                <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mb-1.5">
                   <span>Progres Latihan</span>
-                  <span className="font-mono font-bold text-foreground">{Math.round((currentRep / (activeExercise.reps || 10)) * 100)}%</span>
+                  <span className="font-mono font-bold text-slate-900 dark:text-white">{Math.round((currentRep / (activeExercise.reps || 10)) * 100)}%</span>
                 </div>
                 <Progress
                   value={(currentRep / (activeExercise.reps || 10)) * 100}
@@ -332,8 +332,8 @@ export const Exercises: React.FC = () => {
                   <div className="flex items-center gap-3">
                     <Award size={24} className="text-emerald-500 shrink-0" />
                     <div>
-                      <div className="font-bold text-foreground text-sm">Hebat! Sesi Selesai</div>
-                      <div className="text-[11px] text-muted-foreground">
+                      <div className="font-bold text-slate-900 dark:text-white text-sm">Hebat! Sesi Selesai</div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400">
                         {activeExercise.reps} repetisi berhasil diselesaikan dengan skor akurasi 94.5%.
                       </div>
                     </div>

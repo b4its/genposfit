@@ -49,7 +49,7 @@ export function App() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground selection:bg-blue-500 selection:text-white transition-colors duration-200">
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 selection:bg-blue-500 selection:text-white transition-colors duration-200">
       {/* Navigation Bar */}
       <Navbar
         activeTab={activeTab}
@@ -67,7 +67,7 @@ export function App() {
       </main>
 
       {/* Product Footer */}
-      <footer className="mt-auto border-t border-border bg-card/60 py-6 text-xs transition-colors backdrop-blur-xs">
+      <footer className="mt-auto border-t border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 py-6 text-xs transition-colors backdrop-blur-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <span className="font-bold text-blue-600 dark:text-blue-400">GenPosFit</span>
