@@ -316,6 +316,8 @@ make up-detached  # jalankan di background (detached)
 make down         # stop container
 make restart      # restart container
 make ps           # status container
+make doctor       # 🔍 diagnostik: port, container, image, env, health API
+make repair       # 🔧 perbaiki otomatis: cleanup orphan, rebuild, restart, verifikasi
 make db           # masuk CLI MySQL db container
 make logs-backend # log backend
 make migrate      # jalankan inisialisasi skema

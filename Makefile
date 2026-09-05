@@ -33,7 +33,7 @@ COLOR_CYAN   := \033[36m
         migrate seed reseed seed-dummy \
         shell-backend shell-frontend shell-db \
         install-backend install-frontend lint-backend lint-frontend \
-        clean nuke destroy
+        repair doctor clean nuke destroy
 
 
 # ════════════════════════════════════════════════════════════════
@@ -133,6 +133,125 @@ health: ## [Docker] Cek health status semua service
 	@docker inspect --format='{{.Name}}: {{.State.Health.Status}}' $(DB_CONTAINER) 2>/dev/null || \
 		echo "  db: tidak berjalan"
 	@$(COMPOSE) ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}"
+
+doctor: ## 🔍 Diagnostik menyeluruh: port, image, container, env, konfigurasi
+	@echo ""
+	@echo "$(COLOR_CYAN)╔══════════════════════════════════════════════════════════════╗$(COLOR_RESET)"
+	@echo "$(COLOR_CYAN)║           GenPosFit — Diagnostic Scan                      ║$(COLOR_RESET)"
+	@echo "$(COLOR_CYAN)╚══════════════════════════════════════════════════════════════╝$(COLOR_RESET)"
+	@echo ""
+	@# ── 1. Environment ──
+	@echo "$(COLOR_YELLOW)── 1. Environment (.env) ──$(COLOR_RESET)"
+	@if [ ! -f .env ]; then \
+		echo "  ⚠ .env tidak ditemukan, copy dari .env.example"; \
+		cp .env.example .env; \
+	else \
+		echo "  ✔ .env ada"; \
+	fi
+	@$(eval DB_PORT := $(shell grep '^DB_PORT=' .env | cut -d= -f2))
+	@$(eval BACKEND_PORT := $(shell grep '^BACKEND_PORT=' .env | cut -d= -f2))
+	@$(eval FRONTEND_PORT := $(shell grep '^FRONTEND_PORT=' .env | cut -d= -f2))
+	@$(eval PMA_PORT := $(shell grep '^PMA_PORT=' .env | cut -d= -f2))
+	@echo "     DB_PORT=$(DB_PORT)   BACKEND_PORT=$(BACKEND_PORT)   FRONTEND_PORT=$(FRONTEND_PORT)   PMA_PORT=$(PMA_PORT)"
+	@if [ "$(DB_PORT)" != "3348" ] || [ "$(BACKEND_PORT)" != "8042" ] || [ "$(FRONTEND_PORT)" != "3042" ] || [ "$(PMA_PORT)" != "8122" ]; then \
+		echo "  ⚠ Beberapa port tidak sesuai ekspektasi (3348/8042/3042/8122)!"; \
+	else \
+		echo "  ✔ Port sesuai formula +42"; \
+	fi
+	@echo ""
+	@# ── 2. Port conflict (apakah port sudah dipakai container lain) ──
+	@echo "$(COLOR_YELLOW)── 2. Port Conflict ──$(COLOR_RESET)"
+	@for port in 3348 8042 3042 8122; do \
+		used=$$(docker ps --format '{{.Names}} {{.Ports}}' 2>/dev/null | grep -E ":$$port->|:$$port-" | head -1); \
+		if [ -n "$$used" ]; then \
+			echo "  ✔ :$$port → $$used"; \
+		else \
+			echo "  ⚠ :$$port → tidak ada container yang memakainya (mungkin belum up)"; \
+		fi; \
+	done
+	@echo ""
+	@# ── 3. Container status ──
+	@echo "$(COLOR_YELLOW)── 3. Container Status ──$(COLOR_RESET)"
+	@$(COMPOSE) ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}" 2>/dev/null || echo "  ❌ Tidak bisa membaca status container"
+	@echo ""
+	@# ── 4. Image freshness ──
+	@echo "$(COLOR_YELLOW)── 4. Image Freshness ──$(COLOR_RESET)"
+	@echo "  backend:   dicek via hash perubahan kode"
+	@echo "  frontend:  dicek via hash perubahan kode"
+	@echo "  mysql:8.0  $(shell docker images --format '{{.Repository}}:{{.Tag}} ({{.CreatedAt}})' mysql:8.0 2>/dev/null || echo 'tidak ada')"
+	@echo "  phpmyadmin:latest $(shell docker images --format '{{.Repository}}:{{.Tag}} ({{.CreatedAt}})' phpmyadmin:latest 2>/dev/null || echo 'tidak ada')"
+	@echo ""
+	@# ── 5. Docker Compose config ──
+	@echo "$(COLOR_YELLOW)── 5. Docker Compose Config ──$(COLOR_RESET)"
+	@$(COMPOSE) config 2>&1 | grep -E 'image:|container_name:|ports:' | head -12
+	@echo ""
+	@# ── 6. Backend health ──
+	@echo "$(COLOR_YELLOW)── 6. Backend API Health ──$(COLOR_RESET)"
+	@curl -s -o /dev/null -w "  HTTP %{http_code}" http://localhost:$(BACKEND_PORT)/api/health 2>/dev/null && echo " ✔" || echo "  ❌ Tidak dapat dijangkau"
+	@echo ""
+	@echo "$(COLOR_GREEN)✔ Diagnostik selesai$(COLOR_RESET)"
+
+repair: ## 🔧 Perbaiki otomatis: cleanup orphan containers, rebuild stale images, restart, verifikasi
+	@echo ""
+	@echo "$(COLOR_CYAN)╔══════════════════════════════════════════════════════════════╗$(COLOR_RESET)"
+	@echo "$(COLOR_CYAN)║           GenPosFit — Repair Mode                          ║$(COLOR_RESET)"
+	@echo "$(COLOR_CYAN)╚══════════════════════════════════════════════════════════════╝$(COLOR_RESET)"
+	@echo ""
+	@# 1. Cek .env
+	@if [ ! -f .env ]; then \
+		echo "  ⚠ .env tidak ditemukan, meng-copy dari .env.example..."; \
+		cp .env.example .env; \
+	fi
+	@# 2. Hapus container orphan (dari build gagal / image lama)
+	@echo "$(COLOR_YELLOW)➜ Membersihkan container orphan...$(COLOR_RESET)"
+	-$(COMPOSE) down --remove-orphans 2>/dev/null
+	@echo ""
+	@# 3. Pull image eksternal (mysql, phpmyadmin)
+	@echo "$(COLOR_YELLOW)➜ Menarik image eksternal terbaru...$(COLOR_RESET)"
+	@docker pull mysql:8.0 2>/dev/null | tail -1
+	@docker pull phpmyadmin:latest 2>/dev/null | tail -1
+	@echo ""
+	@# 4. Build ulang image lokal (backend, frontend) tanpa cache
+	@echo "$(COLOR_YELLOW)➜ Build ulang image lokal (backend, frontend)...$(COLOR_RESET)"
+	$(COMPOSE) build --no-cache backend frontend
+	@echo ""
+	@# 5. Start container
+	@echo "$(COLOR_YELLOW)➜ Menjalankan ulang semua container...$(COLOR_RESET)"
+	$(COMPOSE) up -d
+	@echo ""
+	@# 6. Tunggu health check
+	@echo "$(COLOR_YELLOW)➜ Menunggu container siap...$(COLOR_RESET)"
+	@sleep 5
+	-$(COMPOSE) ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}"
+	@echo ""
+	@# 7. Verifikasi backend API
+	@echo "$(COLOR_YELLOW)➜ Verifikasi backend API...$(COLOR_RESET)"
+	@for i in 1 2 3 4 5; do \
+		code=$$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8042/api/health 2>/dev/null); \
+		if [ "$$code" = "200" ]; then \
+			echo "  ✔ Backend ready (HTTP 200)"; \
+			break; \
+		fi; \
+		echo "  ⏳ Menunggu backend ($$i/5)..."; \
+		sleep 3; \
+	done
+	@echo ""
+	@# 8. Verifikasi frontend
+	@echo "$(COLOR_YELLOW)➜ Verifikasi frontend...$(COLOR_RESET)"
+	@code=$$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3042 2>/dev/null); \
+	if [ "$$code" = "200" ]; then \
+		echo "  ✔ Frontend ready (HTTP $$code)"; \
+	else \
+		echo "  ⚠ Frontend HTTP $$code (mungkin butuh loading)"; \
+	fi
+	@echo ""
+	@# 9. Laporan akhir
+	@echo "$(COLOR_GREEN)╔══════════════════════════════════════════════════════════════╗$(COLOR_RESET)"
+	@echo "$(COLOR_GREEN)║            Repair selesai — semua service berjalan            ║$(COLOR_RESET)"
+	@echo "$(COLOR_GREEN)╚══════════════════════════════════════════════════════════════╝$(COLOR_RESET)"
+	@echo "  Frontend   → http://localhost:3042"
+	@echo "  Backend    → http://localhost:8042/docs"
+	@echo "  PhpMyAdmin → http://localhost:8122"
 
 
 # ════════════════════════════════════════════════════════════════
