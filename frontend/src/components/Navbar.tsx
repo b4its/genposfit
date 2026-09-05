@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import {
-  Activity, ShieldCheck, Camera, BarChart3, Dumbbell, Home, LogOut, User, Eye, Users, Menu, X, Settings
+  Activity, ShieldCheck, Camera, BarChart3, Dumbbell, Home, LogOut, User, Eye, Users, Menu, X, Settings, Trophy
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { Pill, PillIndicator, PillContent, Badge } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 
-export type PageTab = 'landing' | 'monitor' | 'register' | 'dashboard' | 'exercises' | 'skeleton' | 'multiplayer' | 'admin' | 'admin-exercises';
+export type PageTab = 'landing' | 'monitor' | 'register' | 'dashboard' | 'exercises' | 'skeleton' | 'multiplayer' | 'misi' | 'admin' | 'admin-exercises';
 
 interface NavbarProps {
   activeTab: PageTab;
@@ -22,6 +22,7 @@ const NAV_ITEMS = [
   { id: 'exercises', label: 'Latihan Terapi', icon: Dumbbell },
   { id: 'skeleton', label: 'Skeleton', icon: Eye, badge: 'Preview' },
   { id: 'multiplayer', label: 'Multiplayer', icon: Users, badge: 'Room' },
+  { id: 'misi', label: 'Misi & Peringkat', icon: Trophy },
   { id: 'admin', label: 'Dashboard', icon: BarChart3, adminOnly: true, badge: 'Admin' },
   { id: 'admin-exercises', label: 'Kelola Latihan', icon: Settings, adminOnly: true, badge: 'Admin' },
 ];

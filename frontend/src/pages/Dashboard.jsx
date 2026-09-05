@@ -6,11 +6,21 @@ import {
 import { Button, Card, Badge, Progress, Pill, PillContent } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 
+const apiUsaha = async (url) => {
+  try {
+    const tok = localStorage.getItem('genposfit_token');
+    const res = await fetch(url, { headers: tok ? { Authorization: `Bearer ${tok}` } : {} });
+    return res.ok ? await res.json() : null;
+  } catch { return null; }
+};
+
 export const Dashboard = () => {
   const { user } = useAuth();
   const currentUserId = user?.user_id || 1;
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('7d');
+  const [statusTerkini, setStatusTerkini] = useState(null);
+  const [peringkatSaya, setPeringkatSaya] = useState(null);
   const [stats, setStats] = useState({
     total_logs: 1240,
     avg_skor: 88.6,
@@ -83,6 +93,38 @@ export const Dashboard = () => {
     fetchData();
   }, [timeRange]);
 
+  // Tahap 8: status kualitas data terkini + posisi musim (ringkas)
+  useEffect(() => {
+    const API = import.meta.env?.VITE_API_URL || '';
+    (async () => {
+      const [ring, lb] = await Promise.all([
+        apiUsaha(`${API}/api/quests/ringkasan`),
+        apiUsaha(`${API}/api/leaderboard/monthly?limit=5`),
+      ]);
+      const wall = await apiUsaha(`${API}/api/wallet/me`);
+      if (ring) setStatusTerkini({ ...ring, wallet_address: wall?.wallet_address ?? null });
+      if (lb?.saya) setPeringkatSaya({ rank: lb.saya.rank, poin_musim: lb.saya.poin_musim, hari: lb.sisa_waktu_hari, musim: lb.musim });
+    })();
+  }, []);
+
+  useEffect(() => {
+    const API = import.meta.env?.VITE_API_URL || 'http://localhost:8042';
+    (async () => {
+      const [ring, me] = await Promise.all([
+        apiUsaha(`${API}/api/quests/ringkasan`),
+        apiUsaha(`${API}/api/leaderboard/monthly?limit=5`),
+      ]);
+      if (ring) {
+        setStatusTerkini(ring);
+        try {
+          const wall = await apiUsaha(`${API}/api/wallet/me`);
+          if (wall) setStatusTerkini((prev) => ({ ...prev, wallet_address: wall.wallet_address }));
+        } catch { /* noop */ }
+      }
+      if (me?.saya) setPeringkatSaya({ rank: me.saya.rank, poin_musim: me.saya.poin_musim, hari: me.sisa_waktu_hari, musim: me.musim });
+    })();
+  }, []);
+
   const exportJSON = () => {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(stats, null, 2));
     const downloadAnchor = document.createElement('a');
@@ -144,6 +186,47 @@ export const Dashboard = () => {
           </Button>
         </div>
       </div>
+
+      {statusTerkini && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          <Card className="p-4">
+            <div className="text-[10px] uppercase tracking-wide text-slate-400">Poin Total</div>
+            <div className="mt-1 text-xl font-bold font-mono text-yellow-600 dark:text-yellow-400">{statusTerkini.poin_total ?? 0}</div>
+            {peringkatSaya && (
+              <div className="text-[10px] text-slate-400">#{peringkatSaya.rank} musim {peringkatSaya.musim} · {peringkatSaya.poin_musim} poin</div>
+            )}
+          </Card>
+          <Card className="p-4">
+            <div className="text-[10px] uppercase tracking-wide text-slate-400">Kualitas Data (5 mnt)</div>
+            <div className={`mt-1 text-xl font-bold font-mono ${
+              statusTerkini.kualitas_rata == null ? 'text-slate-400'
+                : statusTerkini.kualitas_rata >= 60 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600'
+            }`}>
+              {statusTerkini.kualitas_rata == null ? '—' : `${statusTerkini.kualitas_rata}/100`}
+            </div>
+            <div className="text-[10px] text-slate-400">{statusTerkini.jumlah_sampel ?? 0} sampel</div>
+            {statusTerkini.baseline?.perlu_kalibrasi_ulang ? (
+              <div className="text-[10px] text-amber-600">baseline {statusTerkini.baseline.usia_hari} hari — kalibrasi ulang disarankan</div>
+            ) : statusTerkini.baseline && !statusTerkini.baseline.ada ? (
+              <div className="text-[10px] text-rose-500">belum ada baseline (skor = standar umum)</div>
+            ) : null}
+          </Card>
+          <Card className="p-4">
+            <div className="text-[10px] uppercase tracking-wide text-slate-400">Persen Postur Bagus</div>
+            <div className="mt-1 text-xl font-bold font-mono text-blue-600 dark:text-blue-400">
+              {statusTerkini.persentase_bag_us == null ? '—' : `${statusTerkini.persentase_bag_us}%`}
+            </div>
+            <div className="text-[10px] text-slate-400">jendela telemetri terkini</div>
+          </Card>
+          <Card className="p-4">
+            <div className="text-[10px] uppercase tracking-wide text-slate-400">Wallet GPC</div>
+            <div className="mt-1 text-sm font-semibold font-mono text-slate-800 dark:text-slate-200">
+              {statusTerkini.wallet_address ? `${statusTerkini.wallet_address.slice(0, 8)}…${statusTerkini.wallet_address.slice(-4)}` : 'belum terhubung'}
+            </div>
+            {!statusTerkini.wallet_address && <div className="text-[10px] text-amber-600">buka tab Misi & Peringkat untuk connect</div>}
+          </Card>
+        </div>
+      )}
 
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">

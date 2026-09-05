@@ -12,6 +12,7 @@ import { Multiplayer } from './pages/Multiplayer';
 import { AdminPage } from './pages/AdminPage';
 import { AdminExercises } from './pages/AdminExercises';
 import { ShieldCheck } from 'lucide-react';
+import { MisiPeringkat } from './pages/MisiPeringkat';
 
 function AppContent() {
   const { isAuthenticated, user, loading } = useAuth();
@@ -63,6 +64,7 @@ function AppContent() {
       if (e.key === 'h' || e.key === 'H') setActiveTab('landing');
       if (e.key === 's' || e.key === 'S') setActiveTab('skeleton');
       if (e.key === 'p' || e.key === 'P') setActiveTab('multiplayer');
+      if (e.key === 'q' || e.key === 'Q') setActiveTab('misi');
       if (user?.role === 'admin' && (e.key === 'a' || e.key === 'A')) setActiveTab('admin');
       if (user?.role === 'admin' && (e.key === 'x' || e.key === 'X')) setActiveTab('admin-exercises');
     };
@@ -106,6 +108,7 @@ function AppContent() {
         {activeTab === 'exercises' && <Exercises />}
         {activeTab === 'skeleton' && <SkeletonPreview />}
         {activeTab === 'multiplayer' && <Multiplayer />}
+        {activeTab === 'misi' && <MisiPeringkat />}
         {activeTab === 'admin' && <AdminPage />}
         {activeTab === 'admin-exercises' && <AdminExercises />}
       </main>

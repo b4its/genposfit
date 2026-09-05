@@ -10,7 +10,11 @@ import {
 } from 'recharts';
 import { Button, Card, Badge, Pill, PillContent } from '../components/ui';
 
+
+import GpcRewardsPanel from '../components/GpcRewardsPanel';
+
 const apiUrl = () => import.meta.env?.VITE_API_URL || '';
+const gtoken = () => ({ Authorization: `Bearer ${localStorage.getItem('genposfit_token') ?? ''}` });
 
 const PIE_COLORS = ['#10b981', '#f59e0b', '#ef4444'];
 
@@ -23,8 +27,8 @@ export const AdminPage = () => {
     setLoading(true);
     try {
       const [statsRes, lbRes] = await Promise.all([
-        fetch(`${apiUrl()}/api/admin/stats?days=30`),
-        fetch(`${apiUrl()}/api/admin/leaderboard?limit=100`),
+        fetch(`${apiUrl()}/api/admin/stats?days=30`, { headers: gtoken() }),
+        fetch(`${apiUrl()}/api/admin/leaderboard?limit=100`, { headers: gtoken() }),
       ]);
       if (statsRes.ok) {
         const s = await statsRes.json();
@@ -264,6 +268,9 @@ export const AdminPage = () => {
           ))}
         </div>
       </Card>
+
+      {/* Reward GPC bulanan (Tombol Manual Admin) */}
+      <GpcRewardsPanel />
     </div>
   );
 };
