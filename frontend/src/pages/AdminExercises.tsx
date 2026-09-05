@@ -102,7 +102,7 @@ export const AdminExercises: React.FC = () => {
 
   useEffect(() => {
     if (videoRef.current) {
-      videoRef.current.play();
+      videoRef.current.play().catch(() => {});
     }
   }, [camActive]);
 
@@ -596,7 +596,7 @@ export const AdminExercises: React.FC = () => {
                             <Button variant="outline" size="sm" className="flex-1" onClick={startDurationModal}>
                               <Timer size={14} /> Rekam Ulang ({recordingDuration}s)
                             </Button>
-                            <Button variant="success" size="sm" className="flex-1" onClick={captureSinglePose} disabled={!realLandmarksRef.current || realLandmarksRef.current.length < 25}>
+                            <Button variant="success" size="sm" className="flex-1" onClick={captureSinglePose} disabled={!realLandmarks || realLandmarks.length < 25}>
                               <Target size={14} /> Tangkap Sekarang
                             </Button>
                           </>

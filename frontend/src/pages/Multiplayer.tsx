@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Users, Plus, LogIn, KeyRound, DoorOpen, Check, X,
-  Wifi, Monitor, Smartphone, Globe, Server, Camera, Swords, Star, Target as TargetIcon
+  Wifi, Monitor, Smartphone, Globe, Server, Camera, Swords, Star, Target as TargetIcon,
+  AlertOctagon
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getApiUrl, getWsUrl } from '../lib/api';
@@ -219,17 +220,26 @@ const loadBattleMoves = async () => {
     return () => clearInterval(interval);
   }, [mode, camStarted, localLandmarks]);
 
+  const [camError, setCamError] = useState<string | null>(null);
+
   const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+    if (camStarted) {
+      // Matikan kamera
+      if (videoRef.current?.srcObject) {
+        const tracks = (videoRef.current.srcObject as MediaStream)?.getTracks();
+        tracks?.forEach(t => t.stop());
+        videoRef.current.srcObject = null;
       }
-      setCamStarted(true);
-    } catch {
       setCamStarted(false);
+      setLocalLandmarks(null);
+      return;
     }
+    if (!window.isSecureContext) {
+      setCamError('Akses kamera membutuhkan HTTPS — akses aplikasi lewat https:// atau localhost.');
+      return;
+    }
+    setCamError(null);
+    setCamStarted(true);
   };
 
   // Synkronkan landmark MediaPipe nyata ke localLandmarks (untuk broadcast & battle)
@@ -263,12 +273,25 @@ const loadBattleMoves = async () => {
         setMyBattleScore(data.score || 0);
         if (wsRef.current?.readyState === WebSocket.OPEN && data.score >= 60) {
           // +1 poin setiap kecocokan terhadap gerakan aktif yang sedang ditantangkan
+          const pts = data.score >= 85 ? 1 : 0;
           wsRef.current.send(JSON.stringify({
             type: 'battle_score',
             score: data.score,
-            points: data.score >= 85 ? 1 : 0,
+            points: pts,
             move_name: selectedBattleMove.nama,
           }));
+          // Broadcast excl sender → catat poin sendiri secara lokal di papan skor
+          if (pts > 0) {
+            const me = currentKey();
+            if (me) {
+              setBattlePoints(prev => {
+                const next: Record<string, number> = { ...prev, [me]: (prev[me] || 0) + pts };
+                const limit = roomRef.current?.max_score || maxScore;
+                if (next[me] >= limit) setWinnerKey(me);
+                return next;
+              });
+            }
+          }
         }
       }
     } catch { /* ignore */ }
@@ -484,9 +507,8 @@ const loadBattleMoves = async () => {
       setMyPlayerKey(data.guest_key);
       setRoom(data);
       setMode('room');
-setChallengeIds(data.challenge_exercise_ids || []);
+      setChallengeIds(data.challenge_exercise_ids || []);
       connectWS(data.room_code, data.guest_key, displayName, selectedColor);
-      loadBattleMoves();
       // Seed existing players from room response (key konsisten: guest_key dulu)
       const seed: Record<string, RemotePlayer> = {};
       data.players?.forEach((p: any) => {
@@ -501,8 +523,10 @@ setChallengeIds(data.challenge_exercise_ids || []);
   // ---------- RENDER ----------
   if (mode === 'room' && room) {
     const participants: RemotePlayer[] = [];
-    // add self
-    participants.push({ display_name: `${displayName} (Anda)`, warna: selectedColor, is_host: true, landmarks: localLandmarks });
+    // Self — status host diambil dari state room yang otoritatif (bukan selalu true)
+    const myKey = currentKey();
+    const selfIsHost = (room.players || []).some((p: any) => playerKey(p) === myKey && p.is_host);
+    participants.push({ display_name: `${displayName} (Anda)`, warna: selectedColor, is_host: selfIsHost, landmarks: localLandmarks });
     // add remote players
     Object.entries(players).forEach(([key, p]) => {
       if (key === currentKey()) return;
@@ -556,11 +580,16 @@ setChallengeIds(data.challenge_exercise_ids || []);
         </Card>
 
         {/* Camera toggle */}
-        <div className="flex items-center gap-2 mb-6">
+        <div className="flex items-center gap-2 mb-6 flex-wrap">
           <Button variant={camStarted ? "success" : "outline"} size="sm" onClick={startCamera} className="text-xs">
             <Camera size={14} /> {camStarted ? 'Webcam Aktif' : 'Aktifkan Kamera (Kirim Skeleton)'}
           </Button>
           <span className="text-[11px] text-slate-400">Skeleton Anda muncul real-time untuk pemain lain.</span>
+          {camError && (
+            <span className="w-full text-[11px] text-rose-600 dark:text-rose-400 flex items-center gap-1">
+              <AlertOctagon size={12} /> {camError}
+            </span>
+          )}
         </div>
 
         {/* Battle Panel */}

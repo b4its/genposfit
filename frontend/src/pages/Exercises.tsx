@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Play, Pause, RotateCcw, Award, HeartPulse, Camera, CameraOff, Target
+  Play, Pause, RotateCcw, Award, HeartPulse, Camera, CameraOff, Target, AlertTriangle
 } from 'lucide-react';
 import { Button, Card, Badge, Progress, Pill, PillContent } from '../components/ui';
 import { cn } from '../lib/utils';
@@ -8,7 +8,6 @@ import { useAuth } from '../context/AuthContext';
 import { getApiUrl } from '../lib/api';
 import { SkeletonOverlay, type Landmark } from '../components/SkeletonOverlay';
 import { usePoseDetector } from '../hooks/usePoseDetector';
-import { useCamera } from '../hooks/useCamera';
 
 interface ExerciseItem {
   exercise_id: number;
@@ -43,33 +42,41 @@ export const Exercises: React.FC = () => {
   const [poseScores, setPoseScores] = useState<number[]>([]);
   const [lastScore, setLastScore] = useState<number | null>(null);
 
-  // Camera for pose matching
+  // Camera for pose matching — single-source via usePoseDetector (MediaPipe Camera).
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const { started: camStarted, stream: camStream, start: startCam, stop: stopCam } = useCamera();
-  const { landmarks: realLandmarks } = usePoseDetector(videoRef, camStarted);
   const [camActive, setCamActive] = useState(false);
+  const [camError, setCamError] = useState<string | null>(null);
+  const { landmarks: realLandmarks } = usePoseDetector(videoRef, camActive);
   const [playerLandmarks, setPlayerLandmarks] = useState<Landmark[] | null>(null);
   const playerLandmarksRef = useRef(playerLandmarks);
   useEffect(() => { playerLandmarksRef.current = playerLandmarks; }, [playerLandmarks]);
   const activeExerciseRef = useRef(activeExercise);
   useEffect(() => { activeExerciseRef.current = activeExercise; }, [activeExercise]);
 
-  useEffect(() => {
-    if (videoRef.current && camStream) {
-      videoRef.current.srcObject = camStream;
-      videoRef.current.play();
+  const toggleCamera = async () => {
+    if (camActive) {
+      setCamActive(false);
+      return;
     }
-  }, [camStream]);
+    if (!window.isSecureContext) {
+      setCamError('Akses kamera membutuhkan HTTPS — akses aplikasi lewat https:// atau localhost.');
+      return;
+    }
+    setCamError(null);
+    setCamActive(true);
+  };
 
   useEffect(() => {
-    setCamActive(camStarted);
-  }, [camStarted]);
+    if (videoRef.current) {
+      videoRef.current.play().catch(() => {});
+    }
+  }, [camActive]);
 
   useEffect(() => {
-    if (camStarted && realLandmarks && realLandmarks.length >= 25) {
+    if (camActive && realLandmarks && realLandmarks.length >= 25) {
       setPlayerLandmarks(realLandmarks);
     }
-  }, [camStarted, realLandmarks]);
+  }, [camActive, realLandmarks]);
 
   // Fetch from backend exercises endpoint (hierarchical: types → children)
   useEffect(() => {
@@ -249,11 +256,16 @@ export const Exercises: React.FC = () => {
               </div>
 
               {/* Camera toggle */}
-              <div className="flex items-center gap-2 mb-4">
-                <Button variant={camActive ? "success" : "outline"} size="sm" onClick={camActive ? stopCam : startCam} className="text-xs">
+              <div className="flex items-center gap-2 mb-4 flex-wrap">
+                <Button variant={camActive ? "success" : "outline"} size="sm" onClick={toggleCamera} className="text-xs">
                   {camActive ? <CameraOff size={14} /> : <Camera size={14} />} {camActive ? 'Kamera ON' : 'Aktifkan Kamera'}
                 </Button>
                 <span className="text-[11px] text-slate-400">Pose Anda akan dicocokkan dengan referensi.</span>
+                {camError && (
+                  <span className="w-full text-[11px] text-rose-600 dark:text-rose-400 flex items-center gap-1">
+                    <AlertTriangle size={12} /> {camError}
+                  </span>
+                )}
               </div>
 
               {/* Skeleton viewport */}
