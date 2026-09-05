@@ -4,6 +4,8 @@
 .env.*.local
 *.env
 
+misc
+
 
 # Dependencies
 node_modules/
