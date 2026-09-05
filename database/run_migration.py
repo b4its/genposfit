@@ -126,6 +126,114 @@ def run():
         else:
             print("  · tabel rooms belum ada — migrasi dilewati")
 
+        # ---------- GAMIFIKASI + WALLET + GPC (misi, ledger, battle, reward) ----------
+        add_column(db, "users", "wallet_address", "VARCHAR(42) NULL AFTER saldo")
+        if not index_exists(db, "users", "uq_users_wallet"):
+            try:
+                db.execute(text("ALTER TABLE users ADD UNIQUE INDEX uq_users_wallet (wallet_address)"))
+                db.commit()
+                print("  ✔ users.uq_users_wallet dibuat")
+            except Exception as exc:
+                db.rollback()
+                print(f"  · indeks wallet dilewati: {exc}")
+
+        db.execute(text("""
+            CREATE TABLE IF NOT EXISTS point_ledger (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                delta INT NOT NULL,
+                alasan VARCHAR(50) NOT NULL,
+                periode VARCHAR(7) NOT NULL,
+                ref_tipe VARCHAR(30) NULL,
+                ref_id INT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_ledger_user_periode (user_id, periode),
+                FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+            ) ENGINE=InnoDB"""))
+        db.execute(text("""
+            CREATE TABLE IF NOT EXISTS quests (
+                quest_id INT AUTO_INCREMENT PRIMARY KEY,
+                kode VARCHAR(50) NOT NULL UNIQUE,
+                judul VARCHAR(120) NOT NULL,
+                deskripsi VARCHAR(300) NULL,
+                kategori VARCHAR(12) NOT NULL,
+                metrik VARCHAR(50) NOT NULL,
+                target INT NOT NULL DEFAULT 5,
+                reward_poin INT NOT NULL DEFAULT 10,
+                aktif TINYINT NOT NULL DEFAULT 1,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB
+        """))
+        db.execute(text("""
+            CREATE TABLE IF NOT EXISTS user_quests (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                quest_id INT NOT NULL,
+                periode VARCHAR(10) NOT NULL,
+                progres INT NOT NULL DEFAULT 0,
+                status VARCHAR(12) NOT NULL DEFAULT 'aktif',
+                claimed_at DATETIME NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY uq_user_quest_periode (user_id, quest_id, periode),
+                INDEX idx_userquest_user (user_id, periode),
+                FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+                FOREIGN KEY (quest_id) REFERENCES quests(quest_id) ON DELETE CASCADE
+            ) ENGINE=InnoDB
+        """))
+        db.execute(text("""
+            CREATE TABLE IF NOT EXISTS battle_results (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                battle_id VARCHAR(64) NOT NULL,
+                room_code VARCHAR(20) NOT NULL,
+                user_id INT NOT NULL,
+                display_name VARCHAR(100) NULL,
+                score_akhir INT NOT NULL DEFAULT 0,
+                is_winner TINYINT NOT NULL DEFAULT 0,
+                awarded_poin INT NOT NULL DEFAULT 0,
+                quality_ok TINYINT NOT NULL DEFAULT 1,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY uq_battle_participant (battle_id, user_id),
+                INDEX idx_battle_room (room_code),
+                INDEX idx_battle_user_time (user_id, created_at),
+                FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+            ) ENGINE=InnoDB
+        """))
+        db.execute(text("""
+            CREATE TABLE IF NOT EXISTS gpc_reward_tx (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                periode VARCHAR(7) NOT NULL,
+                user_id INT NOT NULL,
+                `rank` INT NOT NULL,
+                wallet_address VARCHAR(42) NOT NULL,
+                jumlah DECIMAL(18,2) NOT NULL,
+                tx_hash VARCHAR(80) NULL,
+                status VARCHAR(16) NOT NULL DEFAULT 'pending',
+                error TEXT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY uq_gpc_periode_user (periode, user_id),
+                FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+            ) ENGINE=InnoDB
+        """))
+        db.commit()
+        print("  ✔ tabel gamifikasi/wallet/gpc terverifikasi")
+
+        jumlah_quest = db.execute(text("SELECT COUNT(*) FROM quests")).scalar() or 0
+        if jumlah_quest == 0:
+            db.execute(text("""
+                INSERT IGNORE INTO quests (kode, judul, deskripsi, kategori, metrik, target, reward_poin, aktif) VALUES
+                ('postur_prima_harian','Postur Prima Harian','Kumpulkan 12 sampel postur berkualitas berstatus BAGUS hari ini.','harian','postur_bagus',12,10,1),
+                ('terapi_bergerak_harian','Terapi Bergerak Harian','Selesaikan 2 sesi latihan terapi postur hari ini.','harian','latihan_selesai',2,10,1),
+                ('kalibrasi_ulang','Baseline Segar','Perbarui kalibrasi pose baseline-mu minggu ini.','mingguan','kalibrasi',1,15,1),
+                ('konsistensi_pekan','Konsistensi Sepekan','Pantau postur minimal 40 sampel berkualitas di pekan ini.','mingguan','postur_qty',40,30,1),
+                ('duel_pilar','Duel Pilar Postur','Menangkan 1 battle multiplayer minggu ini.','mingguan','battle_menang',1,25,1)
+            """))
+            db.commit()
+            print("  ✔ seed misi default dimasukkan")
+        else:
+            print(f"  · quests sudah ada ({jumlah_quest}) - seed dilewati")
+
         print("\n[migrate] Selesai.")
     except Exception as e:
         db.rollback()

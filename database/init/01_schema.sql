@@ -212,7 +212,7 @@ CREATE TABLE IF NOT EXISTS gpc_reward_tx (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     periode VARCHAR(7) NOT NULL,
     user_id INT NOT NULL,
-    rank INT NOT NULL,
+    `rank` INT NOT NULL,
     wallet_address VARCHAR(42) NOT NULL,
     jumlah DECIMAL(18, 2) NOT NULL,
     tx_hash VARCHAR(80) NULL,
