@@ -68,10 +68,9 @@ def evaluasi_postur_lengkap(
 
     # Skor bahu: makin miring (level_bahu besar) makin rendah
     skor_bahu = max(0.0, 100.0 - ((level_bahu - 0.02) * 200.0)) if level_bahu > 0.02 else 100.0
-    penalti_bahu = 100.0 - skor_bahu
 
     # Bobot skor: 55% leher + 35% punggung + 10% bahu = 100%
-    skor_total = (skor_leher * 0.55) + (skor_punggung * 0.35) + (skor_bahu * 0.10) - min(penalti_bahu, 15.0)
+    skor_total = (skor_leher * 0.55) + (skor_punggung * 0.35) + (skor_bahu * 0.10)
     skor_total = max(0.0, min(100.0, skor_total))
     skor_total = round(skor_total, 2)
 

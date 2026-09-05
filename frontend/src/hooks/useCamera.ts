@@ -36,9 +36,7 @@ export function useCamera(options: CameraOptions = {}) {
 
     const applyStatus = (state: PermissionState) => {
       if (cancelled) return;
-      if (state === 'granted' && !streamRef.current) {
-        setPermission('prompt');
-      } else if (state === 'granted') {
+      if (state === 'granted') {
         setPermission('granted');
       } else if (state === 'denied') {
         setPermission('denied');

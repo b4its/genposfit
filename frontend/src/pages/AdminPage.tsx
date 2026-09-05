@@ -92,9 +92,9 @@ export const AdminPage = () => {
             Ringkasan keseluruhan sistem, peringkat pengguna, dan aktivitas platform
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={fetchData} className="flex items-center gap-1.5">
-          <RefreshCw size={14} />
-          <span>Refresh</span>
+        <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="flex items-center gap-1.5">
+          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+          <span>{loading ? 'Memuat...' : 'Refresh'}</span>
         </Button>
       </div>
 

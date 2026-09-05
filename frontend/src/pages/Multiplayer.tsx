@@ -146,9 +146,12 @@ export const Multiplayer: React.FC = () => {
     return () => clearInterval(interval);
   }, [mode, camStarted, localLandmarks]);
 
+  const streamRef = useRef<MediaStream | null>(null);
+
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
@@ -157,6 +160,14 @@ export const Multiplayer: React.FC = () => {
     } catch {
       setCamStarted(false);
     }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    }
+    setCamStarted(false);
   };
 
   // Fallback idle skeleton loop (when camera off, still show own skeleton)
@@ -168,6 +179,14 @@ export const Multiplayer: React.FC = () => {
     }, 120);
     return () => clearInterval(interval);
   }, [mode, camStarted]);
+
+  // Stop camera & close WS on unmount to release hardware
+  useEffect(() => {
+    return () => {
+      stopCamera();
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) wsRef.current.close();
+    };
+  }, []);
 
   const currentKey = () => (guestKey || (user ? `u:${user.user_id}` : ''));
 
@@ -186,7 +205,6 @@ export const Multiplayer: React.FC = () => {
     };
     // Unify identity key: guests keyed by bare guest_key, logged-in users keyed by "u:<id>".
     // Both sides of WS messages and the room-player seed must use this same scheme.
-    const identityKey = () => (guestKey || (user ? `u:${user.user_id}` : ''));
     socket.onmessage = (ev) => {
       try {
         const msg = JSON.parse(ev.data);
@@ -215,6 +233,7 @@ export const Multiplayer: React.FC = () => {
   };
 
   const leaveRoom = () => {
+    stopCamera();
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) wsRef.current.close();
     wsRef.current = null;
     setRoom(null);
@@ -329,7 +348,7 @@ export const Multiplayer: React.FC = () => {
             <span className="flex items-center gap-1.5"><Monitor size={13} className="text-slate-400" /> {browserInfo}</span>
             <span className="flex items-center gap-1.5"><Smartphone size={13} className="text-slate-400" /> {osInfo}</span>
             <span className="flex items-center gap-1.5"><Globe size={13} className="text-slate-400" /> {sessionMeta.language.toUpperCase()}</span>
-            <span className="flex items-center gap-1.5"><Globe size={13} className="text-slate-400" /> {sessionMeta.screen}</span>
+            <span className="flex items-center gap-1.5"><Monitor size={13} className="text-slate-400" /> {sessionMeta.screen}</span>
           </div>
         </Card>
 

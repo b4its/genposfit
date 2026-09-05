@@ -130,28 +130,32 @@ export const Exercises: React.FC = () => {
     if (!isRunning || !activeExercise) return;
 
     const interval = setInterval(() => {
-      setHoldTimer(prev => {
-        if (prev <= 1) {
-          // Advance rep
-          setCurrentRep(r => {
-            const nextR = r + 1;
-            if (nextR >= (activeExercise.reps || 10)) {
-              setIsRunning(false);
-              setSessionCompleted(true);
-              // Save to backend
-              saveCompletedSession(activeExercise.exercise_id, nextR);
-              return nextR;
-            }
-            return nextR;
-          });
-          return activeExercise.durasi_detik || 5;
-        }
-        return prev - 1;
-      });
+      setHoldTimer(prev => (prev <= 1 ? activeExercise.durasi_detik || 5 : prev - 1));
     }, 1000);
 
     return () => clearInterval(interval);
   }, [isRunning, activeExercise]);
+
+  // Advance rep when hold timer hits zero, and complete session when reps reached
+  useEffect(() => {
+    if (!isRunning || !activeExercise) return;
+    if (holdTimer > 1) return;
+
+    setCurrentRep(r => {
+      const nextR = r + 1;
+      return nextR;
+    });
+  }, [holdTimer, isRunning, activeExercise]);
+
+  // Detect session completion and save to backend
+  useEffect(() => {
+    if (!activeExercise) return;
+    if (currentRep < (activeExercise.reps || 10)) return;
+
+    setIsRunning(false);
+    setSessionCompleted(true);
+    saveCompletedSession(activeExercise.exercise_id, currentRep);
+  }, [currentRep, activeExercise]);
 
   const handleSelectExercise = (ex: ExerciseItem) => {
     setActiveExercise(ex);

@@ -66,15 +66,16 @@ export const RegisterPose = ({ onFinishCalibration }) => {
         const angles = calculateAnglesFromLandmarks(realLandmarks);
         if (angles) {
           frameBufferRef.current.push(angles);
-          setRecordedFrames(prev => {
-            const next = prev + 1;
-            if (next >= 90) finishRecording();
-            return next;
-          });
+          setRecordedFrames(prev => prev + 1);
         }
       }
     }
   }, [isCameraActive, realLandmarks, isRecording]);
+
+  // Finish recording when recordedFrames reaches 90
+  useEffect(() => {
+    if (recordedFrames >= 90) finishRecording();
+  }, [recordedFrames]);
 
   // Sync camera started state
   useEffect(() => {
@@ -148,13 +149,7 @@ export const RegisterPose = ({ onFinishCalibration }) => {
           back: backAngle,
           shoulder: shoulderLevel
         });
-        setRecordedFrames(prev => {
-          const next = prev + 1;
-          if (next >= 90) {
-            finishRecording();
-          }
-          return next;
-        });
+        setRecordedFrames(prev => prev + 1);
       }
     }, 40);
 

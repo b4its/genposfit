@@ -79,7 +79,9 @@ export const Monitor = ({ onNavigateToExercises }) => {
   const [landmarks, setLandmarks] = useState(null);
   const videoRef = useRef(null);
   const wsRef = useRef(null);
-  const badPostureTimerRef = useRef(0);
+  const badPostureStartRef = useRef(null);
+  const audioAlertsRef = useRef(audioAlerts);
+  audioAlertsRef.current = audioAlerts;
 
   // MediaPipe pose detection — runs on live camera frames and returns
   // real per-user landmarks, so the skeleton matches the user's anatomy.
@@ -144,13 +146,16 @@ export const Monitor = ({ onNavigateToExercises }) => {
             setFeedback(res.feedback);
 
             if (res.status === 'buruk') {
-              badPostureTimerRef.current += 1;
-              setBadPostureSeconds(badPostureTimerRef.current);
-              if (audioAlerts && badPostureTimerRef.current % 3 === 0) {
+              if (badPostureStartRef.current === null) {
+                badPostureStartRef.current = Date.now();
+              }
+              const elapsed = Math.floor((Date.now() - badPostureStartRef.current) / 1000);
+              setBadPostureSeconds(elapsed);
+              if (audioAlertsRef.current && elapsed > 0 && elapsed % 3 === 0) {
                 playAlertTone();
               }
             } else {
-              badPostureTimerRef.current = 0;
+              badPostureStartRef.current = null;
               setBadPostureSeconds(0);
             }
           }
@@ -171,7 +176,7 @@ export const Monitor = ({ onNavigateToExercises }) => {
         ws.close();
       }
     };
-  }, [audioAlerts, currentUserId]);
+  }, [currentUserId]);
 
   // Start / Stop Webcam
   const toggleCamera = async () => {
@@ -241,19 +246,22 @@ export const Monitor = ({ onNavigateToExercises }) => {
         setBackAngle(Math.round(effectiveBack * 10) / 10);
 
         if (currentStatus === 'buruk') {
-          badPostureTimerRef.current += 1;
-          setBadPostureSeconds(badPostureTimerRef.current);
-          if (audioAlerts && badPostureTimerRef.current % 4 === 0) {
+          if (badPostureStartRef.current === null) {
+            badPostureStartRef.current = Date.now();
+          }
+          const elapsed = Math.floor((Date.now() - badPostureStartRef.current) / 1000);
+          setBadPostureSeconds(elapsed);
+          if (audioAlertsRef.current && elapsed > 0 && elapsed % 4 === 0) {
             playAlertTone();
           }
           setFeedback('Postur buruk terdeteksi! Tarik dagu dan tegakkan punggung.');
         } else if (currentStatus === 'ringan') {
           setFeedback('Peringatan: Dagu agak condong ke depan.');
-          badPostureTimerRef.current = 0;
+          badPostureStartRef.current = null;
           setBadPostureSeconds(0);
         } else {
           setFeedback('Postur ergonomis ideal. Pertahankan posisi ini!');
-          badPostureTimerRef.current = 0;
+          badPostureStartRef.current = null;
           setBadPostureSeconds(0);
         }
       }

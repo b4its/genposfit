@@ -275,6 +275,8 @@ async def websocket_monitor_endpoint(websocket: WebSocket, user_id: int):
                 "sudut_punggung": analisis["sudut_punggung"],
                 "level_bahu": analisis["level_bahu"],
                 "skor_deviasi": evaluasi["skor_deviasi"],
+                "skor_leher": evaluasi["skor_leher"],
+                "skor_punggung": evaluasi["skor_punggung"],
                 "status": evaluasi["status"],
                 "feedback": evaluasi["feedback"],
             })

@@ -48,6 +48,7 @@ services:
       - "${BACKEND_PORT}:8042"
     volumes:
       - ./backend:/app # hot-reload saat development
+      - ./database:/database # seed scripts & migration access
     command: uvicorn app.main:app --host 0.0.0.0 --port 8042 --reload
     networks:
       - genposfit-net
