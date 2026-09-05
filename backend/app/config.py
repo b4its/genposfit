@@ -25,11 +25,16 @@ DB_NAME = os.getenv("DB_NAME", "genposfit")
 BACKEND_PORT = int(os.getenv("BACKEND_PORT", "8042"))
 FRONTEND_PORT = int(os.getenv("FRONTEND_PORT", "3042"))
 
-CORS_ORIGINS = [
-    f"http://localhost:{FRONTEND_PORT}",
-    f"http://127.0.0.1:{FRONTEND_PORT}",
-    "http://localhost:3042",
-    "http://127.0.0.1:3042",
-    "http://localhost:5215",
-    "http://127.0.0.1:5215",
-]
+# Allowed CORS origins — set to "*" to allow all (publish jaringan lokal)
+# or comma-separated list untuk development.
+_raw = os.getenv("CORS_ORIGINS", "*")
+if _raw == "*":
+    CORS_ORIGIN_REGEX = ".*"
+    CORS_ORIGINS = ["*"]
+else:
+    CORS_ORIGIN_REGEX = ""
+    CORS_ORIGINS = [o.strip() for o in _raw.split(",") if o.strip()]
+
+# Fallback localhost origins agar development tetap jalan
+if not CORS_ORIGINS or CORS_ORIGINS == ["*"]:
+    CORS_ORIGINS = [f"http://localhost:{FRONTEND_PORT}", f"http://127.0.0.1:{FRONTEND_PORT}", "*"]

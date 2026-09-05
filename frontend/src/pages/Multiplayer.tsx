@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { SkeletonOverlay, type Landmark } from '../components/SkeletonOverlay';
+import { usePoseDetector } from '../hooks/usePoseDetector';
 import { Button, Card, Input, Pill, PillIndicator, PillContent, Badge, Select } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
@@ -95,11 +96,14 @@ export const Multiplayer: React.FC = () => {
 
   const wsRef = useRef<WebSocket | null>(null);
   const colorPoolRef = useRef<string[]>([]);
+  const roomRef = useRef<any>(null);
+  useEffect(() => { roomRef.current = room; }, [room]);
 
   // local camera + pose
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [camStarted, setCamStarted] = useState(false);
   const [localLandmarks, setLocalLandmarks] = useState<Landmark[] | null>(null);
+  const { landmarks: poseLandmarks } = usePoseDetector(videoRef, camStarted);
 
   // Battle state
   const [battleExercises, setBattleExercises] = useState<any[]>([]);
@@ -178,6 +182,13 @@ export const Multiplayer: React.FC = () => {
     }
   };
 
+  // Synkronkan landmark MediaPipe nyata ke localLandmarks (untuk broadcast & battle)
+  useEffect(() => {
+    if (camStarted && poseLandmarks && poseLandmarks.length >= 25) {
+      setLocalLandmarks(poseLandmarks);
+    }
+  }, [camStarted, poseLandmarks]);
+
   // Fallback idle skeleton loop (when camera off, still show own skeleton)
   useEffect(() => {
     if (mode !== 'room') return;
@@ -233,9 +244,6 @@ export const Multiplayer: React.FC = () => {
         warna: selectedColor,
       }));
     };
-    // Unify identity key: guests keyed by bare guest_key, logged-in users keyed by "u:<id>".
-    // Both sides of WS messages and the room-player seed must use this same scheme.
-    const identityKey = () => (guestKey || (user ? `u:${user.user_id}` : ''));
     socket.onmessage = (ev) => {
       try {
         const msg = JSON.parse(ev.data);
@@ -262,7 +270,7 @@ export const Multiplayer: React.FC = () => {
             setBattleScores(prev => ({ ...prev, [key]: msg.score }));
             setBattlePoints(prev => {
               const next: Record<string, number> = { ...prev, [key]: (prev[key] || 0) + (msg.points || 0) };
-              const limit = room?.max_score || maxScore;
+              const limit = roomRef.current?.max_score || maxScore;
               const champ = Object.keys(next).find(k => next[k] >= limit);
               if (champ) setWinnerKey(champ);
               return next;
@@ -491,7 +499,7 @@ export const Multiplayer: React.FC = () => {
         {/* Players grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {participants.map((p, idx) => (
-            <Card key={idx} className="p-2 relative overflow-hidden bg-slate-950 border-slate-800">
+            <Card key={p.guest_key || `u:${p.user_id}` || `anon-${idx}`} className="p-2 relative overflow-hidden bg-slate-950 border-slate-800">
               <div className="relative w-full h-64 rounded-lg bg-slate-950 flex items-center justify-center overflow-hidden border border-slate-800">
                 <SkeletonOverlay
                   landmarks={p.landmarks}

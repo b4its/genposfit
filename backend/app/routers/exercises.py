@@ -123,7 +123,7 @@ def score_pose(payload: ScorePoseRequest, db: Session = Depends(get_db)):
     Mengembalikan skor kesesuaian (0-100) yang dipakai untuk exercise & battle.
     """
     lms = payload.landmarks
-    if not lms or len(lms) < 25:
+    if not lms or len(lms) < 29:
         return {"score": 0.0, "status": "buruk", "message": "Landmark tidak mencukupi."}
 
     exercise = None
@@ -138,7 +138,7 @@ def score_pose(payload: ScorePoseRequest, db: Session = Depends(get_db)):
         return {"score": 0.0, "status": "buruk", "message": "Latihan tidak punya skeleton referensi."}
 
     ref = exercise.skeleton_data
-    if len(ref) < 25:
+    if len(ref) < 29:
         return {"score": 0.0, "status": "buruk", "message": "Skeleton referensi tidak valid."}
 
     # Skor berbasis jarak antar titik kunci (normalized).

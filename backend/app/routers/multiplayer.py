@@ -9,9 +9,10 @@ import logging
 import secrets
 import json
 from typing import List, Optional, Dict
-from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect, status
+from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
+from sqlalchemy import asc
 from app.database import get_db, SessionLocal
 from app.models import Room, RoomPlayer
 from app.security import hash_password, verify_password
@@ -143,6 +144,99 @@ def room_taken_colors(room_code: str, db: Session = Depends(get_db)):
     return {"taken": taken, "available": [c for c in AVAILABLE_COLORS if c not in taken]}
 
 
+def transfer_host_fifo(db: Session, room: Room, leaving_key: str | None = None):
+    """Jika host keluar (atau socket host disconnect) dan masih ada pemain lain,
+    pindahkan host secara FIFO (pemain yang masuk paling awal menjadi host baru).
+    Room TIDAK dibubarkan selama masih ada pemain. Jika tidak ada pemain lagi,
+    room baru ditandai 'ended' (tidak dibubarkan, tetap tersimpan untuk riwayat)."""
+    players = (
+        db.query(RoomPlayer)
+        .filter(RoomPlayer.room_id == room.room_id)
+        .order_by(asc(RoomPlayer.joined_at), asc(RoomPlayer.player_id))
+        .all()
+    )
+    if not players:
+        # Tidak ada pemain tersisa → room diakhiri tetapi TIDAK dihapus.
+        room.status = "ended"
+        room.host_player_id = None
+        db.commit()
+        return None
+
+    # Ambil pemain non-host pertama (FIFO) sebagai host baru
+    new_host = players[0]
+    room.host_player_id = new_host.player_id
+    room.status = "waiting"
+    for p in players:
+        p.is_host = 1 if p.player_id == new_host.player_id else 0
+    db.commit()
+    db.refresh(room)
+    return new_host
+
+
+class LeaveRoomRequest(BaseModel):
+    room_code: str
+    guest_key: Optional[str] = None
+    user_id: Optional[int] = None
+
+
+@router.post("/leave")
+def leave_room(payload: LeaveRoomRequest, request: Request, db: Session = Depends(get_db)):
+    """Pemain keluar dari room. Jika ia host & masih ada pemain lain, host
+    dipindah FIFO ke pemain tercepat masuk. Room tetap tersimpan (tidak dilarut)."""
+    room = db.query(Room).filter_by(room_code=payload.room_code.strip().upper()).first()
+    if not room:
+        raise HTTPException(404, "Room tidak ditemukan.")
+    if room.status == "ended":
+        return {"message": "Room sudah diakhiri.", "room": room_dict(db, room)}
+
+    # Temukan pemain yang keluar
+    leaving = None
+    if payload.guest_key:
+        leaving = db.query(RoomPlayer).filter_by(room_id=room.room_id, guest_key=payload.guest_key).first()
+    elif payload.user_id:
+        leaving = db.query(RoomPlayer).filter_by(room_id=room.room_id, user_id=payload.user_id).first()
+    else:
+        guest_key = guest_key_from_request(request)
+        leaving = db.query(RoomPlayer).filter_by(room_id=room.room_id, guest_key=guest_key).first()
+
+    is_host = leaving is not None and room.host_player_id is not None and leaving.player_id == room.host_player_id
+
+    if not leaving:
+        return {"message": "Pemain tidak ditemukan di room.", "room": room_dict(db, room)}
+
+    if is_host:
+        # Host keluar → transfer host FIFO ke pemain lain TERLEBIH DAHULU
+        # (sebelum menghapus host, agar FK host_player_id tetap valid)
+        next_host = (
+            db.query(RoomPlayer)
+            .filter(RoomPlayer.room_id == room.room_id, RoomPlayer.player_id != leaving.player_id)
+            .order_by(asc(RoomPlayer.joined_at), asc(RoomPlayer.player_id))
+            .first()
+        )
+        if next_host:
+            room.host_player_id = next_host.player_id
+            for p in db.query(RoomPlayer).filter(RoomPlayer.room_id == room.room_id).all():
+                p.is_host = 1 if p.player_id == next_host.player_id else 0
+            db.flush()
+            # Hapus host lama
+            db.delete(leaving)
+            db.commit()
+            logger.info(f"Host transfer FIFO ke player {next_host.display_name}")
+        else:
+            # Tidak ada pemain lain → akhiri room (tetap tersimpan)
+            room.host_player_id = None
+            room.status = "ended"
+            db.flush()
+            db.delete(leaving)
+            db.commit()
+    else:
+        # Bukan host → hapus langsung
+        db.delete(leaving)
+        db.commit()
+
+    return {"message": "Berhasil keluar dari room.", "room": room_dict(db, room)}
+
+
 # --- WebSocket ---
 
 class WSClient:
@@ -187,6 +281,7 @@ async def multiplayer_ws(websocket: WebSocket, room_code: str):
     guest_key = ""
     name = "Player"
     warna = "#22c55e"
+    client = None
     try:
         data = json.loads(await websocket.receive_text())
         guest_key = data.get("guest_key", "")
@@ -224,12 +319,47 @@ async def multiplayer_ws(websocket: WebSocket, room_code: str):
                     "tipe_pose": msg.get("tipe_pose", "duduk_rileks"),
                 }, exclude=client)
     except WebSocketDisconnect:
-        hub.remove(client)
+        if client is not None:
+            hub.remove(client)
         logger.info(f"Client {guest_key} disconnected from {code}")
+        # Jika host socket-nya disconnect, transfer host FIFO ke pemain lain (room tetap ada)
+        try:
+            room = db.query(Room).filter_by(room_code=code).first()
+            if room and room.host_player_id and guest_key:
+                host_player = db.query(RoomPlayer).filter_by(
+                    room_id=room.room_id, player_id=room.host_player_id
+                ).first()
+                if host_player and host_player.guest_key == guest_key:
+                    next_host = (
+                        db.query(RoomPlayer)
+                        .filter(RoomPlayer.room_id == room.room_id, RoomPlayer.player_id != host_player.player_id)
+                        .order_by(asc(RoomPlayer.joined_at), asc(RoomPlayer.player_id))
+                        .first()
+                    )
+                    if next_host:
+                        room.host_player_id = next_host.player_id
+                        for p in db.query(RoomPlayer).filter(RoomPlayer.room_id == room.room_id).all():
+                            p.is_host = 1 if p.player_id == next_host.player_id else 0
+                        db.commit()
+                        logger.info(f"Host transfer FIFO (disconnect) ke {next_host.display_name}")
+                    else:
+                        room.status = "ended"
+                        room.host_player_id = None
+                        db.commit()
+        except Exception:
+            pass
     except Exception as e:
-        hub.remove(client)
+        if client is not None:
+            hub.remove(client)
         logger.error("WS error: %s", e)
     finally:
         if guest_key:
             await hub.broadcast(code, {"type": "leave", "guest_key": guest_key})
+            # Broadcast host transfer info
+            try:
+                room = db.query(Room).filter_by(room_code=code).first()
+                if room:
+                    await hub.broadcast(code, {"type": "room_update", "room": room_dict(db, room)})
+            except Exception:
+                pass
         db.close()

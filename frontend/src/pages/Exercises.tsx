@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Play, Pause, RotateCcw, Award, HeartPulse, Camera, CameraOff, Target, Star
+  Play, Pause, RotateCcw, Award, HeartPulse, Camera, CameraOff, Target
 } from 'lucide-react';
 import { Button, Card, Badge, Progress, Pill, PillContent } from '../components/ui';
 import { cn } from '../lib/utils';
@@ -29,7 +29,7 @@ const DEFAULT_EXERCISES: ExerciseItem[] = [];
 const apiUrl = () => import.meta.env?.VITE_API_URL || 'http://localhost:8042';
 
 export const Exercises: React.FC = () => {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const currentUserId = user?.user_id || 1;
   const [exercises, setExercises] = useState<ExerciseItem[]>(DEFAULT_EXERCISES);
   const [activeExercise, setActiveExercise] = useState<ExerciseItem | null>(null);
@@ -46,6 +46,10 @@ export const Exercises: React.FC = () => {
   const { landmarks: realLandmarks } = usePoseDetector(videoRef, camStarted);
   const [camActive, setCamActive] = useState(false);
   const [playerLandmarks, setPlayerLandmarks] = useState<Landmark[] | null>(null);
+  const playerLandmarksRef = useRef(playerLandmarks);
+  useEffect(() => { playerLandmarksRef.current = playerLandmarks; }, [playerLandmarks]);
+  const activeExerciseRef = useRef(activeExercise);
+  useEffect(() => { activeExerciseRef.current = activeExercise; }, [activeExercise]);
 
   useEffect(() => {
     if (videoRef.current && camStream) {
@@ -77,24 +81,31 @@ export const Exercises: React.FC = () => {
       .catch(() => {});
   }, []);
 
+  const RESERVE_SCORES = 0; // placeholder unused
+  const poseScoresRef = useRef(poseScores);
+  useEffect(() => { poseScoresRef.current = poseScores; }, [poseScores]);
+
   const saveCompletedSession = async (exerciseId: number, totalReps: number) => {
-    const avgSkor = poseScores.length ? Math.round((poseScores.reduce((a, b) => a + b, 0) / poseScores.length) * 10) / 10 : 94.5;
+    const scores = poseScoresRef.current;
+    const avgSkor = scores.length ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10 : 94.5;
     try {
       await fetch(`${apiUrl()}/api/exercises/sessions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ user_id: currentUserId, exercise_id: exerciseId, total_reps: totalReps, avg_skor: avgSkor }),
       });
     } catch { /* offline fallback */ }
   };
 
   const scorePose = async (): Promise<number> => {
-    if (!activeExercise || !playerLandmarks) return 0;
+    const lm = playerLandmarksRef.current;
+    const ex = activeExerciseRef.current;
+    if (!ex || !lm) return 0;
     try {
       const res = await fetch(`${apiUrl()}/api/exercises/score`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ landmarks: playerLandmarks, exercise_id: activeExercise.exercise_id }),
+        body: JSON.stringify({ landmarks: lm, exercise_id: ex.exercise_id }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -105,25 +116,26 @@ export const Exercises: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!isRunning || !activeExercise) return;
+    if (!isRunning || !activeExerciseRef.current) return;
     const interval = setInterval(() => {
       setHoldTimer(prev => {
         if (prev <= 1) {
           setCurrentRep(r => {
             const nextR = r + 1;
+            const ex = activeExerciseRef.current;
             scorePose().then(s => {
               setLastScore(s);
               setPoseScores(prev => [...prev, s]);
             });
-            if (nextR >= (activeExercise.reps || 10)) {
+            if (ex && nextR >= (ex.reps || 10)) {
               setIsRunning(false);
               setSessionCompleted(true);
-              saveCompletedSession(activeExercise.exercise_id, nextR);
+              saveCompletedSession(ex.exercise_id, nextR);
               return nextR;
             }
             return nextR;
           });
-          return activeExercise.durasi_detik || 5;
+          return activeExerciseRef.current?.durasi_detik || 5;
         }
         return prev - 1;
       });

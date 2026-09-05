@@ -2,7 +2,7 @@
 GenPosFit — Skor Deviasi vs Baseline
 Menghitung skor kualitas postur dan tingkat deviasi terhadap baseline personal user.
 """
-from typing import Optional, Dict, Any, TYPE_CHECKING
+from typing import Optional, Dict, Any
 
 try:
     from sqlalchemy.orm import Session

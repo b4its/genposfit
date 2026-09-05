@@ -72,6 +72,8 @@ def run():
                 db.commit()
                 print("  ✔ users.hashed_password (NOT NULL) dipastikan")
             add_column(db, "users", "role", "VARCHAR(20) DEFAULT 'user' AFTER jam_kerja_hari")
+            add_column(db, "users", "poin", "INT DEFAULT 0 AFTER role")
+            add_column(db, "users", "saldo", "DECIMAL(18,2) DEFAULT 0.00 AFTER poin")
         else:
             print("  · tabel users belum ada — migrasi dilewati")
 
