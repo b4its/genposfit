@@ -97,7 +97,7 @@ export const Dashboard = () => {
 
   // Tahap 8: status kualitas data terkini + posisi musim (ringkas)
   useEffect(() => {
-    const API = import.meta.env?.VITE_API_URL || '';
+    const API = getApiUrl();
     (async () => {
       const [ring, lb] = await Promise.all([
         apiUsaha(`${API}/api/quests/ringkasan`),
@@ -106,24 +106,6 @@ export const Dashboard = () => {
       const wall = await apiUsaha(`${API}/api/wallet/me`);
       if (ring) setStatusTerkini({ ...ring, wallet_address: wall?.wallet_address ?? null });
       if (lb?.saya) setPeringkatSaya({ rank: lb.saya.rank, poin_musim: lb.saya.poin_musim, hari: lb.sisa_waktu_hari, musim: lb.musim });
-    })();
-  }, []);
-
-  useEffect(() => {
-    const API = import.meta.env?.VITE_API_URL || 'http://localhost:8042';
-    (async () => {
-      const [ring, me] = await Promise.all([
-        apiUsaha(`${API}/api/quests/ringkasan`),
-        apiUsaha(`${API}/api/leaderboard/monthly?limit=5`),
-      ]);
-      if (ring) {
-        setStatusTerkini(ring);
-        try {
-          const wall = await apiUsaha(`${API}/api/wallet/me`);
-          if (wall) setStatusTerkini((prev) => ({ ...prev, wallet_address: wall.wallet_address }));
-        } catch { /* noop */ }
-      }
-      if (me?.saya) setPeringkatSaya({ rank: me.saya.rank, poin_musim: me.saya.poin_musim, hari: me.sisa_waktu_hari, musim: me.musim });
     })();
   }, []);
 

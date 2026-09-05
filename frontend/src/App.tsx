@@ -139,6 +139,7 @@ function AppContent() {
               <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-700 rounded text-slate-700 dark:text-slate-200 font-mono shadow-xs">E</kbd> Terapi
               <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-700 rounded text-slate-700 dark:text-slate-200 font-mono shadow-xs">S</kbd> Skeleton
               <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-700 rounded text-slate-700 dark:text-slate-200 font-mono shadow-xs">P</kbd> Multiplayer
+              <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-700 rounded text-slate-700 dark:text-slate-200 font-mono shadow-xs">Q</kbd> Misi
             </div>
           </div>
         </div>
