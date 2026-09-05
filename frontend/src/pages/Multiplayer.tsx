@@ -231,17 +231,21 @@ export const Multiplayer: React.FC = () => {
 
   const currentKey = () => (guestKey || (user ? `u:${user.user_id}` : ''));
 
-  const connectWS = (code: string) => {
+  const connectWS = (code: string, key?: string, name?: string, color?: string) => {
     const apiUrl = API_URL();
     const wsBase = apiUrl.replace(/^http/, 'ws');
     const socket = new WebSocket(`${wsBase}/api/multiplayer/ws/${code}`);
     wsRef.current = socket;
+    // Gunakan nilai fresh (dari parameter) agar tidak stale saat join/create baru.
+    const activeKey = key || guestKey;
+    const activeName = name || displayName;
+    const activeColor = color || selectedColor;
     socket.onopen = () => {
       socket.send(JSON.stringify({
-        guest_key: guestKey,
+        guest_key: activeKey,
         user_id: user?.user_id || null,
-        display_name: displayName,
-        warna: selectedColor,
+        display_name: activeName,
+        warna: activeColor,
       }));
     };
     socket.onmessage = (ev) => {
@@ -318,7 +322,7 @@ export const Multiplayer: React.FC = () => {
       setMyPlayerKey(data.guest_key);
       setRoom(data);
       setMode('room');
-      connectWS(data.room_code);
+      connectWS(data.room_code, data.guest_key, displayName, selectedColor);
       loadBattleMoves();
     } catch { setError('Tidak dapat terhubung ke server.'); } finally { setLoading(false); }
   };
@@ -340,7 +344,8 @@ export const Multiplayer: React.FC = () => {
       setMyPlayerKey(data.guest_key);
       setRoom(data);
       setMode('room');
-      connectWS(data.room_code);
+      connectWS(data.room_code, data.guest_key, displayName, selectedColor);
+      loadBattleMoves();
       // Seed existing players from room response
       const seed: Record<string, RemotePlayer> = {};
       data.players?.forEach((p: any) => {
