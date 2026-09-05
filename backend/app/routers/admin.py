@@ -4,7 +4,10 @@ Kelola program latihan (Exercise) + Dashboard Sistem & Leaderboard.
 Semua endpoint di-proteksi dengan JWT + role='admin'.
 """
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+
+def utcnow() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 from typing import List, Optional, Any
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -244,7 +247,7 @@ def set_user_admin(user_id: int, admin: User = Depends(require_admin), db: Sessi
 @router.get("/stats")
 def get_system_stats(days: int = 30, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
     """Statistik sistem untuk dashboard admin (pengguna, saldo, poin, latihan, postur, room)."""
-    since = datetime.utcnow() - timedelta(days=days)
+    since = utcnow() - timedelta(days=days)
 
     total_users = db.query(User).count()
     new_users = db.query(User).filter(User.created_at >= since).count()

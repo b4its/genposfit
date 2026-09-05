@@ -8,7 +8,15 @@ import random
 from datetime import datetime, timedelta
 
 # Append backend directory if executed from host or container
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "backend"))
+# In Docker, backend code is mounted at /app; on host it's at ../../backend
+_BACKEND_CANDIDATES = [
+    os.path.join(os.path.dirname(__file__), "..", "..", "backend"),  # host
+    "/app",  # docker container (backend mounted at /app)
+]
+for _p in _BACKEND_CANDIDATES:
+    if os.path.isdir(_p):
+        sys.path.insert(0, _p)
+        break
 
 try:
     from app.database import SessionLocal

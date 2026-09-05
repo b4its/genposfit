@@ -2,7 +2,12 @@
 GenPosFit — SQLAlchemy ORM Models
 Definisi tabel database sesuai skema MySQL GenPosFit.
 """
-from datetime import datetime
+from datetime import datetime, timezone
+
+
+def utcnow() -> datetime:
+    """Current UTC time as a naive datetime (for MySQL DATETIME columns)."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 from sqlalchemy import (
     Column, Integer, BigInteger, SmallInteger, String, Text,
     DECIMAL, DateTime, ForeignKey, UniqueConstraint, Index, JSON
@@ -24,8 +29,8 @@ class User(Base):
     role = Column(String(20), default="user")  # 'user', 'admin'
     poin = Column(Integer, default=0)
     saldo = Column(DECIMAL(18, 2), default=0.00)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
     # Relationships
     baselines = relationship("PoseBaseline", back_populates="user", cascade="all, delete-orphan")
@@ -46,7 +51,7 @@ class PoseBaseline(Base):
     std_leher = Column(DECIMAL(6, 3), nullable=False)
     std_punggung = Column(DECIMAL(6, 3), nullable=False)
     n_frame = Column(SmallInteger, nullable=False)
-    recorded_at = Column(DateTime, default=datetime.utcnow)
+    recorded_at = Column(DateTime, default=utcnow)
 
     user = relationship("User", back_populates="baselines")
 
@@ -61,7 +66,7 @@ class PostureLog(Base):
     id = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
     sesi_id = Column(String(64), nullable=True)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=utcnow)
     sudut_leher = Column(DECIMAL(6, 2), nullable=False)
     sudut_punggung = Column(DECIMAL(6, 2), nullable=False)
     level_bahu = Column(DECIMAL(6, 4), nullable=True)
@@ -81,7 +86,7 @@ class ExerciseType(Base):
     type_id = Column(Integer, primary_key=True, autoincrement=True)
     nama = Column(String(100), nullable=False)  # nama jenis latihan (parent)
     deskripsi = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     children = relationship(
         "Exercise", back_populates="parent_type", cascade="all, delete-orphan"
@@ -117,7 +122,7 @@ class ExerciseSession(Base):
     exercise_id = Column(Integer, ForeignKey("exercises.exercise_id"), nullable=False)
     total_reps = Column(SmallInteger, nullable=True)
     avg_skor = Column(DECIMAL(5, 2), nullable=True)
-    selesai_at = Column(DateTime, default=datetime.utcnow)
+    selesai_at = Column(DateTime, default=utcnow)
 
     user = relationship("User", back_populates="exercise_sessions")
     exercise = relationship("Exercise", back_populates="sessions")
@@ -138,8 +143,8 @@ class Room(Base):
     status = Column(String(20), default="waiting")  # 'waiting', 'playing', 'ended'
     max_score = Column(Integer, default=10, nullable=False)  # batas poin pemenang battle (ditetapkan host)
     exercises_json = Column(JSON, nullable=True)  # daftar exercise_id untuk challenge dipilih host
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
     host = relationship("RoomPlayer", foreign_keys=[host_player_id], post_update=True)
     players = relationship("RoomPlayer", foreign_keys="RoomPlayer.room_id", back_populates="room", cascade="all, delete-orphan")
@@ -155,7 +160,7 @@ class RoomPlayer(Base):
     display_name = Column(String(100), nullable=False)
     warna = Column(String(20), nullable=False)  # hex warna persona
     is_host = Column(SmallInteger, default=0)
-    joined_at = Column(DateTime, default=datetime.utcnow)
+    joined_at = Column(DateTime, default=utcnow)
 
     room = relationship("Room", back_populates="players", foreign_keys=[room_id])
     user = relationship("User")

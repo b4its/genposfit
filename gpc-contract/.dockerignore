@@ -1,0 +1,8 @@
+node_modules
+artifacts
+cache
+deployment.local.json
+.env
+.DS_Store
+README.md
+test

@@ -4,7 +4,11 @@ Mendukung daftar latihan peregangan, instruksi sudut target / skeleton data dari
 pencatatan sesi latihan, dan scoring perbandingan pose gerakan battle.
 """
 from typing import List, Optional, Any, Dict
-from datetime import datetime
+from datetime import datetime, timezone
+
+def utcnow() -> datetime:
+    """Naive UTC now, cocok untuk kolom MySQL DATETIME."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -95,7 +99,7 @@ def record_exercise_session(payload: SessionCreate, db: Session = Depends(get_db
         exercise_id=payload.exercise_id,
         total_reps=payload.total_reps,
         avg_skor=payload.avg_skor,
-        selesai_at=datetime.utcnow()
+        selesai_at=utcnow()
     )
     db.add(session_record)
     db.commit()
@@ -149,10 +153,10 @@ def score_pose(payload: ScorePoseRequest, db: Session = Depends(get_db)):
     exercise = None
     if payload.exercise_id:
         exercise = db.query(Exercise).filter_by(exercise_id=payload.exercise_id).first()
-    elif db.query(Exercise).filter(Exercise.skeleton_data.isnot(None)).first():
-        exercise = db.query(Exercise).filter(Exercise.skeleton_data.isnot(None)).first()
     else:
-        return {"score": 0.0, "status": "buruk", "message": "Tidak ada latihan referensi."}
+        exercise = db.query(Exercise).filter(Exercise.skeleton_data.isnot(None)).first()
+        if not exercise:
+            return {"score": 0.0, "status": "buruk", "message": "Tidak ada latihan referensi."}
 
     if not exercise or not exercise.skeleton_data:
         return {"score": 0.0, "status": "buruk", "message": "Latihan tidak punya skeleton referensi."}

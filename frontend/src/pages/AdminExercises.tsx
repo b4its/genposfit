@@ -206,17 +206,23 @@ export const AdminExercises: React.FC = () => {
     setRecordingCountdown(0);
     if (captureTimerRef.current) { clearInterval(captureTimerRef.current); captureTimerRef.current = null; }
     if (recordingTimerRef.current) { clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
+  };
 
-    // Average captured frames into a single landmark set
+  useEffect(() => {
+    if (recording) return;
     setCapturedFrames(prev => {
       if (prev.length > 0) {
-        // Average all captured frames
-        const avg = averageLandmarks(prev);
-        setChildSkeleton(avg);
+        return prev;
       }
       return prev;
     });
-  };
+  }, [recording]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (recording) return;
+    if (capturedFrames.length === 0) return;
+    setChildSkeleton(averageLandmarks(capturedFrames));
+  }, [capturedFrames, recording]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (capturedFrames.length > 1 && !recording) {

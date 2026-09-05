@@ -395,18 +395,18 @@ export const SkeletonPreview: React.FC = () => {
             </div>
             <div className="space-y-4 text-xs">
               {[
-                { label: 'Lengan Kiri', val: leftArmAngle, set: setLeftArmAngle, color: 'blue', min: -45, max: 60 },
-                { label: 'Lengan Kanan', val: rightArmAngle, set: setRightArmAngle, color: 'emerald', min: -45, max: 60 },
+                { label: 'Lengan Kiri', val: leftArmAngle, set: setLeftArmAngle, color: 'blue', textClass: 'text-blue-600 dark:text-blue-400', accentClass: 'accent-blue-500', min: -45, max: 60 },
+                { label: 'Lengan Kanan', val: rightArmAngle, set: setRightArmAngle, color: 'emerald', textClass: 'text-emerald-600 dark:text-emerald-400', accentClass: 'accent-emerald-500', min: -45, max: 60 },
               ].map((s) => (
                 <div key={s.label}>
                   <div className="flex justify-between text-slate-600 dark:text-slate-400 font-medium mb-1.5">
                     <span>{s.label}:</span>
-                    <span className={`font-mono font-bold text-${s.color}-600 dark:text-${s.color}-400`}>{s.val}°</span>
+                    <span className={`font-mono font-bold ${s.textClass}`}>{s.val}°</span>
                   </div>
                   <input
                     type="range" min={s.min} max={s.max} step={1} value={s.val}
                     onChange={(e) => s.set(parseFloat(e.target.value))}
-                    className={`w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-${s.color}-500`}
+                    className={`w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer ${s.accentClass}`}
                   />
                   <div className="flex justify-between text-[10px] text-slate-400 mt-0.5">
                     <span>{s.min}°</span><span>0° (T-Pose)</span><span>+{s.max}°</span>

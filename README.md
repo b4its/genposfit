@@ -58,7 +58,7 @@ Setiap pengguna baru **wajib melewati proses registrasi pose** sebelum bisa meng
 |---|---|---|
 | **Frontend (React)** | Kamera (`getUserMedia`), MediaPipe Pose JS, UI | Menangkap video kamera, mengekstraksi 33 landmark langsung di browser, menggambar skeleton, menampilkan UI onboarding/monitor/dashboard/latihan |
 | **Backend (FastAPI)** | REST API + WebSocket | Mengelola registrasi baseline, menghitung skor deviasi personal, menyimpan log, menyajikan laporan |
-| **Database (MySQL 8.0)** | 5 tabel: `users`, `pose_baseline`, `posture_logs`, `exercises`, `exercise_sessions` | Penyimpanan persisten (via Docker volume) |
+| **Database (MySQL 8.0)** | 8 tabel: `users`, `pose_baseline`, `posture_logs`, `exercise_types`, `exercises`, `exercise_sessions`, `rooms`, `room_players` | Penyimpanan persisten (via Docker volume `genposfit-db-data`) |
 
 > Proyek kini berjalan penuh di **Docker Compose** (4 container: `db`, `backend`, `frontend`, `phpmyadmin`) sebagai pengganti stand-alone SQLite.
 
@@ -290,7 +290,7 @@ Inti personalisasi: **skor deviasi** — seberapa jauh postur saat ini menyimpan
 cp .env.example .env
 
 # 2. Build & jalankan semua container (db, backend, frontend, phpmyadmin)
-make up            # (alias: docker compose up -d --build)
+make up-detached    # background (atau make up untuk foreground)
 
 # 3. Seeder data contoh (opsional)
 make seed
@@ -337,8 +337,7 @@ make nuke         # bersihkan termasuk volume db
 genposfit/
 ├── .env.example                  # Template environment
 ├── docker-compose.yml            # Orchestrasi: db, backend, frontend, phpmyadmin
-├── Makefile                      # Command operasional (Docker, DB, seed, lint)
-├── PRD.md                        # Spesifikasi & arsitektur
+├── Makefile                      # Command operasional (Docker, DB, seed, lint, GPC)
 ├── .github/workflows/ci.yml      # CI: backend test + frontend build
 │
 ├── backend/                      # Python 3.11 + FastAPI
@@ -357,6 +356,8 @@ genposfit/
 ├── database/
 │   ├── init/01_schema.sql        # Skema MySQL (auto-run)
 │   └── seed/                     # seed.sql + seed_user.py
+│
+├── gpc-contract/                 # GenPosFit Coin (ERC-1155, Sepolia)
 │
 └── frontend/                     # React 19 + Vite + TypeScript
     ├── Dockerfile

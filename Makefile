@@ -33,7 +33,9 @@ COLOR_CYAN   := \033[36m
         migrate seed reseed seed-dummy \
         shell-backend shell-frontend shell-db \
         install-backend install-frontend lint-backend lint-frontend \
-        repair doctor clean nuke destroy
+        repair doctor clean nuke destroy \
+        gpc-up gpc-down gpc-publish gpc-send gpc-balance gpc-owner \
+        gpc-total-supply gpc-max-supply gpc-info gpc-test gpc-compile
 
 
 # ════════════════════════════════════════════════════════════════
@@ -226,8 +228,9 @@ repair: ## 🔧 Perbaiki otomatis: cleanup orphan containers, rebuild stale imag
 	@echo ""
 	@# 7. Verifikasi backend API
 	@echo "$(COLOR_YELLOW)➜ Verifikasi backend API...$(COLOR_RESET)"
+	@$(eval BACKEND_PORT := $(shell grep '^BACKEND_PORT=' .env | cut -d= -f2))
 	@for i in 1 2 3 4 5; do \
-		code=$$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8042/api/health 2>/dev/null); \
+		code=$$(curl -s -o /dev/null -w '%{http_code}' http://localhost:$(BACKEND_PORT)/api/health 2>/dev/null); \
 		if [ "$$code" = "200" ]; then \
 			echo "  ✔ Backend ready (HTTP 200)"; \
 			break; \
@@ -238,7 +241,8 @@ repair: ## 🔧 Perbaiki otomatis: cleanup orphan containers, rebuild stale imag
 	@echo ""
 	@# 8. Verifikasi frontend
 	@echo "$(COLOR_YELLOW)➜ Verifikasi frontend...$(COLOR_RESET)"
-	@code=$$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3042 2>/dev/null); \
+	@$(eval FRONTEND_PORT := $(shell grep '^FRONTEND_PORT=' .env | cut -d= -f2))
+	@code=$$(curl -s -o /dev/null -w '%{http_code}' http://localhost:$(FRONTEND_PORT) 2>/dev/null); \
 	if [ "$$code" = "200" ]; then \
 		echo "  ✔ Frontend ready (HTTP $$code)"; \
 	else \
@@ -322,7 +326,7 @@ reseed: ## [DB] RESET TOTAL: drop tabel → migrasi ulang → seed ulang
 	$(COMPOSE) exec -T $(SERVICE_DB) mysql -u$(DB_USER) -p$(DB_PASSWORD) $(DB_NAME) \
 		-e "SET FOREIGN_KEY_CHECKS=0; \
 		    DROP TABLE IF EXISTS exercise_sessions, posture_logs, \
-		    pose_baseline, exercises, users, room_players, rooms; \
+		    pose_baseline, exercises, room_players, rooms, exercise_types, users; \
 		    SET FOREIGN_KEY_CHECKS=1;"
 	$(MAKE) migrate
 	$(MAKE) seed
@@ -383,3 +387,49 @@ destroy: ## [Clean] Total wipe: container + volume + image (dari nol lagi)
 		[ "$$ok" = "y" ] && $(COMPOSE) down -v --rmi all --remove-orphans && \
 		echo "$(COLOR_GREEN)✔ Environment GenPosFit dihapus total$(COLOR_RESET)" || \
 		echo "Dibatalkan."
+
+
+# ════════════════════════════════════════════════════════════════
+# GPC — GenPosFit Coin (ERC-1155, Sepolia) | stack TERPISAH
+# ════════════════════════════════════════════════════════════════
+
+GPC_COMPOSE := $(COMPOSE) -f gpc-contract/docker-compose.yml --env-file .env --project-directory .
+
+gpc-up: ## [GPC] Build image + jalankan container Hardhat (daemon)
+	$(GPC_COMPOSE) up -d --build
+	@echo "$(COLOR_GREEN)✔ Container GPC berjalan (genposfit-gpc)$(COLOR_RESET)"
+
+gpc-down: ## [GPC] Stop + hapus container GPC
+	$(GPC_COMPOSE) down
+	@echo "$(COLOR_GREEN)✔ Container GPC dihentikan$(COLOR_RESET)"
+
+gpc-publish: ## [GPC] Deploy token GPC ke network Sepolia + catat alamat di deployment.json
+	@mkdir -p gpc-contract
+	$(GPC_COMPOSE) run --rm gpc run scripts/deploy.js --network sepolia
+
+gpc-send: ## [GPC] Kirim GPC. Usage: make gpc-send TARGET=0x... AMOUNT=100
+	@test -n "$(TARGET)" || (echo "$(COLOR_YELLOW)Pemakaian: make gpc-send TARGET=0xRecipient [AMOUNT=100]$(COLOR_RESET)" && exit 1)
+	$(GPC_COMPOSE) run --rm -e TARGET=$(TARGET) -e AMOUNT=$(AMOUNT) \
+		gpc run scripts/send.js --network sepolia
+
+gpc-balance: ## [GPC] Cek saldo GPC. Usage: make gpc-balance TARGET=0x...
+	$(GPC_COMPOSE) run --rm -e TARGET=$(TARGET) \
+		gpc run scripts/balance.js --network sepolia
+
+gpc-owner: ## [GPC] Tampilkan alamat pemilik (owner) token GPC
+	$(GPC_COMPOSE) run --rm gpc run scripts/info.js --network sepolia
+
+gpc-info: ## [GPC] Tampilkan informasi lengkap token GPC (owner, supply, dll)
+	$(GPC_COMPOSE) run --rm gpc run scripts/info.js --network sepolia
+
+gpc-total-supply: ## [GPC] Lihat total suplai GPC saat ini
+	$(GPC_COMPOSE) run --rm gpc run scripts/info.js --network sepolia
+
+gpc-max-supply: ## [GPC] Lihat batas maksimal suplai GPC
+	$(GPC_COMPOSE) run --rm gpc run scripts/info.js --network sepolia
+
+gpc-compile: ## [GPC] Compile kontrak GPC tanpa deploy
+	$(GPC_COMPOSE) run --rm gpc compile
+
+gpc-test: ## [GPC] Jalankan unit test kontrak GPC
+	$(GPC_COMPOSE) run --rm gpc test

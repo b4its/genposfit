@@ -47,3 +47,10 @@ Thumbs.db
 
 # Docker local overrides
 docker-compose.override.yml
+
+# GPC — Hardhat / smart contract artifacts
+gpc-contract/artifacts/
+gpc-contract/cache/
+gpc-contract/node_modules/
+gpc-contract/deployment.local.json
+gpc-contract/.env
