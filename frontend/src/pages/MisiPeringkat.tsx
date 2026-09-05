@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { Badge, Button, Card, Progress } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
-import { alamatPendek, hasWallet, sambungkanAkun, tandaTanganPesan } from '../lib/wallet';
+import { DEFAULT_COMMUNITY_WALLET, alamatPendek, hasWallet, sambungkanAkun, tandaTanganPesan } from '../lib/wallet';
 import { getApiUrl } from '../lib/api';
 
 const apiUrl = getApiUrl;
@@ -28,8 +28,8 @@ interface Misi {
 
 interface MisiResponse {
   user_id: number;
-  poin_total: number;
-  musim: string;
+  periode: string;
+  total_poin: number;
   misi: Misi[];
 }
 
@@ -39,12 +39,15 @@ interface EntriPeringkat {
   username: string;
   nama: string;
   poin_musim: number;
+  poin_total: number;
   role: string;
 }
 
 interface ResponPeringkat {
   musim: string;
   musim_berjalan: boolean;
+  mulai: string;
+  berakhir: string;
   sisa_waktu_detik: number;
   sisa_waktu_hari: number;
   top: EntriPeringkat[];
@@ -55,6 +58,19 @@ interface ResponPeringkat {
 interface Profil {
   poin?: number;
   wallet_address?: string | null;
+  is_default?: boolean;
+  default_wallet?: string;
+  total_gpc_diterima?: number;
+  jumlah_transaksi_sukses?: number;
+  riwayat_reward?: {
+    id: number;
+    periode: string;
+    rank: number;
+    jumlah: number;
+    tx_hash: string | null;
+    status: string;
+    created_at: string | null;
+  }[];
 }
 
 type Tab = 'misi' | 'peringkat';
@@ -82,16 +98,29 @@ export const MisiPeringkat: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const [mRes, pRes, meRes] = await Promise.all([
+      const [mRes, pRes, meRes, wallRes] = await Promise.all([
         fetch(`${apiUrl()}/api/quests`, { headers: headers() }),
         fetch(`${apiUrl()}/api/leaderboard/monthly?limit=25`, { headers: headers() }),
         fetch(`${apiUrl()}/api/auth/me`, { headers: headers() }),
+        fetch(`${apiUrl()}/api/wallet/me`, { headers: headers() }),
       ]);
       if (mRes.ok) setMisiData(await mRes.json());
       if (pRes.ok) setLb(await pRes.json());
+
+      let wallData: any = null;
+      if (wallRes.ok) wallData = await wallRes.json();
+
       if (meRes.ok) {
         const me = await meRes.json();
-        setProfil({ poin: me.poin ?? 0, wallet_address: me.wallet_address ?? null });
+        setProfil({
+          poin: me.poin ?? 0,
+          wallet_address: wallData?.wallet_address ?? me.wallet_address ?? null,
+          is_default: wallData?.is_default ?? false,
+          default_wallet: wallData?.default_wallet ?? DEFAULT_COMMUNITY_WALLET,
+          total_gpc_diterima: wallData?.total_gpc_diterima ?? 0,
+          jumlah_transaksi_sukses: wallData?.jumlah_transaksi_sukses ?? 0,
+          riwayat_reward: wallData?.riwayat_reward ?? [],
+        });
       }
       const gagal = [mRes, pRes].filter((r) => r.status === 401);
       if (gagal.length) setError('Sesi berakhir — silakan login ulang.');
@@ -123,16 +152,25 @@ export const MisiPeringkat: React.FC = () => {
     }
   };
 
-  const hubungkanWallet = async () => {
-    if (!hasWallet()) {
-      setToast('MetaMask tidak terdeteksi. Install extension MetaMask terlebih dahulu.');
-      setTimeout(() => setToast(null), 5000);
-      return;
-    }
+  const hubungkanWallet = async (pakaiDefault: boolean = false) => {
     setWalletLoading(true);
     try {
+      // Jika user memilih dompet default ATAU browser tidak memasang MetaMask:
+      if (pakaiDefault || !hasWallet()) {
+        const res = await fetch(`${apiUrl()}/api/wallet/bind-default`, {
+          method: 'POST',
+          headers: headers(),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.detail || 'Gagal mengatur dompet.');
+        setToast('Berhasil terhubung ke Dompet Bersama (0x6Edc…2b48)! Tidak butuh MetaMask.');
+        await muatSemua();
+        return;
+      }
+
+      // Jika browser memiliki MetaMask dan ingin mengkoneksikan dompet pribadi:
       const address = await sambungkanAkun();
-      if (!address) throw new Error('Akses akun ditolak.');
+      if (!address) throw new Error('Akses akun MetaMask ditolak.');
       const chRes = await fetch(`${apiUrl()}/api/wallet/challenge`, { headers: headers() });
       const ch = await chRes.json();
       if (!chRes.ok) throw new Error(ch?.detail || 'Gagal meminta tantangan.');
@@ -144,7 +182,7 @@ export const MisiPeringkat: React.FC = () => {
       });
       const v = await vRes.json();
       if (!vRes.ok) throw new Error(v?.detail || 'Verifikasi signature gagal.');
-      setToast('Wallet terhubung! Reward GPC dapat dikirim ke alamat ini.');
+      setToast('Wallet pribadi terhubung! Reward GPC dapat dikirim ke alamat ini.');
       await muatSemua();
     } catch (e: any) {
       setToast(e.message || 'Koneksi wallet gagal.');
@@ -190,13 +228,13 @@ export const MisiPeringkat: React.FC = () => {
           </h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Kumpulkan poin dari latihan nyata, klaim hadiah harian/mingguan, dan kejar puncak klasemen bulan{' '}
-            <span className="font-mono">{misiData?.musim ?? ''}</span>.
+            <span className="font-mono">{lb?.musim ?? misiData?.periode ?? ''}</span>.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <Badge variant="info" className="gap-1 px-2.5 py-1 text-xs">
             <Coins size={13} className="text-yellow-500" />
-            {misiData?.poin_total ?? profil?.poin ?? 0} poin
+            {misiData?.total_poin ?? profil?.poin ?? 0} poin
           </Badge>
           {lb && (
             <Badge variant="outline" className="flex gap-1 px-2.5 py-1 font-mono text-xs">
@@ -217,35 +255,113 @@ export const MisiPeringkat: React.FC = () => {
       <Card className="mb-6 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-950">
-              {profil?.wallet_address
-                ? <CheckCircle2 size={20} className="text-emerald-600" />
-                : <Wallet size={20} className="text-slate-500" />}
+            <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${
+              profil?.wallet_address ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400' : 'bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400'
+            }`}>
+              <Wallet size={22} />
             </div>
             <div>
-              <div className="text-sm font-semibold text-slate-900 dark:text-white">
-                {profil?.wallet_address
-                  ? `Wallet terhubung: ${alamatPendek(profil.wallet_address)}`
-                  : 'Wallet GPC belum terhubung'}
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                  {profil?.wallet_address ? (
+                    <>
+                      Wallet: <span className="font-mono">{alamatPendek(profil.wallet_address)}</span>
+                    </>
+                  ) : (
+                    'Dompet Komunitas (0x6Edc…2b48)'
+                  )}
+                </span>
+                {profil?.is_default ? (
+                  <Badge variant="warning">Dompet Bersama Komunitas</Badge>
+                ) : profil?.wallet_address ? (
+                  <Badge variant="outline">Dompet Pribadi</Badge>
+                ) : (
+                  <Badge variant="outline">Default: Siap Digunakan</Badge>
+                )}
               </div>
               <div className="text-xs text-slate-500 dark:text-slate-400">
-                {profil?.wallet_address
-                  ? 'Juara bulanan akan menerima token GPC on-chain (Sepolia) di alamat ini.'
-                  : 'Hubungkan MetaMask untuk menerima reward token bila masuk Top-3 bulan ini.'}
+                {profil?.wallet_address ? (
+                  profil.is_default ? (
+                    <span>Semua reward token GPC dikirim ke dompet bersama <strong className="font-mono text-slate-700 dark:text-slate-300">0x6EdcA860c066FCdA6c434095d5901810DCE12b48</strong>.</span>
+                  ) : (
+                    <span>Reward token GPC dikirim ke dompet pribadi Anda di jaringan Sepolia.</span>
+                  )
+                ) : (
+                  <span>Semua akun disamakan menggunakan dompet bersama ini tanpa memerlukan ekstensi MetaMask.</span>
+                )}
               </div>
             </div>
           </div>
-          {profil?.wallet_address ? (
-            <Button variant="outline" size="sm" onClick={lepasWallet} disabled={walletLoading}>
-              <XCircle size={14} /> Lepas
-            </Button>
-          ) : (
-            <Button size="sm" onClick={hubungkanWallet} disabled={walletLoading}>
-              {walletLoading ? <Loader2 size={14} className="animate-spin" /> : <Wallet size={14} />}
-              Connect Wallet
-            </Button>
-          )}
+
+          <div className="flex items-center gap-2">
+            {profil?.wallet_address ? (
+              <>
+                {!profil.is_default && (
+                  <Button size="sm" variant="outline" onClick={() => hubungkanWallet(true)} disabled={walletLoading}>
+                    Ganti ke Dompet Bersama
+                  </Button>
+                )}
+                <Button variant="outline" size="sm" onClick={lepasWallet} disabled={walletLoading}>
+                  <XCircle size={14} /> Lepas
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button size="sm" onClick={() => hubungkanWallet(true)} disabled={walletLoading}>
+                  {walletLoading ? <Loader2 size={14} className="animate-spin" /> : <Wallet size={14} />}
+                  Gunakan Dompet Komunitas
+                </Button>
+                {hasWallet() && (
+                  <Button size="sm" variant="outline" onClick={() => hubungkanWallet(false)} disabled={walletLoading}>
+                    MetaMask Pribadi
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
         </div>
+
+        {/* Pendapatan Spesifik Akun Ini */}
+        <div className="mt-3.5 pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-3">
+            <span className="text-slate-500 dark:text-slate-400">Pendapatan Reward Akun Ini:</span>
+            <span className="font-mono text-base font-bold text-yellow-600 dark:text-yellow-400">
+              {(profil?.total_gpc_diterima ?? 0).toLocaleString()} GPC
+            </span>
+            {profil?.riwayat_reward && profil.riwayat_reward.length > 0 && (
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                {profil.riwayat_reward.length}x transaksi
+              </span>
+            )}
+          </div>
+          <div className="text-[11px] text-slate-400 italic">
+            *Dihitung khusus per akun ini dari riwayat perolehan reward, bukan total saldo satu dompet.
+          </div>
+        </div>
+
+        {/* Riwayat Reward Akun Ini */}
+        {profil?.riwayat_reward && profil.riwayat_reward.length > 0 && (
+          <div className="mt-2.5 pt-2 border-t border-slate-100/60 dark:border-slate-800/60 flex flex-wrap gap-2">
+            {profil.riwayat_reward.map((rw) => (
+              <div key={rw.id} className="rounded-lg bg-slate-50 dark:bg-slate-800/60 px-2.5 py-1 text-[11px] flex items-center gap-2">
+                <span className="font-medium text-slate-700 dark:text-slate-200">Musim {rw.periode}</span>
+                <span className="font-mono text-yellow-600 dark:text-yellow-400 font-bold">+{rw.jumlah} GPC</span>
+                <span className="text-slate-400 font-mono text-[10px]">Rank #{rw.rank}</span>
+                {rw.tx_hash && (
+                  <a
+                    href={`https://sepolia.etherscan.io/tx/${rw.tx_hash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-500 underline font-mono text-[10px]"
+                    title={rw.tx_hash}
+                  >
+                    {rw.tx_hash.slice(0, 8)}…
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </Card>
 
       {/* Tabs */}
@@ -343,8 +459,11 @@ export const MisiPeringkat: React.FC = () => {
             </div>
           )}
           {!profil?.wallet_address && lb?.saya && lb.saya.rank <= 3 && (
-            <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300">
-              Kamu di 3 besar! Hubungkan wallet (tombol di atas) sebelum musim berakhir agar reward GPC bisa dikirim.
+            <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-blue-300 bg-blue-50 p-3 text-xs text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300">
+              <span>Kamu berada di 3 besar! Reward GPC akan otomatis disalurkan ke dompet komunitas default (<span className="font-mono font-semibold">0x6EdcA860c066FCdA6c434095d5901810DCE12b48</span>) tanpa memerlukan instalasi MetaMask.</span>
+              <Button size="sm" onClick={() => hubungkanWallet(true)} disabled={walletLoading}>
+                Aktifkan Sekarang
+              </Button>
             </div>
           )}
         </Card>

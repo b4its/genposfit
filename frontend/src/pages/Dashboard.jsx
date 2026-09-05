@@ -104,7 +104,15 @@ export const Dashboard = () => {
         apiUsaha(`${API}/api/leaderboard/monthly?limit=5`),
       ]);
       const wall = await apiUsaha(`${API}/api/wallet/me`);
-      if (ring) setStatusTerkini({ ...ring, wallet_address: wall?.wallet_address ?? null });
+      if (ring) {
+        setStatusTerkini({
+          ...ring,
+          wallet_address: wall?.wallet_address ?? null,
+          is_default: wall?.is_default ?? false,
+          default_wallet: wall?.default_wallet ?? '0x6EdcA860c066FCdA6c434095d5901810DCE12b48',
+          total_gpc_diterima: wall?.total_gpc_diterima ?? 0,
+        });
+      }
       if (lb?.saya) setPeringkatSaya({ rank: lb.saya.rank, poin_musim: lb.saya.poin_musim, hari: lb.sisa_waktu_hari, musim: lb.musim });
     })();
   }, []);
@@ -203,11 +211,24 @@ export const Dashboard = () => {
             <div className="text-[10px] text-slate-400">jendela telemetri terkini</div>
           </Card>
           <Card className="p-4">
-            <div className="text-[10px] uppercase tracking-wide text-slate-400">Wallet GPC</div>
-            <div className="mt-1 text-sm font-semibold font-mono text-slate-800 dark:text-slate-200">
-              {statusTerkini.wallet_address ? `${statusTerkini.wallet_address.slice(0, 8)}…${statusTerkini.wallet_address.slice(-4)}` : 'belum terhubung'}
+            <div className="flex items-center justify-between">
+              <div className="text-[10px] uppercase tracking-wide text-slate-400">Wallet GPC</div>
+              {statusTerkini.is_default ? (
+                <span className="text-[9px] font-medium bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300 px-1.5 py-0.5 rounded">Komunitas</span>
+              ) : statusTerkini.wallet_address ? (
+                <span className="text-[9px] font-medium bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 px-1.5 py-0.5 rounded">Pribadi</span>
+              ) : (
+                <span className="text-[9px] font-medium bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 px-1.5 py-0.5 rounded">Default</span>
+              )}
             </div>
-            {!statusTerkini.wallet_address && <div className="text-[10px] text-amber-600">buka tab Misi & Peringkat untuk connect</div>}
+            <div className="mt-1 text-sm font-semibold font-mono text-slate-800 dark:text-slate-200">
+              {statusTerkini.wallet_address
+                ? `${statusTerkini.wallet_address.slice(0, 6)}…${statusTerkini.wallet_address.slice(-4)}`
+                : `${(statusTerkini.default_wallet || '0x6EdcA860c066FCdA6c434095d5901810DCE12b48').slice(0, 6)}…${(statusTerkini.default_wallet || '0x6EdcA860c066FCdA6c434095d5901810DCE12b48').slice(-4)}`}
+            </div>
+            <div className="mt-1 text-[11px] font-medium text-amber-600 dark:text-amber-400">
+              Reward Akun: <span className="font-mono font-bold">{(statusTerkini.total_gpc_diterima ?? 0).toLocaleString()} GPC</span>
+            </div>
           </Card>
         </div>
       )}

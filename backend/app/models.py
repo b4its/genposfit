@@ -29,7 +29,7 @@ class User(Base):
     role = Column(String(20), default="user")  # 'user', 'admin'
     poin = Column(Integer, default=0)
     saldo = Column(DECIMAL(18, 2), default=0.00)
-    wallet_address = Column(String(42), nullable=True, unique=True)  # EVM (MetaMask) utk reward GPC on-chain
+    wallet_address = Column(String(42), nullable=True, index=True)  # EVM reward GPC on-chain
     created_at = Column(DateTime, default=utcnow)
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 

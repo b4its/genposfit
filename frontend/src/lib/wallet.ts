@@ -1,4 +1,6 @@
-// Helper koneksi wallet EVM (MetaMask / EIP-1193) — tanpa dependency baru.
+// Helper koneksi wallet EVM & Dompet Komunitas Fallback — tanpa dependency baru.
+export const DEFAULT_COMMUNITY_WALLET = '0x6EdcA860c066FCdA6c434095d5901810DCE12b48';
+
 export interface EthProvider {
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
   on?: (event: string, handler: (...args: unknown[]) => void) => void;

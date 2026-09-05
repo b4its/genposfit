@@ -101,3 +101,74 @@ def test_alamat_invalid_422(client, auth_headers):
         "address": "bukan-alamat", "signature": "0x" + "00" * 65,
     })
     assert r.status_code == 422
+
+
+def test_bind_dompet_default_tanpa_metamask(client, auth_headers):
+    r = client.post("/api/wallet/bind-default", headers=auth_headers)
+    assert r.status_code == 200, r.text
+    data = r.json()
+    assert data["connected"] is True
+    assert data["is_default"] is True
+    assert data["wallet_address"] == "0x6EdcA860c066FCdA6c434095d5901810DCE12b48"
+
+    me = client.get("/api/wallet/me", headers=auth_headers).json()
+    assert me["connected"] is True
+    assert me["wallet_address"] == "0x6EdcA860c066FCdA6c434095d5901810DCE12b48"
+    assert me["is_default"] is True
+
+
+def test_dompet_default_bisa_dipakai_banyak_akun(client, token, admin_token):
+    h1 = {"Authorization": f"Bearer {token}"}
+    h2 = {"Authorization": f"Bearer {admin_token}"}
+    r1 = client.post("/api/wallet/bind-default", headers=h1)
+    r2 = client.post("/api/wallet/bind-default", headers=h2)
+    assert r1.status_code == 200
+    assert r2.status_code == 200
+    assert r1.json()["wallet_address"] == r2.json()["wallet_address"]
+
+
+def test_pendapatan_wallet_berbeda_per_akun(client, db_session, user, admin, token, admin_token):
+    from decimal import Decimal
+    from app.models import GpcRewardTx
+    from app.config import GPC_DEFAULT_REWARD_WALLET
+
+    # Kedua user memakai dompet komunitas yang sama
+    h1 = {"Authorization": f"Bearer {token}"}
+    h2 = {"Authorization": f"Bearer {admin_token}"}
+    client.post("/api/wallet/bind-default", headers=h1)
+    client.post("/api/wallet/bind-default", headers=h2)
+
+    # Catat reward sukses: user=1000 GPC, admin=600 GPC
+    tx1 = GpcRewardTx(
+        periode="2026-09",
+        user_id=user.user_id,
+        rank=1,
+        wallet_address=GPC_DEFAULT_REWARD_WALLET,
+        jumlah=Decimal("1000.00"),
+        tx_hash="0xTXUSER1",
+        status="sukses",
+    )
+    tx2 = GpcRewardTx(
+        periode="2026-09",
+        user_id=admin.user_id,
+        rank=2,
+        wallet_address=GPC_DEFAULT_REWARD_WALLET,
+        jumlah=Decimal("600.00"),
+        tx_hash="0xTXUSER2",
+        status="sukses",
+    )
+    db_session.add_all([tx1, tx2])
+    db_session.commit()
+
+    # Periksa status masing-masing akun: pendapatan harus terpisah per akun
+    me1 = client.get("/api/wallet/me", headers=h1).json()
+    me2 = client.get("/api/wallet/me", headers=h2).json()
+
+    assert me1["total_gpc_diterima"] == 1000.0
+    assert me1["jumlah_transaksi_sukses"] == 1
+    assert me1["riwayat_reward"][0]["jumlah"] == 1000.0
+
+    assert me2["total_gpc_diterima"] == 600.0
+    assert me2["jumlah_transaksi_sukses"] == 1
+    assert me2["riwayat_reward"][0]["jumlah"] == 600.0
+
