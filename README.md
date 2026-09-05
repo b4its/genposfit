@@ -169,7 +169,7 @@ Skema auto-dijalankan saat container `db` pertama kali dibuat dari `database/ini
 
 ## 7. Backend — API FastAPI
 
-Prefix utama: `/api` — dokumentasi otomatis Swagger di `http://localhost:8000/docs`.
+Prefix utama: `/api` — dokumentasi otomatis Swagger di `http://localhost:8042/docs`.
 
 ### Router & Endpoint
 
@@ -303,10 +303,10 @@ make logs
 
 | Service | URL |
 |---|---|
-| Frontend | http://localhost:3000 |
-| Backend (Swagger API) | http://localhost:8000/docs |
-| Health check | http://localhost:8000/api/health |
-| PhpMyAdmin | http://localhost:8080 |
+| Frontend | http://localhost:3042 |
+| Backend (Swagger API) | http://localhost:8042/docs |
+| Health check | http://localhost:8042/api/health |
+| PhpMyAdmin | http://localhost:8122 |
 
 ### Command Makefile Berguna
 

@@ -161,7 +161,7 @@ def seed():
         db_user = os.getenv("DB_USER", "genposfit_user")
         db_pass = os.getenv("DB_PASSWORD", "genposfit_secret")
         db_host = os.getenv("DB_HOST", "127.0.0.1")
-        db_port = int(os.getenv("DB_PORT", "3306"))
+        db_port = int(os.getenv("DB_PORT", "3348"))
         db_name = os.getenv("DB_NAME", "genposfit")
 
         conn = pymysql.connect(

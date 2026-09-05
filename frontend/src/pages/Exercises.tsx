@@ -88,7 +88,7 @@ export const Exercises: React.FC = () => {
 
   // Fetch from backend exercises endpoint if available
   useEffect(() => {
-    const apiUrl = import.meta.env?.VITE_API_URL || 'http://localhost:8000';
+    const apiUrl = import.meta.env?.VITE_API_URL || 'http://localhost:8042';
     fetch(`${apiUrl}/api/exercises`)
       .then(res => res.json())
       .then(data => {
@@ -104,7 +104,7 @@ export const Exercises: React.FC = () => {
 
   // Timer loop for active rep hold
   const saveCompletedSession = async (exerciseId: number, totalReps: number) => {
-    const apiUrl = import.meta.env?.VITE_API_URL || 'http://localhost:8000';
+    const apiUrl = import.meta.env?.VITE_API_URL || 'http://localhost:8042';
     try {
       await fetch(`${apiUrl}/api/exercises/sessions`, {
         method: 'POST',

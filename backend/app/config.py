@@ -19,17 +19,17 @@ for env_path in [
 DB_USER = os.getenv("DB_USER", "genposfit_user")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "genposfit_secret")
 DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
-DB_PORT = os.getenv("DB_PORT", "3306")
+DB_PORT = os.getenv("DB_PORT", "3348")
 DB_NAME = os.getenv("DB_NAME", "genposfit")
 
-BACKEND_PORT = int(os.getenv("BACKEND_PORT", "8000"))
-FRONTEND_PORT = int(os.getenv("FRONTEND_PORT", "3000"))
+BACKEND_PORT = int(os.getenv("BACKEND_PORT", "8042"))
+FRONTEND_PORT = int(os.getenv("FRONTEND_PORT", "3042"))
 
 CORS_ORIGINS = [
     f"http://localhost:{FRONTEND_PORT}",
     f"http://127.0.0.1:{FRONTEND_PORT}",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
+    "http://localhost:3042",
+    "http://127.0.0.1:3042",
+    "http://localhost:5215",
+    "http://127.0.0.1:5215",
 ]

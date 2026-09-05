@@ -191,7 +191,7 @@ export const RegisterPose = ({ onFinishCalibration }) => {
     }
 
     setIsSubmitting(true);
-    const apiUrl = import.meta.env?.VITE_API_URL || 'http://localhost:8000';
+    const apiUrl = import.meta.env?.VITE_API_URL || 'http://localhost:8042';
 
     try {
       const payload = {

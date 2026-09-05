@@ -32,7 +32,7 @@ export const Dashboard = () => {
   // Fetch summary from backend or fallback to rich mock data
   const fetchData = async () => {
     setLoading(true);
-    const apiUrl = import.meta.env?.VITE_API_URL || 'http://localhost:8000';
+    const apiUrl = import.meta.env?.VITE_API_URL || 'http://localhost:8042';
 
     try {
       const res = await fetch(`${apiUrl}/api/monitoring/summary/1?days=7`);
@@ -313,7 +313,7 @@ WHERE user_id = 1
   AND timestamp >= NOW() - INTERVAL 7 DAY;`}
               </pre>
               <div className="text-[11px] text-slate-500 mt-2">
-                PhpMyAdmin GUI tersedia di <code>http://localhost:8080</code>
+                PhpMyAdmin GUI tersedia di <code>http://localhost:8122</code>
               </div>
             </div>
           )}

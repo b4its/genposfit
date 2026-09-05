@@ -59,9 +59,9 @@ up: ## [Docker] Build (jika perlu) + jalankan semua container di foreground
 up-detached: ## [Docker] Jalankan semua container di background (mode daemon)
 	$(COMPOSE) up -d
 	@echo "$(COLOR_GREEN)✔ Semua service GenPosFit berjalan$(COLOR_RESET)"
-	@echo "  Frontend   → http://localhost:3000"
-	@echo "  Backend    → http://localhost:8000/docs"
-	@echo "  PhpMyAdmin → http://localhost:8080"
+	@echo "  Frontend   → http://localhost:3042"
+	@echo "  Backend    → http://localhost:8042/docs"
+	@echo "  PhpMyAdmin → http://localhost:8122"
 
 down: ## [Docker] Stop dan hapus semua container (data volume tetap aman)
 	$(COMPOSE) down

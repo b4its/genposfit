@@ -69,7 +69,7 @@ export const Monitor = ({ onNavigateToExercises }) => {
 
   // Connect WebSocket to FastAPI backend
   useEffect(() => {
-    const wsUrl = `ws://localhost:8000/api/monitoring/ws/1`;
+    const wsUrl = `ws://localhost:8042/api/monitoring/ws/1`;
     let ws;
 
     try {
@@ -249,7 +249,7 @@ export const Monitor = ({ onNavigateToExercises }) => {
             </h1>
           </div>
           <p className="text-xs font-mono text-slate-400">
-            Sesi: #{formatTime(sessionSeconds)} · FPS: ~30 · WebSocket: :8000
+            Sesi: #{formatTime(sessionSeconds)} · FPS: ~30 · WebSocket: :8042
           </p>
         </div>
 

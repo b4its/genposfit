@@ -72,7 +72,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
 
   const codeSnippets = {
     ws: `// Connect to GenPosFit live ergonomics WebSocket
-const socket = new WebSocket('ws://localhost:8000/api/monitoring/ws/1');
+const socket = new WebSocket('ws://localhost:8042/api/monitoring/ws/1');
 
 socket.onopen = () => {
   console.log('[GenPosFit] Stream ready @ 30 FPS');
@@ -84,7 +84,7 @@ socket.onmessage = (event) => {
   updateHUD(telemetry);
 };`,
     curl: `# Evaluasi snapshot 33 landmark via HTTP endpoint
-curl -X POST http://localhost:8000/api/monitoring/evaluate \\
+curl -X POST http://localhost:8042/api/monitoring/evaluate \\
   -H "Content-Type: application/json" \\
   -d '{
     "user_id": 1,
@@ -95,7 +95,7 @@ curl -X POST http://localhost:8000/api/monitoring/evaluate \\
     python: `import websockets, json, asyncio
 
 async def stream_posture():
-    uri = "ws://localhost:8000/api/monitoring/ws/1"
+    uri = "ws://localhost:8042/api/monitoring/ws/1"
     async with websockets.connect(uri) as ws:
         while True:
             # Kirim koordinat 33 landmarks dari kamera/model
@@ -119,7 +119,7 @@ asyncio.run(stream_posture())`,
         style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-subtle)' }}>
         <span className="inline-flex items-center gap-2 text-slate-500 dark:text-slate-400">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-          Docker Compose environment ready: FastAPI (8000) · React (3000) · MySQL (3306) · PhpMyAdmin (8080)
+          Docker Compose environment ready: FastAPI (8042) · React (3042) · MySQL (3348) · PhpMyAdmin (8122)
         </span>
       </div>
 

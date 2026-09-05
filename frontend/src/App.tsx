@@ -13,7 +13,7 @@ export function App() {
 
   // Check backend health on mount
   useEffect(() => {
-    const apiUrl = import.meta.env?.VITE_API_URL || 'http://localhost:8000';
+    const apiUrl = import.meta.env?.VITE_API_URL || 'http://localhost:8042';
     const checkHealth = () => {
       fetch(`${apiUrl}/api/health`)
         .then(res => res.json())
@@ -84,23 +84,23 @@ export function App() {
           {/* Quick links to dev environment */}
           <div className="flex items-center gap-4 text-slate-400">
             <a
-              href="http://localhost:8000/docs"
+              href="http://localhost:8042/docs"
               target="_blank"
               rel="noreferrer"
               className="hover:text-blue-400 flex items-center gap-1 transition-colors"
             >
               <Terminal size={12} />
-              <span>Swagger API (:8000)</span>
+              <span>Swagger API (:8042)</span>
             </a>
 
             <a
-              href="http://localhost:8080"
+              href="http://localhost:8122"
               target="_blank"
               rel="noreferrer"
               className="hover:text-emerald-400 flex items-center gap-1 transition-colors"
             >
               <Database size={12} />
-              <span>PhpMyAdmin (:8080)</span>
+              <span>PhpMyAdmin (:8122)</span>
             </a>
 
             <div className="hidden md:flex items-center gap-1 text-[10px] text-slate-500 bg-slate-800/40 px-2 py-0.5 rounded border border-slate-700/50">

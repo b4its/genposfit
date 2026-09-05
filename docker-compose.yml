@@ -16,7 +16,7 @@ services:
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "${DB_PORT}:3306"
+      - "${DB_PORT}:3348"
     volumes:
       - db_data:/var/lib/mysql # persistensi data
       - ./database/init:/docker-entrypoint-initdb.d # auto-run schema saat pertama kali
@@ -40,15 +40,15 @@ services:
         condition: service_healthy # tunggu MySQL benar-benar siap
     environment:
       DB_HOST: db
-      DB_PORT: 3306
+      DB_PORT: 3348
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "${BACKEND_PORT}:8000"
+      - "${BACKEND_PORT}:8042"
     volumes:
       - ./backend:/app # hot-reload saat development
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8042 --reload
     networks:
       - genposfit-net
 
@@ -65,7 +65,7 @@ services:
       VITE_API_URL: http://localhost:${BACKEND_PORT}
       NEXT_PUBLIC_API_URL: http://localhost:${BACKEND_PORT}
     ports:
-      - "${FRONTEND_PORT}:3000"
+      - "${FRONTEND_PORT}:3042"
     volumes:
       - ./frontend:/app
       - /app/node_modules # jangan timpa node_modules container
@@ -81,7 +81,7 @@ services:
       - db
     environment:
       PMA_HOST: db
-      PMA_PORT: 3306
+      PMA_PORT: 3348
     ports:
       - "${PMA_PORT}:80"
     networks:

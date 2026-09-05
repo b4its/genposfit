@@ -106,7 +106,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 apiOnline ? 'bg-emerald-500' : 'bg-red-500'
               }`} />
             </span>
-            <span>{apiOnline ? 'API :8000 OK' : 'OFFLINE'}</span>
+            <span>{apiOnline ? 'API :8042 OK' : 'OFFLINE'}</span>
           </div>
 
           <ThemeToggle />
