@@ -1,0 +1,74 @@
+-- ============================================================
+-- GenPosFit — Skema Database MySQL
+-- Auto-dijalankan saat container db pertama kali dibuat
+-- ============================================================
+
+CREATE DATABASE IF NOT EXISTS genposfit CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE genposfit;
+
+-- ------------------------- USERS ----------------------------
+CREATE TABLE IF NOT EXISTS users (
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    nama VARCHAR(100) NOT NULL,
+    email VARCHAR(150) UNIQUE,
+    pekerjaan VARCHAR(100),
+    jam_kerja_hari TINYINT DEFAULT 8,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- --------------------- POSE BASELINE ------------------------
+CREATE TABLE IF NOT EXISTS pose_baseline (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    orientasi ENUM('frontal','lateral_kiri','lateral_kanan') NOT NULL,
+    tipe_pose ENUM('berdiri_tegak','berdiri_rileks','duduk_tegak','duduk_rileks') NOT NULL,
+    sudut_leher DECIMAL(6,2) NOT NULL,
+    sudut_punggung DECIMAL(6,2) NOT NULL,
+    level_bahu DECIMAL(6,4) NOT NULL,
+    std_leher DECIMAL(6,3) NOT NULL,
+    std_punggung DECIMAL(6,3) NOT NULL,
+    n_frame SMALLINT NOT NULL,
+    recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    UNIQUE KEY uq_user_pose (user_id, orientasi, tipe_pose)
+) ENGINE=InnoDB;
+
+-- ---------------------- POSTURE LOGS ------------------------
+CREATE TABLE IF NOT EXISTS posture_logs (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    sesi_id VARCHAR(64),
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    sudut_leher DECIMAL(6,2) NOT NULL,
+    sudut_punggung DECIMAL(6,2) NOT NULL,
+    level_bahu DECIMAL(6,4),
+    skor_deviasi DECIMAL(5,2) NOT NULL,
+    status ENUM('bagus','ringan','buruk') NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    INDEX idx_user_time (user_id, timestamp)
+) ENGINE=InnoDB;
+
+-- ------------------- LATIHAN (Mode B) -----------------------
+CREATE TABLE IF NOT EXISTS exercises (
+    exercise_id INT AUTO_INCREMENT PRIMARY KEY,
+    nama VARCHAR(100) NOT NULL,
+    deskripsi TEXT,
+    target_otot VARCHAR(150),
+    sudut_target JSON,
+    durasi_detik SMALLINT,
+    reps TINYINT DEFAULT 10,
+    tingkat ENUM('pemula','menengah','lanjut') DEFAULT 'pemula'
+) ENGINE=InnoDB;
+
+-- ------------------ SESSION LATIHAN -------------------------
+CREATE TABLE IF NOT EXISTS exercise_sessions (
+    session_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    exercise_id INT NOT NULL,
+    total_reps TINYINT,
+    avg_skor DECIMAL(5,2),
+    selesai_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (exercise_id) REFERENCES exercises(exercise_id)
+) ENGINE=InnoDB;

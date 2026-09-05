@@ -1,0 +1,98 @@
+# ============================================================
+# GenPosFit — Genryphem Posture and Fit
+# Docker Compose: MySQL + Backend + Frontend + PhpMyAdmin
+# ============================================================
+
+services:
+
+  # ------------------------- DATABASE -------------------------
+  db:
+    image: mysql:8.0
+    container_name: genposfit-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${DB_PORT}:3306"
+    volumes:
+      - db_data:/var/lib/mysql # persistensi data
+      - ./database/init:/docker-entrypoint-initdb.d # auto-run schema saat pertama kali
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - genposfit-net
+
+  # ------------------------- BACKEND --------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: genposfit-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy # tunggu MySQL benar-benar siap
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${BACKEND_PORT}:8000"
+    volumes:
+      - ./backend:/app # hot-reload saat development
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - genposfit-net
+
+  # ------------------------- FRONTEND -------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: genposfit-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      VITE_API_URL: http://localhost:${BACKEND_PORT}
+      NEXT_PUBLIC_API_URL: http://localhost:${BACKEND_PORT}
+    ports:
+      - "${FRONTEND_PORT}:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules # jangan timpa node_modules container
+    networks:
+      - genposfit-net
+
+  # ------------------------- PHPMYADMIN -----------------------
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: genposfit-phpmyadmin
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+    ports:
+      - "${PMA_PORT}:80"
+    networks:
+      - genposfit-net
+
+# ========================= VOLUMES & NETWORK ==================
+volumes:
+  db_data:
+    name: genposfit-db-data
+
+networks:
+  genposfit-net:
+    name: genposfit-network
+    driver: bridge
