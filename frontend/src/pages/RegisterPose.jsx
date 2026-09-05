@@ -52,8 +52,9 @@ export const RegisterPose = ({ onFinishCalibration }) => {
   const frameBufferRef = useRef([]);
   const animFrameIdRef = useRef(null);
 
-  // MediaPipe pose detection — real per-user landmarks for the skeleton.
-  const { landmarks: realLandmarks } = usePoseDetector(videoRef, camStarted);
+  // MediaPipe pose detection berjalan di atas stream useCamera (noCamera mode)
+  // — hanya SATU getUserMedia, mencegah konflik/NotReadableError perangkat kamera.
+  const { landmarks: realLandmarks } = usePoseDetector(videoRef, camStarted, { noCamera: true });
 
   // Sync real landmarks from MediaPipe when camera is live.
   const realLandmarksRef = useRef(realLandmarks);
@@ -259,7 +260,7 @@ export const RegisterPose = ({ onFinishCalibration }) => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-10">
       {/* Header */}
-      <div className="max-w-4xl mx-auto mb-8 text-left">
+      <div className="mb-8 text-left">
         <Pill variant="success" size="md" className="mb-3 font-mono">
           <PillIndicator variant="success" pulse={false} />
           <PillContent>STEP 1: PERSONAL POSTURE CALIBRATION</PillContent>
@@ -273,7 +274,7 @@ export const RegisterPose = ({ onFinishCalibration }) => {
         </p>
       </div>
 
-      <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Column: Form Setup */}
         <div className="lg:col-span-5 flex flex-col gap-6">
           {/* User Profile Card */}

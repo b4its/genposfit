@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:https": "sh scripts/gen-certs.sh && vite",
+    "dev:https": "sh scripts/gen-certs.sh && VITE_HTTPS=1 vite",
     "certs": "sh scripts/gen-certs.sh",
     "build": "tsc -b && vite build",
     "lint": "eslint .",

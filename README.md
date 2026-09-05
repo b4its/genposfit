@@ -60,7 +60,7 @@ Setiap pengguna baru **wajib melewati proses registrasi pose** sebelum bisa meng
 | **Backend (FastAPI)** | REST API + WebSocket | Mengelola registrasi baseline, menghitung skor deviasi personal, menyimpan log, menyajikan laporan |
 | **Database (MySQL 8.0)** | 8 tabel: `users`, `pose_baseline`, `posture_logs`, `exercise_types`, `exercises`, `exercise_sessions`, `rooms`, `room_players` | Penyimpanan persisten (via Docker volume `genposfit-db-data`) |
 
-> Proyek kini berjalan penuh di **Docker Compose** (4 container: `db`, `backend`, `frontend`, `phpmyadmin`) sebagai pengganti stand-alone SQLite.
+> Proyek kini berjalan penuh di **Docker Compose** (5 container: `db`, `backend`, `frontend`, `phpmyadmin`, `ngrok`) sebagai pengganti stand-alone SQLite.
 
 **Alur komunikasi:**
 
@@ -84,7 +84,8 @@ Setiap pengguna baru **wajib melewati proses registrasi pose** sebelum bisa meng
 | | MediaPipe + OpenCV + NumPy | Analisis sudut biomekanika landmark |
 | | Pydantic | Validasi skema data baseline & log |
 | **Database** | MySQL 8.0 | Penyimpanan persisten, InnoDB, FK + index |
-| **Infra** | Docker Compose | Orchestrasi 4 container (db, backend, frontend, phpmyadmin) |
+| **Infra** | Docker Compose | Orchestrasi 5 container (db, backend, frontend, phpmyadmin, ngrok) |
+| | Ngrok (Docker) | Public HTTPS reverse tunnel untuk deploy remote & testing kamera mobile |
 | | GitHub Actions (CI) | Backend unit test (`unittest`) + frontend build (`tsc` + Vite) |
 
 ---
@@ -303,26 +304,56 @@ make logs
 
 | Service | URL |
 |---|---|
-| Frontend | https://localhost:3042 (HTTPS auto — kamera butuh secure context) |
+| Frontend | `http://localhost:3042` (default) atau `https://<ip-host>:3042` saat `VITE_HTTPS=1` |
+| Ngrok Public Tunnel | `https://unseen-liable-agreeable.ngrok-free.dev` (cek status: `make ngrok-url`) |
+| Ngrok Web Inspector | `http://localhost:4040` |
 | Backend (Swagger API) | http://localhost:8042/docs |
-| Health check | http://localhost:8042/api/health / https://localhost:3042/api/health (proxy) |
+| Health check | http://localhost:8042/api/health — proxy frontend: `<front-url>/api/health` |
 | PhpMyAdmin | http://localhost:8122 |
 
-> **Kamera (getUserMedia):** Browser hanya mengizinkan akses kamera pada *secure context* —
-> `https://` atau `http://localhost`. Jika aplikasi diakses lewat **IP host** (mis.
-> `192.168.1.42`) via HTTP, browser otomatis memblokir kamera dengan pesan seperti
-> *"Browser tidak mendukung akses kamera"* atau *"Kamera tidak diizinkan"*. Solusi:
-> container frontend sudah otomatis membuat sertifikat **self-signed**
-> (`frontend/scripts/gen-certs.sh`, SAN `localhost` + IP host terdeteksi + `CERT_HOSTS`) dan
-> serve **https://IP_HOST:3042**. Buka URL tersebut, klik *Advanced → Proceed*
-> (warning wajar untuk cert self-signed), aktivasi kamera akan muncul dialog izin biasa.
-> Dev tanpa Docker: `cd frontend && npm run certs && npm run dev -- --host 0.0.0.0`.
+### 🌐 Deploy & Hosting Publik via Ngrok (Docker)
+
+GenPosFit dilengkapi container **ngrok** resmi (`ngrok/ngrok:latest`) untuk mengekspos aplikasi ke publik/internet secara aman:
+
+```bash
+make public        # nyalakan tunnel ngrok di Docker container
+make ngrok-url     # tampilkan URL publik aktif & status koneksi
+make logs-ngrok    # pantau log container ngrok secara live
+make ngrok-down    # hentikan container ngrok
+```
+
+- **Kamera Mobile & Remote Testing Langsung Aktif:** Ngrok menyediakan koneksi **HTTPS resmi** (trusted CA) sehingga API browser `navigator.mediaDevices.getUserMedia` (kamera & MediaPipe) otomatis aktif di semua smartphone atau laptop tanpa konfigurasi sertifikat manual.
+- **Traffic Inspection:** Akses dashboard inspeksi ngrok di `http://localhost:4040` untuk memantau request REST dan frame WebSocket.
+- **Authtoken & URL:** Dikonfigurasi di file `.env` melalui `NGROK_AUTHTOKEN`, `NGROK_URL`, dan `NGROK_PORT`.
+
+> **Kamera (getUserMedia) — baca ini jika kamera diblokir / `ERR_EMPTY_RESPONSE`:**
+> Browser hanya mengizinkan kamera pada *secure context*: `https://…` atau
+> `http://localhost`. Di dalam project ini diatur lewat flag `.env` **VITE_HTTPS**:
+>
+> | `VITE_HTTPS` | URL yang jalan | Kamera |
+> |---|---|---|
+> | `0` / kosong (default) | `http://localhost:3042` | ✅ hanya di `localhost` (IP host via http: diblokir browser) |
+> | `1` | `https://localhost:3042` dan `https://<IP_HOST>:3042` | ✅ di semua perangkat LAN (accept warning self-signed sekali) |
+> | **Via Ngrok** | `https://unseen-liable-agreeable.ngrok-free.dev` | ✅ **Aktif di mana saja (HTTPS terpercaya)** |
+>
+> ⚠️ Saat `VITE_HTTPS=1`, container hanya bicara TLS — membuka `http://…:3042`
+> menghasilkan **ERR_EMPTY_RESPONSE** ("didn't send any data"). Itu **bukan** container
+> mati: gunakan `https://`, atau set `VITE_HTTPS=0` bila memang mau HTTP.
+>
+> Nyalakan HTTPS: isi di `.env` → `VITE_HTTPS=1` + `CERT_HOSTS="10.160.116.16"`
+> (IP yang diketik user), lalu `make up-detached` ulang (cert dibuat otomatis oleh
+> `frontend/scripts/gen-certs.sh`, di-*reuse* selama SAN & expiry cocok).
+> Regenerasi paksa: `make certs` (add `CERT_HOSTS` via arg). Dev tanpa Docker:
+> `cd frontend && npm run dev:https -- --host 0.0.0.0`.
 
 ### Command Makefile Berguna
 
 ```bash
 make up           # jalankan semua container (foreground)
 make up-detached  # jalankan di background (detached)
+make public       # 🌐 jalankan hosting publik ngrok di Docker
+make ngrok-url    # 🔗 lihat status & link publik ngrok
+make logs-ngrok   # 📋 lihat log container ngrok
 make down         # stop container
 make restart      # restart container
 make ps           # status container
@@ -346,7 +377,7 @@ make nuke         # bersihkan termasuk volume db
 ```
 genposfit/
 ├── .env.example                  # Template environment
-├── docker-compose.yml            # Orchestrasi: db, backend, frontend, phpmyadmin
+├── docker-compose.yml            # Orchestrasi: db, backend, frontend, phpmyadmin, ngrok
 ├── Makefile                      # Command operasional (Docker, DB, seed, lint, GPC)
 ├── .github/workflows/ci.yml      # CI: backend test + frontend build
 │
@@ -406,3 +437,39 @@ genposfit/
 **GenPosFit** — *Postur personal, bukan standar generik.* 🧘
 
 </div>
+
+## 🎮 Sistem Gamifikasi & Reward (v1.1)
+
+- **Misi harian & mingguan** — progres dihitung otomatis dari telemetri nyata
+  (monitor postur, sesi latihan, kalibrasi, menang battle multiplayer) lewat
+  `/api/quests`; hadiah poin diklaim user dan tercatat di **ledger poin**
+  (`point_ledger`) — sumber kebenaran peringkat. Hanya data berkualitas
+  (visibility landmark, geometri anatomis) yang dihitung.
+- **Peringkat bulanan (musim)** — endpoint publik `/api/leaderboard/monthly`
+  dengan Top-N, posisi "saya", dan sisa waktu musim. Admin: `/api/admin/leaderboard`.
+- **Kualitas data adaptif** — skor deviasi postur melonggarkan toleransi jika
+  baseline sudah > 30 hari (kondisi terkini pengguna) dan menandai sampel
+  berkualitas rendah. UI Live Monitor menampilkan banner kualitas data.
+- **Battle multiplayer jadi dihitung** — hasil battle dilaporkan ke backend
+  (`/api/multiplayer/rooms/{code}/result` + WS `battle_finished`), pemenang
+  +25 poin, peserta +8; progres misi "Duel Pilar Postur".
+- **Reward token GPC on-chain** — smart contract `GenPosFitCoin` (ERC-1155) di
+  Ethereum **Sepolia Testnet**. User menghubungkan **MetaMask** lewat halaman
+  Misi (verifikasi signature personal_sign). Tombol admin **"Distribute Monthly
+  Rewards"** men-mint GPC per peringkat (idempoten per musim, riwayat tx di
+  `gpc_reward_tx`). Aktifkan via `GPC_REWARDS_ENABLED=1` + alamat kontrak,
+  dan konfigurasi RPC pada `.env` backend.
+
+### Endpoint baru (ringkas)
+
+| Method | Path | Akses |
+| ------ | ---- | ----- |
+| GET | `/api/quests` | user login |
+| POST | `/api/quests/{id}/claim` | user login |
+| GET | `/api/quests/ringkasan` | user login |
+| GET | `/api/leaderboard/monthly` | user login |
+| GET/POST/PUT/DELETE | `/api/admin/quests*` | admin |
+| GET | `/api/admin/leaderboard/monthly` | admin |
+| POST | `/api/multiplayer/rooms/{code}/result` | publik (verifikasi via DB) |
+| GET | `/api/wallet/challenge` · POST `/api/wallet/verify` · GET/DELETE `/api/wallet/me` | user login |
+| GET | `/api/admin/rewards/preview` · POST `/api/admin/rewards/distribute` · GET `/api/admin/rewards/history` | admin |

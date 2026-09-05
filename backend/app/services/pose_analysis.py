@@ -176,3 +176,101 @@ def analisis_postur_dari_landmarks(
         "sudut_punggung": sudut_punggung,
         "level_bahu": level_bahu,
     }
+
+
+# Titik-titik kunci yang wajib terlihat agar perhitungan sudut tepercaya:
+# wajah (hidung/telinga) + bahu + panggul.
+KUNCI_VISIBILITAS = (
+    PoseIndices.NOSE,
+    PoseIndices.LEFT_EAR,
+    PoseIndices.RIGHT_EAR,
+    PoseIndices.LEFT_SHOULDER,
+    PoseIndices.RIGHT_SHOULDER,
+    PoseIndices.LEFT_HIP,
+    PoseIndices.RIGHT_HIP,
+)
+
+# Ambang kualitas data (0-100). Di bawah AMBANG_SIMPAN, frame tidak layak
+# disimpan ke DB maupun dihitung untuk misi/poin.
+AMBANG_SIMPAN = 55.0
+AMBANG_PENUH = 80.0
+
+
+def _clamp(v: float, lo: float, hi: float) -> float:
+    return max(lo, min(hi, v))
+
+
+def analisis_kualitas_landmarks(landmarks: List[Dict[str, float]]) -> Dict[str, Any]:
+    """
+   Nilai KUALITAS DATA telemetri postur saat ini (bukan skor postur), 0-100,
+    berdasarkan kondisi terkini frame: confidence landmark kunci,
+    plausibilitas anatomis, dan simetri horizontal pinggul/bahu.
+    """
+    alasan: List[str] = []
+    if not landmarks or len(landmarks) < 27:
+        return {"kualitas": 0.0, "layak": False, "alasan": ["jumlah landmark < 27"]}
+
+    vis = [
+        float(landmarks[i].get("visibility", 0.0))
+        for i in KUNCI_VISIBILITAS
+        if i < len(landmarks)
+    ]
+    if not vis:
+        return {"kualitas": 0.0, "layak": False, "alasan": ["visibilitas tidak tersedia"]}
+
+    vis_min = min(vis)
+    vis_rata = sum(vis) / len(vis)
+    if vis_min < 0.30:
+        alasan.append(
+            "keypoint kunci tertutup (vis min %.2f) - seluruh tubuh dan wajah harus terlihat kamera" % vis_min
+        )
+    elif vis_min < 0.50:
+        alasan.append("keypoint kurang jelas (vis min %.2f) - perbaiki pencahayaan/jarak" % vis_min)
+
+    conf_score = _clamp((vis_rata - 0.25) / 0.75, 0.0, 1.0) * 55.0
+
+    # Plausibilitas anatomis: bahu di atas panggul, bahu relatif segaris.
+    l_sh = landmarks[PoseIndices.LEFT_SHOULDER]
+    r_sh = landmarks[PoseIndices.RIGHT_SHOULDER]
+    l_hip = landmarks[PoseIndices.LEFT_HIP]
+    r_hip = landmarks[PoseIndices.RIGHT_HIP]
+    nose = landmarks[PoseIndices.NOSE]
+
+    plausible = 1.0
+    if not (l_sh["y"] < l_hip["y"] and r_sh["y"] < r_hip["y"]):
+        plausible -= 0.5
+        alasan.append("bahu tidak berada di atas panggul - orientasi tubuh tidak terdeteksi benar")
+    if abs(l_sh["y"] - r_sh["y"]) > 0.10:
+        plausible -= 0.35
+        alasan.append("bahu miring ekstrem di bingkai - posisikan kamera sejajar dada")
+    if not (0.0 <= nose["x"] <= 1.0 and 0.0 <= nose["y"] <= 1.0):
+        plausible -= 0.5
+        alasan.append("landmark wajah keluar bingkai")
+
+    # Simetri horizontal pinggul vs bahu (deteksi tubuh menyamping total).
+    lebar_pinggul = abs(l_hip["x"] - r_hip["x"])
+    lebar_bahu = abs(l_sh["x"] - r_sh["x"])
+    simetri = 0.0
+    if lebar_bahu > 0.05:
+        ratio = lebar_pinggul / lebar_bahu
+        if 0.25 <= ratio <= 1.6:
+            simetri = 1.0
+        elif ratio < 0.15:
+            alasan.append("tubuh hampir menyamping total - gunakan kalibrasi lateral")
+        else:
+            simetri = 0.5
+    plaus_score = _clamp(plausible, 0.0, 1.0) * 30.0 + simetri * 15.0
+
+    kualitas = round(_clamp(conf_score + plaus_score, 0.0, 100.0), 1)
+    # Pelanggaran berat (anatomi mustahil / wajah keluar frame) memaksakan data
+    # TIDAK layak disimpan, berapa pun confidence visibilitasnya.
+    if plausible <= 0.25:
+        kualitas = min(kualitas, 40.0)
+    layak = kualitas >= AMBANG_SIMPAN and plausible > 0.25
+    return {
+        "kualitas": kualitas,
+        "layak": layak,
+        "vis_min": round(vis_min, 3),
+        "vis_rata": round(vis_rata, 3),
+        "alasan": alasan,
+    }

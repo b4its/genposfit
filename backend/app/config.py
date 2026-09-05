@@ -38,3 +38,34 @@ else:
 # Fallback localhost origins agar development tetap jalan
 if not CORS_ORIGINS or CORS_ORIGINS == ["*"]:
     CORS_ORIGINS = [f"http://localhost:{FRONTEND_PORT}", f"http://127.0.0.1:{FRONTEND_PORT}", "*"]
+
+# ---------------- GPC Rewards (Ethereum Sepolia Testnet) ----------------
+# Backend memakai RPC + private key treasury yang sama dgn konfigurasi
+# hardhat gpc-contract (.env root). Nilai di-overridable utk docker/tests.
+SEPOLIA_RPC_URL = os.getenv("SEPOLIA_RPC_URL", "")
+# kontrak GPC (ERC-1155) hasil deploy via `make deploy-gpc` / npx hardhat run
+GPC_CONTRACT_ADDRESS = os.getenv("GPC_CONTRACT_ADDRESS", "")
+# kunci treasury = owner kontrak (yg boleh panggil mint)
+GPC_TREASURY_PRIVATE_KEY = os.getenv("GPC_TREASURY_PRIVATE_KEY", os.getenv("PRIVATE_KEY", ""))
+# chainId target reward (default 11155111 Sepolia, lihat hardhat.config.js)
+GPC_CHAIN_ID = int(os.getenv("GPC_CHAIN_ID", "11155111"))
+# master switch; False -> endpoint distribusi menolak kirim nyata (preview tetap jalan)
+GPC_REWARDS_ENABLED = os.getenv("GPC_REWARDS_ENABLED", "0") == "1"
+
+def _parse_jadwal_reward(raw: str) -> dict:
+    """Format env: '1:1000,2:600,3:400' (rank:jumlah GPC utuh)."""
+    jadwal = {}
+    for part in (raw or "").split(","):
+        if ":" in part:
+            r, _, n = part.partition(":")
+            try:
+                jadwal[int(r)] = int(n)
+            except ValueError:
+                continue
+    return jadwal or {1: 1000, 2: 600, 3: 400}
+
+GPC_REWARD_SCHEDULE = _parse_jadwal_reward(os.getenv("GPC_REWARD_SCHEDULE", "1:1000,2:600,3:400"))
+
+# Gas limit cadangan utk mint ERC-1155 (estimasi gagal di beberapa RPC publik)
+GPC_GAS_LIMIT = int(os.getenv("GPC_GAS_LIMIT", "150000"))
+GPC_GAS_PRICE_WEI = int(os.getenv("GPC_GAS_PRICE_WEI", "0")) or None  # None = auto gasPrice

@@ -44,6 +44,14 @@ services:
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
+      SECRET_KEY: ${SECRET_KEY}
+      # Reward token GPC (Ethereum Sepolia Testnet) - hanya untuk tombol
+      # distribusi manual di Dashboard Admin.
+      SEPOLIA_RPC_URL: ${SEPOLIA_RPC_URL}
+      GPC_CONTRACT_ADDRESS: ${GPC_CONTRACT_ADDRESS}
+      GPC_TREASURY_PRIVATE_KEY: ${GPC_TREASURY_PRIVATE_KEY}
+      GPC_REWARDS_ENABLED: ${GPC_REWARDS_ENABLED:-0}
+      GPC_REWARD_SCHEDULE: ${GPC_REWARD_SCHEDULE:-1:1000,2:600,3:400}
     ports:
       - "${BACKEND_PORT}:8042"
     volumes:
@@ -64,18 +72,21 @@ services:
       - backend
     environment:
       VITE_API_PROXY: http://backend:8042
-      NEXT_PUBLIC_API_URL: http://backend:8042
-      # IP host (opsional) untuk SAN cert HTTPS dev; dipisah spasi. Kosong → auto-detect.
-      # Contoh: CERT_HOSTS="192.168.1.42 genposfit.local"
+      # Mode HTTPS dev: 1 = https://<ip-host>:3042 (kamera via IP host),
+      # 0/kosong = http://localhost:3042 (kamera tetap aman krn localhost).
+      VITE_HTTPS: ${VITE_HTTPS:-0}
+      # IP/DNS host untuk SAN cert HTTPS (WAJIB diisi bila VITE_HTTPS=1 & akses
+      # dari perangkat lain, karena dalam container IP host tidak terdeteksi).
+      # Contoh: CERT_HOSTS="10.160.116.16 genposfit.local"
       CERT_HOSTS: "${CERT_HOSTS:-}"
     ports:
       - "${FRONTEND_PORT}:3042"
     volumes:
       - ./frontend:/app
       - /app/node_modules # jangan timpa node_modules container
-    # Generate self-signed cert saat container start → Vite serve HTTPS →
-    # getUserMedia (kamera) bisa diakses dari browser via IP host tanpa "Not secure".
-    command: sh -c "sh scripts/gen-certs.sh $${CERT_HOSTS}; npm run dev -- --host 0.0.0.0 --port 3042"
+    # Saat VITE_HTTPS=1: generate/reuse self-signed cert lalu vite serve https.
+    # Selain itu container jalan sebagai HTTP biasa seperti sebelumnya.
+    command: sh -c "if [ \"$$VITE_HTTPS\" = 1 ]; then sh scripts/gen-certs.sh $$CERT_HOSTS; fi; npm run dev -- --host 0.0.0.0 --port 3042"
     networks:
       - genposfit-net
 
@@ -91,6 +102,37 @@ services:
       PMA_PORT: 3306
     ports:
       - "${PMA_PORT}:80"
+    networks:
+      - genposfit-net
+
+  # ------------------------- NGROK (PUBLIC TUNNEL) ------------
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: genposfit-ngrok
+    restart: unless-stopped
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        target="frontend:3042"
+        extra_args=""
+        config_arg="--config=/var/lib/ngrok/ngrok.yml"
+        if [ "$$VITE_HTTPS" = "1" ] || [ "$$VITE_HTTPS" = "true" ]; then
+          target="https://frontend:3042"
+          extra_args="--upstream-tls-verify=false"
+        fi
+        if [ -n "$$NGROK_URL" ]; then
+          exec ngrok $$config_arg http "$$target" --url "$$NGROK_URL" $$extra_args --log=stdout
+        else
+          exec ngrok $$config_arg http "$$target" $$extra_args --log=stdout
+        fi
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-3IuzLXEMuqqYOOvKV87DydDfWAM_84J5ekeRFfF2Lmpt6c9cn}
+      NGROK_URL: ${NGROK_URL:-https://default.internal}
+      VITE_HTTPS: ${VITE_HTTPS:-0}
+    ports:
+      - "${NGROK_PORT:-4040}:4040"
+    depends_on:
+      - frontend
     networks:
       - genposfit-net
 
