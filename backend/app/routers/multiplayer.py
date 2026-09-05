@@ -16,6 +16,7 @@ from sqlalchemy import asc
 from app.database import get_db, SessionLocal
 from app.models import Room, RoomPlayer, Exercise
 from app.security import hash_password, verify_password
+from app.services.battles import catat_hasil_battle, BattleInvalidError
 
 router = APIRouter(prefix="/api/multiplayer", tags=["Multiplayer"])
 
@@ -274,6 +275,34 @@ def leave_room(payload: LeaveRoomRequest, request: Request, db: Session = Depend
     return {"message": "Berhasil keluar dari room.", "room": room_dict(db, room)}
 
 
+class BattleResultEntry(BaseModel):
+    guest_key: str
+    skor: int = 0
+    is_pemenang: bool = False
+
+
+class BattleResultRequest(BaseModel):
+    battle_id: str
+    hasil: List[BattleResultEntry]
+
+
+@router.post("/rooms/{room_code}/result")
+def report_room_result(room_code: str, payload: BattleResultRequest, db: Session = Depends(get_db)):
+    """Frontend melaporkan winner battle -> server memverifikasi & mendistribusikan poin."""
+    try:
+        hasil = catat_hasil_battle(
+            db,
+            room_code=room_code,
+            battle_id=payload.battle_id,
+            hasil=[h.model_dump() for h in payload.hasil],
+        )
+    except BattleInvalidError as exc:
+        raise HTTPException(exc.status, exc.pesan)
+    status_code = 200 if hasil.get("status") == "recorded" else 200
+    return hasil
+
+
+
 # --- WebSocket ---
 
 class WSClient:
@@ -349,6 +378,20 @@ async def multiplayer_ws(websocket: WebSocket, room_code: str):
                     "points": msg.get("points", 0),
                     "move_name": msg.get("move_name", ""),
                 }, exclude=client)
+                continue
+            if msg_type == "battle_finished":
+                # Settlement hasil battle -> catat + broadcast poin ke semua
+                ids = msg.get("hasil", [])
+                battle_id = msg.get("battle_id", "")
+                try:
+                    hasil = catat_hasil_battle(db, room_code=code, battle_id=battle_id, hasil=ids)
+                except BattleInvalidError as exc:
+                    await hub.broadcast(code, {
+                        "type": "battle_result_error", "battle_id": battle_id,
+                        "guest_key": guest_key, "detail": exc.pesan,
+                    })
+                    continue
+                await hub.broadcast(code, {"type": "battle_result", "hasil": hasil})
                 continue
             if msg_type == "challenge_update":
                 # Host mengatur daftar gerakan tantangan; simpan ke DB dan broadcast ke semua.

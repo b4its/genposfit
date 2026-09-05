@@ -437,3 +437,39 @@ genposfit/
 **GenPosFit** — *Postur personal, bukan standar generik.* 🧘
 
 </div>
+
+## 🎮 Sistem Gamifikasi & Reward (v1.1)
+
+- **Misi harian & mingguan** — progres dihitung otomatis dari telemetri nyata
+  (monitor postur, sesi latihan, kalibrasi, menang battle multiplayer) lewat
+  `/api/quests`; hadiah poin diklaim user dan tercatat di **ledger poin**
+  (`point_ledger`) — sumber kebenaran peringkat. Hanya data berkualitas
+  (visibility landmark, geometri anatomis) yang dihitung.
+- **Peringkat bulanan (musim)** — endpoint publik `/api/leaderboard/monthly`
+  dengan Top-N, posisi "saya", dan sisa waktu musim. Admin: `/api/admin/leaderboard`.
+- **Kualitas data adaptif** — skor deviasi postur melonggarkan toleransi jika
+  baseline sudah > 30 hari (kondisi terkini pengguna) dan menandai sampel
+  berkualitas rendah. UI Live Monitor menampilkan banner kualitas data.
+- **Battle multiplayer jadi dihitung** — hasil battle dilaporkan ke backend
+  (`/api/multiplayer/rooms/{code}/result` + WS `battle_finished`), pemenang
+  +25 poin, peserta +8; progres misi "Duel Pilar Postur".
+- **Reward token GPC on-chain** — smart contract `GenPosFitCoin` (ERC-1155) di
+  Ethereum **Sepolia Testnet**. User menghubungkan **MetaMask** lewat halaman
+  Misi (verifikasi signature personal_sign). Tombol admin **"Distribute Monthly
+  Rewards"** men-mint GPC per peringkat (idempoten per musim, riwayat tx di
+  `gpc_reward_tx`). Aktifkan via `GPC_REWARDS_ENABLED=1` + alamat kontrak,
+  dan konfigurasi RPC pada `.env` backend.
+
+### Endpoint baru (ringkas)
+
+| Method | Path | Akses |
+| ------ | ---- | ----- |
+| GET | `/api/quests` | user login |
+| POST | `/api/quests/{id}/claim` | user login |
+| GET | `/api/quests/ringkasan` | user login |
+| GET | `/api/leaderboard/monthly` | user login |
+| GET/POST/PUT/DELETE | `/api/admin/quests*` | admin |
+| GET | `/api/admin/leaderboard/monthly` | admin |
+| POST | `/api/multiplayer/rooms/{code}/result` | publik (verifikasi via DB) |
+| GET | `/api/wallet/challenge` · POST `/api/wallet/verify` · GET/DELETE `/api/wallet/me` | user login |
+| GET | `/api/admin/rewards/preview` · POST `/api/admin/rewards/distribute` · GET `/api/admin/rewards/history` | admin |

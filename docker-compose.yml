@@ -44,6 +44,14 @@ services:
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
+      SECRET_KEY: ${SECRET_KEY}
+      # Reward token GPC (Ethereum Sepolia Testnet) - hanya untuk tombol
+      # distribusi manual di Dashboard Admin.
+      SEPOLIA_RPC_URL: ${SEPOLIA_RPC_URL}
+      GPC_CONTRACT_ADDRESS: ${GPC_CONTRACT_ADDRESS}
+      GPC_TREASURY_PRIVATE_KEY: ${GPC_TREASURY_PRIVATE_KEY}
+      GPC_REWARDS_ENABLED: ${GPC_REWARDS_ENABLED:-0}
+      GPC_REWARD_SCHEDULE: ${GPC_REWARD_SCHEDULE:-1:1000,2:600,3:400}
     ports:
       - "${BACKEND_PORT}:8042"
     volumes:

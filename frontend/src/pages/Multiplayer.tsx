@@ -132,6 +132,10 @@ export const Multiplayer: React.FC = () => {
   const [battleScores, setBattleScores] = useState<Record<string, number>>({});
   const [battlePoints, setBattlePoints] = useState<Record<string, number>>({});
   const [winnerKey, setWinnerKey] = useState<string | null>(null);
+  const [battlePoin, setBattlePoin] = useState<Record<string, number>>({});
+  const [battlePesan, setBattlePesan] = useState<string | null>(null);
+  const battleIdRef = useRef<string>('');
+  const hasilBattleTerkirim = useRef(false);
   const [myBattleScore, setMyBattleScore] = useState<number>(0);
   const [challengeIds, setChallengeIds] = useState<number[]>([]);
 
@@ -409,6 +413,18 @@ const loadBattleMoves = async () => {
               return next;
             });
           }
+        } else if (msg.type === 'battle_result' && msg.hasil) {
+          const h = msg.hasil;
+          const map: Record<string, number> = {};
+          (h.hasil || []).forEach((x: any) => { map[x.guest_key] = x.poin; });
+          setBattlePoin(map);
+          setBattlePesan(
+            h.status === 'recorded'
+              ? `Hadiah dibagikan — pemenang +${h.pemenang?.poin ?? 0} poin!`
+              : h.message || 'Hasil battle dicatat.'
+          );
+        } else if (msg.type === 'battle_result_error') {
+          setBattlePesan(`Pencatatan battle ditolak: ${msg.detail}`);
         } else if (msg.type === 'challenge_update') {
           // Hanya host yang boleh mengirim; semua (termasuk host) terapkan
           applyChallengeIds(msg.challenge_exercise_ids);
@@ -439,6 +455,40 @@ const loadBattleMoves = async () => {
     socket.onerror = () => { /* ignore */ };
   };
 
+  // Laporkan hasil battle sekali ke server (WS battle_finished + fallback REST)
+  useEffect(() => {
+    if (!winnerKey || mode !== 'room' || hasilBattleTerkirim.current) return;
+    const rc = roomRef.current;
+    if (!rc?.room_code) return;
+    hasilBattleTerkirim.current = true;
+    const battleId = battleIdRef.current || `${rc.room_code}-${Date.now()}`;
+    battleIdRef.current = battleId;
+    const total: Record<string, number> = { ...battleScores };
+    const kunciSaya = currentKey();
+    if (kunciSaya) total[kunciSaya] = battlePoints[kunciSaya] ?? 0;
+    const hasil = Object.entries(total).map(([k, pts]) => ({
+      guest_key: k, skor: pts, is_pemenang: k === winnerKey,
+    }));
+    const ws = wsRef.current;
+    if (ws?.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'battle_finished', guest_key: guestKey, battle_id: battleId, hasil }));
+    } else {
+      fetch(`${API_URL()}/api/multiplayer/rooms/${rc.room_code}/result`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ battle_id: battleId, hasil }),
+      })
+        .then((r) => r.json())
+        .then((d) => {
+          const map: Record<string, number> = {};
+          (d?.hasil || []).forEach((x: any) => { map[x.guest_key] = x.poin; });
+          setBattlePoin(map);
+          setBattlePesan(d?.message || 'Hadiah battle dicatat.');
+        })
+        .catch(() => { hasilBattleTerkirim.current = false; });
+    }
+  }, [winnerKey, mode, battleScores, battlePoints, guestKey]);
+
   const leaveRoom = () => {
     // Bersihkan data sesi dari DB agar pemain tidak "hantu" di room
     try {
@@ -468,6 +518,10 @@ const loadBattleMoves = async () => {
     setBattleScores({});
     setBattlePoints({});
     setWinnerKey(null);
+    setBattlePoin({});
+    setBattlePesan(null);
+    hasilBattleTerkirim.current = false;
+    battleIdRef.current = '';
     setMyBattleScore(0);
     setChallengeIds([]);
   };
@@ -702,7 +756,12 @@ const loadBattleMoves = async () => {
                       <span className="w-3 h-3 rounded-full" style={{ backgroundColor: p.warna }} />
                       {p.display_name} {isWinner && <Badge variant="warning">PEMENANG!</Badge>}
                     </div>
-                    <div className="font-mono font-bold text-purple-600 dark:text-purple-400">{pts} <span className="text-[10px] text-slate-400 font-normal">/ {room?.max_score || maxScore}</span></div>
+                    <div className="flex items-center gap-1">
+                      {battlePoin[key] != null && battlePoin[key] > 0 && (
+                        <Badge variant="success" className="text-[9px] h-4 px-1">+{battlePoin[key]}</Badge>
+                      )}
+                      <div className="font-mono font-bold text-purple-600 dark:text-purple-400">{pts} <span className="text-[10px] text-slate-400 font-normal">/ {room?.max_score || maxScore}</span></div>
+                    </div>
                   </div>
                 );
               })}
@@ -710,9 +769,13 @@ const loadBattleMoves = async () => {
           )}
 
           {winnerKey && (
-            <div className="mt-3 p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-xs flex items-center gap-2">
-              <Star size={14} />
-              <span><strong>Battle selesai!</strong> {players[winnerKey]?.display_name || 'Pemain'} mencapai batas poin dan memenangkan battle!</span>
+            <div className="mt-3 p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-xs flex items-start gap-2">
+              <Star size={14} className="mt-0.5 shrink-0" />
+              <div>
+                <span><strong>Battle selesai!</strong> {players[winnerKey]?.display_name || (myPlayerKey === winnerKey ? displayName : 'Pemain')} mencapai batas poin dan memenangkan battle!</span>
+                {battlePesan && <div className="mt-1 text-emerald-600 dark:text-emerald-400">{battlePesan}</div>}
+                {!user && <div className="mt-1 opacity-80">Login agar poinmu masuk ke ledger &amp; peringkat bulanan.</div>}
+              </div>
             </div>
           )}
         </Card>

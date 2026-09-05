@@ -29,6 +29,7 @@ class User(Base):
     role = Column(String(20), default="user")  # 'user', 'admin'
     poin = Column(Integer, default=0)
     saldo = Column(DECIMAL(18, 2), default=0.00)
+    wallet_address = Column(String(42), nullable=True, unique=True)  # EVM (MetaMask) utk reward GPC on-chain
     created_at = Column(DateTime, default=utcnow)
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
@@ -72,6 +73,9 @@ class PostureLog(Base):
     level_bahu = Column(DECIMAL(6, 4), nullable=True)
     skor_deviasi = Column(DECIMAL(5, 2), nullable=False)
     status = Column(String(20), nullable=False)  # 'bagus', 'ringan', 'buruk'
+    # Skor kualitas data telemetri frame ini (0-100) dari analisis_kualitas_landmarks.
+    # NULL berarti log dibuat sebelum sistem kualitas data aktif.
+    kualitas_data = Column(DECIMAL(5, 2), nullable=True)
 
     user = relationship("User", back_populates="posture_logs")
 
@@ -168,4 +172,122 @@ class RoomPlayer(Base):
     __table_args__ = (
         UniqueConstraint("room_id", "warna", name="uq_room_color"),
         UniqueConstraint("room_id", "guest_key", name="uq_room_guest"),
+    )
+
+
+class PointLedger(Base):
+    """
+    Buku besar mutasi poin. Satu baris = satu perubahan poin user.
+    Menjadi sumber kebenaran peringkat bulanan (group per `periode` YYYY-MM),
+    sekaligus audit anti-cheat (alasan + referensi sumber poin).
+    """
+    __tablename__ = "point_ledger"
+
+    id = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
+    delta = Column(Integer, nullable=False)
+    alasan = Column(String(50), nullable=False)          # 'misi:xxx', 'battle_menang', 'klaim_admin', dll
+    periode = Column(String(7), nullable=False, index=True)  # 'YYYY-MM' (musimming bulanan)
+    ref_tipe = Column(String(30), nullable=True)
+    ref_id = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=utcnow, index=True)
+
+    user = relationship("User")
+
+    __table_args__ = (
+        Index("idx_ledger_user_periode", "user_id", "periode"),
+    )
+
+
+class Quest(Base):
+    """
+    Template misi harian / mingguan. `metrik` menentukan dari tabel mana progres
+    dihitung otomatis (lihat services/quests.py). Seed default via ensure_quests().
+    """
+    __tablename__ = "quests"
+
+    quest_id = Column(Integer, primary_key=True, autoincrement=True)
+    kode = Column(String(50), unique=True, nullable=False, index=True)
+    judul = Column(String(120), nullable=False)
+    deskripsi = Column(String(300), nullable=True)
+    kategori = Column(String(12), nullable=False)   # 'harian' | 'mingguan'
+    metrik = Column(String(50), nullable=False)     # postur_bagus | latihan_selesai | kalibrasi | sesi_multiplayer | battle_menang
+    target = Column(Integer, nullable=False, default=5)
+    reward_poin = Column(Integer, nullable=False, default=10)
+    aktif = Column(SmallInteger, nullable=False, default=1)
+    created_at = Column(DateTime, default=utcnow)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
+
+
+class UserQuest(Base):
+    """Progres/klaim seorang user terhadap satu quest pada satu periode."""
+    __tablename__ = "user_quests"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
+    quest_id = Column(Integer, ForeignKey("quests.quest_id", ondelete="CASCADE"), nullable=False)
+    periode = Column(String(10), nullable=False)   # harian 'YYYY-MM-DD', mingguan 'YYYY-Wnn'
+    progres = Column(Integer, nullable=False, default=0)
+    status = Column(String(12), nullable=False, default="aktif")  # 'aktif' | 'selesai' | 'diklaim'
+    created_at = Column(DateTime, default=utcnow)
+    claimed_at = Column(DateTime, nullable=True)
+
+    user = relationship("User")
+    quest = relationship("Quest")
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "quest_id", "periode", name="uq_user_quest_periode"),
+        Index("idx_userquest_user", "user_id", "periode"),
+    )
+
+
+class BattleResult(Base):
+    """
+    Hasil satu battle multiplayer (satu baris per peserta terautentikasi).
+    `battle_id` unik per sesi battle yang dilaporkan frontend sehingga
+    pelaporan ulang idempoten (anti point-farming).
+    """
+    __tablename__ = "battle_results"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    battle_id = Column(String(64), nullable=False, index=True)
+    room_code = Column(String(20), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
+    display_name = Column(String(100), nullable=True)
+    score_akhir = Column(Integer, nullable=False, default=0)
+    is_winner = Column(SmallInteger, nullable=False, default=0)
+    awarded_poin = Column(Integer, nullable=False, default=0)
+    quality_ok = Column(SmallInteger, nullable=False, default=1)
+    created_at = Column(DateTime, default=utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("battle_id", "user_id", name="uq_battle_participant"),
+    )
+
+
+class GpcRewardTx(Base):
+    """
+    Riwayat distribusi token GPC on-chain (Sepolia) per periode (musim).
+    UNIQUE (periode, user_id) = idempoten: tombol admin tidak bisa mengirim
+    reward dua kali utk user pada musim yang sama, kecuali percobaan
+    berstatus 'gagal' (retry memakai baris yang sama).
+    """
+    __tablename__ = "gpc_reward_tx"
+
+    id = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
+    periode = Column(String(7), nullable=False, index=True)      # 'YYYY-MM'
+    user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
+    rank = Column(Integer, nullable=False)
+    wallet_address = Column(String(42), nullable=False)
+    jumlah = Column(DECIMAL(18, 2), nullable=False)              # GPC utuh (bukan wei)
+    tx_hash = Column(String(80), nullable=True)
+    status = Column(String(16), nullable=False, default="pending")  # pending|sukses|gagal
+    error = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=utcnow)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
+
+    user = relationship("User")
+
+    __table_args__ = (
+        UniqueConstraint("periode", "user_id", name="uq_gpc_periode_user"),
     )

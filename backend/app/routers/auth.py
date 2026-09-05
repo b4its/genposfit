@@ -45,6 +45,9 @@ class UserInfoResponse(BaseModel):
     email: str | None = None
     pekerjaan: str | None = None
     jam_kerja_hari: int | None = 8
+    poin: int = 0
+    saldo: float = 0.0
+    wallet_address: str | None = None
 
 
 @router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
@@ -142,4 +145,7 @@ def get_current_user_info(request: Request, authorization: str = "", db: Session
         email=user.email,
         pekerjaan=user.pekerjaan,
         jam_kerja_hari=user.jam_kerja_hari,
+        poin=int(user.poin or 0),
+        saldo=float(user.saldo or 0.0),
+        wallet_address=user.wallet_address,
     )

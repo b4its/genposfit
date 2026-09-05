@@ -69,6 +69,7 @@ export const Monitor = ({ onNavigateToExercises }) => {
   const [backAngle, setBackAngle] = useState(171.5);
   const [shoulderLevel, setShoulderLevel] = useState(0.012);
   const [feedback, setFeedback] = useState('Postur ergonomis ideal. Pertahankan posisi ini!');
+  const [dataKualitas, setDataKualitas] = useState(null);
   const [sessionSeconds, setSessionSeconds] = useState(0);
   const [badPostureSeconds, setBadPostureSeconds] = useState(0);
 
@@ -147,6 +148,7 @@ export const Monitor = ({ onNavigateToExercises }) => {
             setBackAngle(res.sudut_punggung);
             setShoulderLevel(res.level_bahu);
             setFeedback(res.feedback);
+            setDataKualitas(res.kualitas_data || null);
 
             if (res.status === 'buruk') {
               if (badPostureStartRef.current === null) {
@@ -510,6 +512,21 @@ export const Monitor = ({ onNavigateToExercises }) => {
             <p className="text-xs text-slate-800 dark:text-slate-200 mt-4 leading-relaxed bg-slate-100 dark:bg-slate-800/70 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700/60">
               {feedback}
             </p>
+            {dataKualitas && (
+              <div className={`mt-3 rounded-xl border p-3 text-xs ${
+                dataKualitas.layak
+                  ? 'border-emerald-300/60 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                  : 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300'
+              }`}>
+                <span className="font-semibold">Kualitas data: {dataKualitas.kualitas?.toFixed?.(0) ?? dataKualitas.kualitas}/100</span>
+                {!dataKualitas.layak && (
+                  <ul className="mt-1 list-disc pl-4 opacity-90">
+                    {(dataKualitas.alasan || []).slice(0, 2).map((a, i) => <li key={i}>{a}</li>)}
+                    <li>Sampel berkualitas rendah tidak disimpan & tidak menghitung misi/poin.</li>
+                  </ul>
+                )}
+              </div>
+            )}
           </Card>
 
           {/* Joint Breakdown Card with Kibo UI Progress */}
