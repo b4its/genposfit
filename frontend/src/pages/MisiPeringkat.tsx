@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Award, CheckCircle2, Clock, Coins, Crown, Loader2, Medal, Target,
+  Award, CheckCircle2, Clock, Crown, Loader2, Medal, Target,
   Trophy, Wallet, XCircle,
 } from 'lucide-react';
 import { Badge, Button, Card, Progress } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { DEFAULT_COMMUNITY_WALLET, alamatPendek, hasWallet, sambungkanAkun, tandaTanganPesan } from '../lib/wallet';
+import coinIcon from '../assets/coin.svg';
 import { getApiUrl } from '../lib/api';
 
 const apiUrl = getApiUrl;
@@ -233,7 +234,7 @@ export const MisiPeringkat: React.FC = () => {
         </div>
         <div className="flex items-center gap-3">
           <Badge variant="info" className="gap-1 px-2.5 py-1 text-xs">
-            <Coins size={13} className="text-yellow-500" />
+            <img src={coinIcon} alt="coin" className="h-3.5 w-3.5" />
             {misiData?.total_poin ?? profil?.poin ?? 0} poin
           </Badge>
           {lb && (
@@ -496,7 +497,7 @@ const MisiItem: React.FC<{
       </div>
       <div className="mt-3 flex items-center justify-between">
         <span className="flex items-center gap-1 text-xs font-medium text-yellow-600 dark:text-yellow-400">
-          <Coins size={13} /> +{m.reward_poin} poin
+          <img src={coinIcon} alt="coin" className="h-3.5 w-3.5" /> +{m.reward_poin} poin
         </span>
         <Button size="sm" variant={siap ? 'default' : 'outline'} disabled={!siap || mengklaim === m.quest_id} onClick={() => onKlaim(m.quest_id)}>
           {mengklaim === m.quest_id ? <Loader2 size={13} className="animate-spin" /> : null}
