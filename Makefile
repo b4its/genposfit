@@ -305,10 +305,12 @@ db-restore: ## [DB] Restore database dari file .sql (make db-restore FILE=path/t
 # MIGRATION & SEEDING
 # ════════════════════════════════════════════════════════════════
 
-migrate: ## [DB] Jalankan skema tabel (idempotent, aman diulang)
+migrate: ## [DB] Jalankan skema tabel + upgrade kolom baru (idempotent, aman diulang)
 	$(COMPOSE) exec -T $(SERVICE_DB) mysql -u$(DB_USER) -p$(DB_PASSWORD) $(DB_NAME) \
 		< ./database/init/01_schema.sql
-	@echo "$(COLOR_GREEN)✔ Migrasi skema selesai$(COLOR_RESET)"
+	$(COMPOSE) exec -T $(SERVICE_DB) mysql -u$(DB_USER) -p$(DB_PASSWORD) $(DB_NAME) \
+		< ./database/init/02_migrate.sql
+	@echo "$(COLOR_GREEN)✔ Migrasi skema & upgrade kolom selesai$(COLOR_RESET)"
 
 seed: ## [DB] Isi data awal (latihan, config) tanpa menghapus data lama
 	$(COMPOSE) exec -T $(SERVICE_DB) mysql -u$(DB_USER) -p$(DB_PASSWORD) $(DB_NAME) \
