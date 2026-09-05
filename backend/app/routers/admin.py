@@ -1,6 +1,8 @@
 """
 GenPosFit — Router Admin
 Kelola program latihan oleh admin. Endpoint di-proteksi dengan JWT + role='admin'.
+Mendukung perekaman skeleton pose dari kamera admin (33 landmark) sebagai referensi
+untuk exercise player dan gerakan battle multiplayer.
 """
 import logging
 from typing import List, Optional, Any
@@ -10,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Exercise, User
 from app.security import decode_access_token
+from app.services.pose_analysis import analisis_postur_dari_landmarks
 
 router = APIRouter(prefix="/api/admin", tags=["Admin"])
 
@@ -34,9 +37,11 @@ class ExerciseCreate(BaseModel):
     deskripsi: Optional[str] = None
     target_otot: Optional[str] = None
     sudut_target: Optional[Any] = None
+    skeleton_data: Optional[list] = None  # 33 landmark dari kamera admin
     durasi_detik: Optional[int] = None
     reps: int = 10
     tingkat: str = "pemula"
+    is_battle: bool = False
 
 
 class ExerciseUpdate(BaseModel):
@@ -44,9 +49,11 @@ class ExerciseUpdate(BaseModel):
     deskripsi: Optional[str] = None
     target_otot: Optional[str] = None
     sudut_target: Optional[Any] = None
+    skeleton_data: Optional[list] = None
     durasi_detik: Optional[int] = None
     reps: Optional[int] = None
     tingkat: Optional[str] = None
+    is_battle: Optional[bool] = None
 
 
 class ExerciseOut(BaseModel):
@@ -55,9 +62,13 @@ class ExerciseOut(BaseModel):
     deskripsi: Optional[str] = None
     target_otot: Optional[str] = None
     sudut_target: Optional[Any] = None
+    skeleton_data: Optional[list] = None
+    sudut_leher: Optional[float] = None
+    sudut_punggung: Optional[float] = None
     durasi_detik: Optional[int] = None
     reps: Optional[int] = 10
     tingkat: Optional[str] = "pemula"
+    is_battle: bool = False
 
     class Config:
         from_attributes = True
@@ -70,7 +81,34 @@ def admin_get_exercises(admin: User = Depends(require_admin), db: Session = Depe
 
 @router.post("/exercises", response_model=ExerciseOut, status_code=201)
 def admin_create_exercise(payload: ExerciseCreate, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
-    ex = Exercise(**payload.model_dump())
+    """Buat latihan baru. Jika menyertakan skeleton_data, hitung sudut otomatis."""
+    data = payload.model_dump()
+    skeleton = data.get("skeleton_data")
+    if skeleton and len(skeleton) >= 25:
+        analisis = analisis_postur_dari_landmarks(skeleton)
+        if analisis.get("valid"):
+            data["sudut_leher"] = analisis["sudut_leher"]
+            data["sudut_punggung"] = analisis["sudut_punggung"]
+    ex = Exercise(**data)
+    db.add(ex)
+    db.commit()
+    db.refresh(ex)
+    return ex
+
+
+@router.post("/exercises/record-pose", response_model=ExerciseOut, status_code=201)
+def admin_record_pose(payload: ExerciseCreate, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
+    """Rekam pose dari kamera (33 landmark) sebagai latihan baru. skeleton_data diisi otomatis."""
+    data = payload.model_dump()
+    skeleton = data.get("skeleton_data", [])
+    if not skeleton or len(skeleton) < 25:
+        raise HTTPException(400, "skeleton_data wajib minimal 25 titik landmark.")
+    analisis = analisis_postur_dari_landmarks(skeleton)
+    if not analisis.get("valid"):
+        raise HTTPException(400, "Landmark tidak valid untuk analisis postur.")
+    data["sudut_leher"] = analisis["sudut_leher"]
+    data["sudut_punggung"] = analisis["sudut_punggung"]
+    ex = Exercise(**data)
     db.add(ex)
     db.commit()
     db.refresh(ex)
@@ -82,7 +120,14 @@ def admin_update_exercise(exercise_id: int, payload: ExerciseUpdate, admin: User
     ex = db.query(Exercise).filter_by(exercise_id=exercise_id).first()
     if not ex:
         raise HTTPException(404, "Latihan tidak ditemukan.")
-    for key, val in payload.model_dump(exclude_unset=True).items():
+    data = payload.model_dump(exclude_unset=True)
+    skeleton = data.get("skeleton_data")
+    if skeleton and len(skeleton) >= 25:
+        analisis = analisis_postur_dari_landmarks(skeleton)
+        if analisis.get("valid"):
+            data["sudut_leher"] = analisis["sudut_leher"]
+            data["sudut_punggung"] = analisis["sudut_punggung"]
+    for key, val in data.items():
         setattr(ex, key, val)
     db.commit()
     db.refresh(ex)

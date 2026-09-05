@@ -60,9 +60,13 @@ CREATE TABLE IF NOT EXISTS exercises (
     deskripsi TEXT,
     target_otot VARCHAR(150),
     sudut_target JSON,
+    skeleton_data JSON,
+    sudut_leher DECIMAL(6,2),
+    sudut_punggung DECIMAL(6,2),
     durasi_detik SMALLINT,
     reps TINYINT DEFAULT 10,
-    tingkat ENUM('pemula','menengah','lanjut') DEFAULT 'pemula'
+    tingkat ENUM('pemula','menengah','lanjut') DEFAULT 'pemula',
+    is_battle TINYINT DEFAULT 0
 ) ENGINE=InnoDB;
 
 -- ------------------ SESSION LATIHAN -------------------------

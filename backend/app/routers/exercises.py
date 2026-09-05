@@ -1,14 +1,17 @@
 """
 GenPosFit — Endpoint Latihan Terapi Postur (Mode B)
-Mendukung daftar latihan peregangan, instruksi sudut target, dan pencatatan sesi latihan.
+Mendukung daftar latihan peregangan, instruksi sudut target / skeleton data dari admin,
+pencatatan sesi latihan, dan scoring perbandingan pose gerakan battle.
 """
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Dict
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Exercise, ExerciseSession, User
+from app.services.pose_analysis import analisis_postur_dari_landmarks
+from app.services.deviation_score import skor_deviasi_tunggal
 
 router = APIRouter(prefix="/api/exercises", tags=["Latihan Postur"])
 
@@ -19,9 +22,13 @@ class ExerciseOut(BaseModel):
     deskripsi: Optional[str] = None
     target_otot: Optional[str] = None
     sudut_target: Optional[Any] = None
+    skeleton_data: Optional[list] = None
+    sudut_leher: Optional[float] = None
+    sudut_punggung: Optional[float] = None
     durasi_detik: Optional[int] = None
     reps: Optional[int] = 10
     tingkat: Optional[str] = "pemula"
+    is_battle: bool = False
 
     class Config:
         from_attributes = True
@@ -102,3 +109,69 @@ def get_user_exercise_history(user_id: int, db: Session = Depends(get_db)):
         }
         for s in sessions
     ]
+
+
+class ScorePoseRequest(BaseModel):
+    landmarks: List[Dict[str, Any]]
+    exercise_id: Optional[int] = None
+
+
+@router.post("/score")
+def score_pose(payload: ScorePoseRequest, db: Session = Depends(get_db)):
+    """
+    Membandingkan pose player (landmarks) terhadap skeleton referensi latihan.
+    Mengembalikan skor kesesuaian (0-100) yang dipakai untuk exercise & battle.
+    """
+    lms = payload.landmarks
+    if not lms or len(lms) < 25:
+        return {"score": 0.0, "status": "buruk", "message": "Landmark tidak mencukupi."}
+
+    exercise = None
+    if payload.exercise_id:
+        exercise = db.query(Exercise).filter_by(exercise_id=payload.exercise_id).first()
+    elif db.query(Exercise).filter(Exercise.skeleton_data.isnot(None)).first():
+        exercise = db.query(Exercise).filter(Exercise.skeleton_data.isnot(None)).first()
+    else:
+        return {"score": 0.0, "status": "buruk", "message": "Tidak ada latihan referensi."}
+
+    if not exercise or not exercise.skeleton_data:
+        return {"score": 0.0, "status": "buruk", "message": "Latihan tidak punya skeleton referensi."}
+
+    ref = exercise.skeleton_data
+    if len(ref) < 25:
+        return {"score": 0.0, "status": "buruk", "message": "Skeleton referensi tidak valid."}
+
+    # Skor berbasis jarak antar titik kunci (normalized).
+    KEY = [0, 7, 8, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28]
+    total = 0.0
+    count = 0
+    for i in KEY:
+        a, b = lms[i], ref[i]
+        if a is None or b is None:
+            continue
+        ax, ay = a.get("x", 0.5), a.get("y", 0.5)
+        bx, by = b.get("x", 0.5), b.get("y", 0.5)
+        dist = ((ax - bx) ** 2 + (ay - by) ** 2) ** 0.5
+        # Jarak normalize terhadap bounding; 0.05 → 100, semakin jauh turun garis lurus.
+        per_point = max(0.0, 100.0 - (dist / 0.15) * 100.0)
+        total += per_point
+        count += 1
+
+    score = round(total / count, 2) if count else 0.0
+    if score >= 85:
+        status_label = "bagus"
+        message = "Pose hampir sempurna menirukan referensi!"
+    elif score >= 60:
+        status_label = "ringan"
+        message = "Pose cukup mirip, sedikit penyesuaian lagi."
+    else:
+        status_label = "buruk"
+        message = "Pose belum menyerupai gerakan referensi."
+
+    return {
+        "exercise_id": exercise.exercise_id,
+        "nama": exercise.nama,
+        "score": score,
+        "status": status_label,
+        "message": message,
+    }

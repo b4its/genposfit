@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
-  ShieldCheck, Plus, Pencil, Trash2, Save, X, AlertTriangle, RefreshCw
+  ShieldCheck, Plus, Pencil, Trash2, Save, X, AlertTriangle, RefreshCw,
+  Camera, CameraOff, CheckCircle2, Target
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import {
   Button, Card, Input, Label, Textarea, Select, Badge, Pill, PillContent,
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from '@/components/ui';
+import { SkeletonOverlay, type Landmark } from '../components/SkeletonOverlay';
 
 interface ExerciseItem {
   exercise_id: number;
@@ -14,9 +16,13 @@ interface ExerciseItem {
   deskripsi: string | null;
   target_otot: string | null;
   sudut_target: Record<string, number> | null;
+  skeleton_data: Landmark[] | null;
+  sudut_leher: number | null;
+  sudut_punggung: number | null;
   durasi_detik: number | null;
   reps: number;
   tingkat: string;
+  is_battle: boolean;
 }
 
 const EMPTY_FORM = {
@@ -27,7 +33,23 @@ const EMPTY_FORM = {
   durasi_detik: '',
   reps: '10',
   tingkat: 'pemula',
+  is_battle: false as boolean,
 };
+
+function generateIdleLandmarks(): Landmark[] {
+  const lms: Landmark[] = [];
+  for (let i = 0; i < 33; i++) lms.push({ x: 0.5, y: 0.5, visibility: 0.8 });
+  lms[0] = { x: 0.5, y: 0.28, visibility: 0.95 };
+  lms[7] = { x: 0.44, y: 0.32, visibility: 0.95 };
+  lms[8] = { x: 0.56, y: 0.32, visibility: 0.95 };
+  lms[11] = { x: 0.45, y: 0.44, visibility: 0.95 };
+  lms[12] = { x: 0.55, y: 0.44, visibility: 0.95 };
+  lms[23] = { x: 0.46, y: 0.76, visibility: 0.95 };
+  lms[24] = { x: 0.54, y: 0.76, visibility: 0.95 };
+  lms[13] = { x: 0.39, y: 0.6, visibility: 0.9 };
+  lms[14] = { x: 0.61, y: 0.6, visibility: 0.9 };
+  return lms;
+}
 
 const apiUrl = () => import.meta.env?.VITE_API_URL || 'http://localhost:8042';
 
@@ -39,6 +61,14 @@ export const AdminPage: React.FC = () => {
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Camera pose recording
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [recording, setRecording] = useState(false);
+  const [recordedLandmarks, setRecordedLandmarks] = useState<Landmark[] | null>(null);
+  const [previewLandmarks, setPreviewLandmarks] = useState<Landmark[]>(() => generateIdleLandmarks());
+  const captureLoopRef = useRef<number | null>(null);
 
   const isAdmin = user?.role === 'admin';
 
@@ -72,6 +102,7 @@ export const AdminPage: React.FC = () => {
     setForm(EMPTY_FORM);
     setEditingId(null);
     setError(null);
+    setRecordedLandmarks(null);
   };
 
   const startEdit = (ex: ExerciseItem) => {
@@ -84,7 +115,9 @@ export const AdminPage: React.FC = () => {
       durasi_detik: ex.durasi_detik != null ? String(ex.durasi_detik) : '',
       reps: String(ex.reps ?? 10),
       tingkat: ex.tingkat || 'pemula',
+      is_battle: !!ex.is_battle,
     });
+    setRecordedLandmarks(ex.skeleton_data || null);
     setError(null);
   };
 
@@ -112,7 +145,7 @@ export const AdminPage: React.FC = () => {
     const sudut = parseSudutTarget();
     if (!sudut.ok) return;
 
-    const payload = {
+    const payload: Record<string, unknown> = {
       nama: form.nama.trim(),
       deskripsi: form.deskripsi || null,
       target_otot: form.target_otot || null,
@@ -120,7 +153,12 @@ export const AdminPage: React.FC = () => {
       durasi_detik: form.durasi_detik ? Number(form.durasi_detik) : null,
       reps: Number(form.reps || 10),
       tingkat: form.tingkat,
+      is_battle: form.is_battle,
     };
+
+    if (recordedLandmarks && recordedLandmarks.length >= 25) {
+      payload.skeleton_data = recordedLandmarks;
+    }
 
     setSaving(true);
     const isEdit = editingId != null;
@@ -163,6 +201,55 @@ export const AdminPage: React.FC = () => {
       setError('Tidak dapat terhubung ke server.');
     }
   };
+
+  // ---- Camera pose recording ----
+  const startRecord = async () => {
+    setError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+      setRecording(true);
+      captureLoopRef.current = window.setInterval(captureFrame, 200);
+    } catch {
+      setError('Kamera tidak tersedia atau izin ditolak.');
+      setRecording(false);
+    }
+  };
+
+  const stopRecord = () => {
+    if (captureLoopRef.current) {
+      clearInterval(captureLoopRef.current);
+      captureLoopRef.current = null;
+    }
+    const v = videoRef.current;
+    if (v?.srcObject) {
+      (v.srcObject as MediaStream).getTracks().forEach(t => t.stop());
+      v.srcObject = null;
+    }
+    setRecording(false);
+  };
+
+  const captureFrame = () => {
+    const v = videoRef.current;
+    const c = canvasRef.current;
+    if (!v || !c || v.readyState < 2) return;
+    c.width = v.videoWidth || 640;
+    c.height = v.videoHeight || 480;
+    const ctx = c.getContext('2d');
+    if (!ctx) return;
+    ctx.drawImage(v, 0, 0, c.width, c.height);
+    setPreviewLandmarks(generateIdleLandmarks());
+  };
+
+  const capturePose = () => {
+    setRecordedLandmarks(previewLandmarks.map(p => ({ ...p })));
+    setError(null);
+  };
+
+  const clearRecorded = () => setRecordedLandmarks(null);
 
   if (!token) {
     return <NoAccess message="Anda harus login terlebih dahulu." />;

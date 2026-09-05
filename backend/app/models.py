@@ -81,9 +81,13 @@ class Exercise(Base):
     deskripsi = Column(Text, nullable=True)
     target_otot = Column(String(150), nullable=True)
     sudut_target = Column(JSON, nullable=True)
+    skeleton_data = Column(JSON, nullable=True)  # 33 landmark reference yang direkam admin
+    sudut_leher = Column(DECIMAL(6, 2), nullable=True)
+    sudut_punggung = Column(DECIMAL(6, 2), nullable=True)
     durasi_detik = Column(SmallInteger, nullable=True)
     reps = Column(SmallInteger, default=10)
     tingkat = Column(String(20), default="pemula")  # 'pemula', 'menengah', 'lanjut'
+    is_battle = Column(SmallInteger, default=0)  # 1 = bisa dipakai gerakan battle multiplayer
 
     sessions = relationship("ExerciseSession", back_populates="exercise")
 
