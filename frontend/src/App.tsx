@@ -5,6 +5,7 @@ import { RegisterPose } from './pages/RegisterPose';
 import { Monitor } from './pages/Monitor';
 import { Dashboard } from './pages/Dashboard';
 import { Exercises } from './pages/Exercises';
+import { SkeletonPreview } from './pages/SkeletonPreview';
 import { ShieldCheck } from 'lucide-react';
 
 export function App() {
@@ -42,6 +43,7 @@ export function App() {
       if (e.key === 'd' || e.key === 'D') setActiveTab('dashboard');
       if (e.key === 'e' || e.key === 'E') setActiveTab('exercises');
       if (e.key === 'h' || e.key === 'H') setActiveTab('landing');
+      if (e.key === 's' || e.key === 'S') setActiveTab('skeleton');
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -64,6 +66,7 @@ export function App() {
         {activeTab === 'monitor' && <Monitor onNavigateToExercises={() => setActiveTab('exercises')} />}
         {activeTab === 'dashboard' && <Dashboard />}
         {activeTab === 'exercises' && <Exercises />}
+        {activeTab === 'skeleton' && <SkeletonPreview />}
       </main>
 
       {/* Product Footer */}
@@ -90,6 +93,7 @@ export function App() {
               <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-700 rounded text-slate-700 dark:text-slate-200 font-mono shadow-xs">C</kbd> Kalibrasi
               <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-700 rounded text-slate-700 dark:text-slate-200 font-mono shadow-xs">D</kbd> Dashboard
               <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-700 rounded text-slate-700 dark:text-slate-200 font-mono shadow-xs">E</kbd> Terapi
+              <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-700 rounded text-slate-700 dark:text-slate-200 font-mono shadow-xs">S</kbd> Skeleton
             </div>
           </div>
         </div>

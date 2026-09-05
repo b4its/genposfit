@@ -1,9 +1,9 @@
 import React from 'react';
-import { Activity, ShieldCheck, Camera, BarChart3, Dumbbell, Home } from 'lucide-react';
+import { Activity, ShieldCheck, Camera, BarChart3, Dumbbell, Home, Eye } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { Pill, PillIndicator, PillContent, Badge } from '@/components/ui';
 
-export type PageTab = 'landing' | 'monitor' | 'register' | 'dashboard' | 'exercises';
+export type PageTab = 'landing' | 'monitor' | 'register' | 'dashboard' | 'exercises' | 'skeleton';
 
 interface NavbarProps {
   activeTab: PageTab;
@@ -22,6 +22,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'register', label: 'Kalibrasi', icon: ShieldCheck },
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
     { id: 'exercises', label: 'Latihan Terapi', icon: Dumbbell },
+    { id: 'skeleton', label: 'Skeleton', icon: Eye, badge: 'Preview' },
   ];
 
   return (
