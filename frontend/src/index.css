@@ -1,32 +1,67 @@
 /* ============================================================
-   GenPosFit — Posture & Biomechanical Health Engine
-   Primary Accent: Medical Blue & Ergonomic Emerald
-   Typography: Plus Jakarta Sans (UI) & Fira Code (Telemetry)
+   GenPosFit — Biomechanical Posture & Ergonomics Engine
+   Tailwind CSS v4 Design Tokens & Root Theme
    ============================================================ */
 
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-:root {
-  /* Light Theme Defaults */
+@theme {
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  --bg-primary: #f8fafc;
-  --bg-surface: #ffffff;
-  --bg-subtle: #f1f5f9;
-  --bg-card: #ffffff;
-  --bg-card-hover: #f8fafc;
-  --bg-input: #ffffff;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
   --border: #e2e8f0;
-  --border-subtle: #edf2f7;
-  --border-focus: #3b82f6;
+  --input: #e2e8f0;
+  --ring: #3b82f6;
 
-  --text-main: #0f172a;
+  /* Temporary aliases during page migration */
+  --bg-primary: var(--background);
+  --bg-surface: var(--card);
+  --bg-card: var(--card);
+  --bg-subtle: var(--muted);
+  --bg-input: var(--card);
+  --text-main: var(--foreground);
   --text-secondary: #334155;
-  --text-muted: #64748b;
-
+  --text-muted: var(--muted-foreground);
   --accent-blue: #2563eb;
   --accent-blue-light: #eff6ff;
   --accent-green: #059669;
@@ -35,31 +70,38 @@
   --accent-yellow-light: #fffbeb;
   --accent-red: #dc2626;
   --accent-red-light: #fef2f2;
-
-  --glow-blue: 0 4px 20px rgba(37, 99, 235, 0.12);
-  --glow-green: 0 4px 20px rgba(5, 150, 105, 0.12);
-  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
 }
 
 .dark {
-  /* Dark Theme */
-  --bg-primary: #0b0f17;
-  --bg-surface: #111827;
-  --bg-subtle: #1e293b;
-  --bg-card: #111827;
-  --bg-card-hover: #172033;
-  --bg-input: #0f172a;
+  --background: #0b0f17;
+  --foreground: #f8fafc;
+  --card: #111827;
+  --card-foreground: #f8fafc;
+  --popover: #111827;
+  --popover-foreground: #f8fafc;
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --secondary: #1e293b;
+  --secondary-foreground: #f8fafc;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #1e293b;
+  --accent-foreground: #f8fafc;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
   --border: #1f2937;
-  --border-subtle: #1e293b;
-  --border-focus: #60a5fa;
+  --input: #1f2937;
+  --ring: #60a5fa;
 
-  --text-main: #f8fafc;
+  /* Temporary aliases during page migration */
+  --bg-primary: var(--background);
+  --bg-surface: var(--card);
+  --bg-card: var(--card);
+  --bg-subtle: var(--muted);
+  --bg-input: #0f172a;
+  --text-main: var(--foreground);
   --text-secondary: #cbd5e1;
-  --text-muted: #94a3b8;
-
+  --text-muted: var(--muted-foreground);
   --accent-blue: #3b82f6;
   --accent-blue-light: rgba(59, 130, 246, 0.15);
   --accent-green: #10b981;
@@ -68,13 +110,6 @@
   --accent-yellow-light: rgba(245, 158, 11, 0.15);
   --accent-red: #ef4444;
   --accent-red-light: rgba(239, 68, 68, 0.15);
-
-  --glow-blue: 0 0 35px rgba(59, 130, 246, 0.2);
-  --glow-green: 0 0 35px rgba(16, 185, 129, 0.2);
-  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px -1px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.6);
 }
 
 * {
@@ -85,25 +120,19 @@
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--bg-primary);
-  color: var(--text-main);
+  background-color: var(--background);
+  color: var(--foreground);
   min-height: 100vh;
   line-height: 1.5;
-  transition: background-color 0.25s ease, color 0.25s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
   overflow-x: hidden;
 }
 
 /* Subtle ambient background pattern */
 .bg-ambient-pattern {
-  background-color: var(--bg-primary);
+  background-color: var(--background);
   background-image: radial-gradient(var(--border) 1px, transparent 1px);
   background-size: 28px 28px;
-}
-
-/* Monospace font utility for numeric telemetry only */
-.font-mono {
-  font-family: var(--font-mono);
-  font-feature-settings: 'tnum' on, 'zero' on;
 }
 
 /* App container */
@@ -114,48 +143,22 @@ body {
   padding: 0 1.5rem;
 }
 
-/* Modern Card with subtle elevation and border */
+/* Legacy helpers being migrated */
 .dev-card,
 .app-card {
-  background-color: var(--bg-surface);
+  background-color: var(--card);
   border: 1px solid var(--border);
-  border-radius: 14px;
-  box-shadow: var(--shadow-sm);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+  border-radius: 1rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
-
-.dev-card:hover,
-.app-card:hover {
-  border-color: rgba(59, 130, 246, 0.35);
-}
-
-/* Form Input & Select */
 .app-input {
   width: 100%;
   padding: 0.6rem 0.85rem;
-  border-radius: 9px;
-  background-color: var(--bg-input);
+  border-radius: 0.75rem;
+  background-color: var(--card);
   border: 1px solid var(--border);
-  color: var(--text-main);
-  font-size: 0.875rem;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  color: var(--foreground);
 }
-
-.app-input:focus {
-  outline: none;
-  border-color: var(--border-focus);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-}
-
-/* Glassmorphism panel */
-.glass-panel {
-  background: var(--bg-card);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--border);
-}
-
-/* Status Pill */
 .status-pill {
   display: inline-flex;
   align-items: center;
@@ -164,29 +167,23 @@ body {
   border-radius: 9999px;
   font-size: 0.72rem;
   font-weight: 600;
-  letter-spacing: 0.03em;
   text-transform: uppercase;
 }
-
 .status-pill-bagus {
-  background: var(--accent-green-light);
-  color: var(--accent-green);
-  border: 1px solid rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.3);
 }
-
 .status-pill-ringan {
-  background: var(--accent-yellow-light);
-  color: var(--accent-yellow);
-  border: 1px solid rgba(217, 119, 6, 0.35);
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.3);
 }
-
 .status-pill-buruk {
-  background: var(--accent-red-light);
-  color: var(--accent-red);
-  border: 1px solid rgba(220, 38, 38, 0.35);
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.3);
 }
-
-/* Primary Action Buttons */
 .btn-primary {
   display: inline-flex;
   align-items: center;
@@ -195,21 +192,10 @@ body {
   padding: 0.65rem 1.25rem;
   font-weight: 600;
   font-size: 0.875rem;
-  border-radius: 9px;
-  background: linear-gradient(135deg, var(--accent-blue) 0%, #1d4ed8 100%);
+  border-radius: 0.75rem;
+  background-color: #2563eb;
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
 }
-
-.btn-primary:hover {
-  filter: brightness(1.08);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
-}
-
 .btn-green {
   display: inline-flex;
   align-items: center;
@@ -218,21 +204,10 @@ body {
   padding: 0.65rem 1.25rem;
   font-weight: 600;
   font-size: 0.875rem;
-  border-radius: 9px;
-  background: linear-gradient(135deg, var(--accent-green) 0%, #047857 100%);
+  border-radius: 0.75rem;
+  background-color: #059669;
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.25);
 }
-
-.btn-green:hover {
-  filter: brightness(1.08);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35);
-}
-
 .btn-outline {
   display: inline-flex;
   align-items: center;
@@ -241,32 +216,24 @@ body {
   padding: 0.65rem 1.25rem;
   font-weight: 600;
   font-size: 0.875rem;
-  border-radius: 9px;
-  background: var(--bg-surface);
-  color: var(--text-main);
+  border-radius: 0.75rem;
+  background-color: var(--card);
+  color: var(--foreground);
   border: 1px solid var(--border);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: var(--shadow-xs);
 }
 
-.btn-outline:hover {
-  background: var(--bg-subtle);
-  border-color: var(--text-muted);
-}
-
-/* Custom scrollbars */
+/* Custom subtle scrollbars */
 ::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--bg-primary);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
   background: var(--border);
-  border-radius: 4px;
+  border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+  background: var(--muted-foreground);
 }
