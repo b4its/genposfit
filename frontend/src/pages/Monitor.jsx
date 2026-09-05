@@ -272,12 +272,12 @@ export const Monitor = ({ onNavigateToExercises }) => {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
             </span>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight font-mono">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
               Live Ergonomics Monitor
             </h1>
           </div>
-          <p className="text-xs font-mono text-slate-400">
-            Sesi: #{formatTime(sessionSeconds)} · FPS: ~30 · WebSocket: :8042
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+            Sesi: #{formatTime(sessionSeconds)} · FPS: ~30 · Deteksi Biomekanika Aktif
           </p>
         </div>
 
@@ -285,10 +285,10 @@ export const Monitor = ({ onNavigateToExercises }) => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setAudioAlerts(!audioAlerts)}
-            className={`p-2 rounded-lg border text-xs font-mono cursor-pointer flex items-center gap-1.5 ${
+            className={`p-2 rounded-lg border text-xs font-medium cursor-pointer flex items-center gap-1.5 transition-all ${
               audioAlerts
-                ? 'bg-blue-600/20 border-blue-500 text-blue-400'
-                : 'bg-slate-900 border-slate-700 text-slate-400'
+                ? 'bg-blue-500/10 border-blue-500/30 text-blue-600 dark:text-blue-400'
+                : 'btn-outline text-slate-500'
             }`}
           >
             {audioAlerts ? <Volume2 size={16} /> : <VolumeX size={16} />}
@@ -297,10 +297,10 @@ export const Monitor = ({ onNavigateToExercises }) => {
 
           <button
             onClick={toggleCamera}
-            className={`px-3 py-2 rounded-lg border text-xs font-mono cursor-pointer flex items-center gap-2 ${
-camActive
-                ? 'bg-emerald-600/20 border-emerald-500 text-emerald-400'
-                : 'bg-slate-900 border-slate-700 text-slate-300'
+            className={`px-3 py-2 rounded-lg border text-xs font-medium cursor-pointer flex items-center gap-2 transition-all ${
+              camActive
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-semibold'
+                : 'btn-outline text-slate-700 dark:text-slate-200'
             }`}
           >
             {camActive ? <Camera size={16} /> : <CameraOff size={16} />}
@@ -309,10 +309,10 @@ camActive
 
           <button
             onClick={() => setIsLive(!isLive)}
-            className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer ${
+            className={`px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all ${
               isLive
-                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30'
-                : 'bg-amber-600 text-white'
+                ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/25'
+                : 'bg-amber-600 hover:bg-amber-500 text-white shadow-md shadow-amber-600/25'
             }`}
           >
             {isLive ? <Pause size={14} /> : <Play size={14} />}
@@ -393,179 +393,179 @@ camActive
               </div>
             </div>
           </div>
-
-          {/* Simulator manual sliders for testing & presentation */}
-          <div className="dev-card p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-mono text-slate-400 flex items-center gap-1.5">
-                <Sliders size={14} className="text-blue-400" />
-                <span>Simulasi Gerakan & Deviasi Biomekanika</span>
-              </span>
-              <button
-                onClick={() => { setSimNeck(165); setSimBack(171); }}
-                className="text-[11px] font-mono text-blue-400 hover:underline cursor-pointer"
-              >
-                Reset Ergonomis
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
-              <div>
-                <div className="flex justify-between text-slate-400 mb-1">
-                  <span>Sudut Leher (Forward Head):</span>
-                  <span className="text-emerald-400 font-bold">{simNeck}°</span>
-                </div>
-                <input
-                  type="range"
-                  min="130"
-                  max="175"
-                  value={simNeck}
-                  onChange={(e) => {
-                    setSimNeck(parseFloat(e.target.value));
-                    setSimMode(true);
-                  }}
-                  className="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
-                />
-              </div>
-
-              <div>
-                <div className="flex justify-between text-slate-400 mb-1">
-                  <span>Sudut Punggung (Trunk Slope):</span>
-                  <span className="text-blue-400 font-bold">{simBack}°</span>
-                </div>
-                <input
-                  type="range"
-                  min="135"
-                  max="178"
-                  value={simBack}
-                  onChange={(e) => {
-                    setSimBack(parseFloat(e.target.value));
-                    setSimMode(true);
-                  }}
-                  className="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right HUD: Ergonomic Score, Gauges & Action Recommendations */}
-        <div className="lg:col-span-4 flex flex-col gap-4">
-          {/* Main Score Card */}
-          <div className="dev-card p-6 text-center relative overflow-hidden"
-            style={{
-              borderColor: status === 'bagus' ? 'rgba(16, 185, 129, 0.4)' : status === 'ringan' ? 'rgba(245, 158, 11, 0.4)' : 'rgba(239, 68, 68, 0.4)'
-            }}>
-            <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">
-              Skor Kualitas Ergonomi
-            </div>
-
-            {/* Circular Gauge */}
-            <div className="relative w-36 h-36 mx-auto my-2 flex items-center justify-center">
-              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                <circle
-                  cx="50" cy="50" r="42"
-                  strokeWidth="8"
-                  stroke="currentColor"
-                  className="text-slate-800"
-                  fill="transparent"
-                />
-                <circle
-                  cx="50" cy="50" r="42"
-                  strokeWidth="8"
-                  stroke={status === 'bagus' ? '#10b981' : status === 'ringan' ? '#f59e0b' : '#ef4444'}
-                  strokeDasharray={264}
-                  strokeDashoffset={264 - (264 * score) / 100}
-                  strokeLinecap="round"
-                  fill="transparent"
-                  className="transition-all duration-300"
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-3xl font-extrabold font-mono">{score}</span>
-                <span className="text-[10px] font-mono text-slate-400">/ 100</span>
-              </div>
-            </div>
-
-            <div className="mt-2">
-              <div className={`status-pill status-pill-${status}`}>
-                {status === 'bagus' ? 'ERGONOMIS BAGUS' : status === 'ringan' ? 'DEVIASI RINGAN' : 'POSTUR BURUK'}
-              </div>
-            </div>
-
-            <p className="text-xs text-slate-300 mt-3 font-mono leading-relaxed bg-slate-900/50 p-2.5 rounded-lg border border-slate-800">
-              {feedback}
-            </p>
-          </div>
-
-          {/* Joint Breakdown Card */}
-          <div className="dev-card p-5">
-            <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-wider mb-4">
-              Biomechanical Telemetry
-            </h3>
-
-            <div className="space-y-3.5 text-xs font-mono">
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-slate-400">Sudut Leher (Craniovertebral):</span>
-                  <span className="text-emerald-400 font-bold">{neckAngle}° (Base 165°)</span>
-                </div>
-                <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-emerald-500"
-                    style={{ width: `${Math.min(100, (neckAngle / 175) * 100)}%` }}
-                  ></div>
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-slate-400">Sudut Punggung (Trunk):</span>
-                  <span className="text-blue-400 font-bold">{backAngle}° (Base 170°)</span>
-                </div>
-                <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-blue-500"
-                    style={{ width: `${Math.min(100, (backAngle / 180) * 100)}%` }}
-                  ></div>
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-slate-400">Kemiringan Bahu (Symmetry):</span>
-                  <span className="text-slate-200 font-bold">{(shoulderLevel * 100).toFixed(1)}%</span>
-                </div>
-                <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-teal-400"
-                    style={{ width: `${Math.min(100, shoulderLevel * 1000)}%` }}
-                  ></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Therapy Suggestion Box */}
-          <div className="dev-card p-5 bg-gradient-to-br from-emerald-950/30 to-blue-950/20 border-emerald-500/20">
-            <div className="flex items-center gap-2 text-emerald-400 text-xs font-mono font-bold mb-2">
-              <Dumbbell size={16} />
-              <span>Rekomendasi Terapi Postur</span>
-            </div>
-            <p className="text-xs text-slate-300 font-mono leading-relaxed mb-4">
-              Lakukan latihan <strong>Chin Tuck</strong> selama 5 detik untuk menguatkan fleksor leher dalam dan mengurangi ketegangan servikal.
-            </p>
-            {onNavigateToExercises && (
-              <button
-                onClick={onNavigateToExercises}
-                className="w-full btn-green py-2 text-xs font-mono cursor-pointer"
-              >
-                Buka Menu Latihan Terapi
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+ 
+           {/* Simulator manual sliders for testing & presentation */}
+           <div className="app-card p-5">
+             <div className="flex items-center justify-between mb-3">
+               <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                 <Sliders size={14} className="text-blue-500" />
+                 <span>Simulasi Gerakan & Deviasi Biomekanika</span>
+               </span>
+               <button
+                 onClick={() => { setSimNeck(165); setSimBack(171); }}
+                 className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+               >
+                 Reset Ergonomis
+               </button>
+             </div>
+ 
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+               <div>
+                 <div className="flex justify-between text-slate-600 dark:text-slate-400 font-medium mb-1.5">
+                   <span>Sudut Leher (Forward Head):</span>
+                   <span className="text-emerald-600 dark:text-emerald-400 font-bold font-mono">{simNeck}°</span>
+                 </div>
+                 <input
+                   type="range"
+                   min="130"
+                   max="175"
+                   value={simNeck}
+                   onChange={(e) => {
+                     setSimNeck(parseFloat(e.target.value));
+                     setSimMode(true);
+                   }}
+                   className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                 />
+               </div>
+ 
+               <div>
+                 <div className="flex justify-between text-slate-600 dark:text-slate-400 font-medium mb-1.5">
+                   <span>Sudut Punggung (Trunk Slope):</span>
+                   <span className="text-blue-600 dark:text-blue-400 font-bold font-mono">{simBack}°</span>
+                 </div>
+                 <input
+                   type="range"
+                   min="135"
+                   max="178"
+                   value={simBack}
+                   onChange={(e) => {
+                     setSimBack(parseFloat(e.target.value));
+                     setSimMode(true);
+                   }}
+                   className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                 />
+               </div>
+             </div>
+           </div>
+         </div>
+ 
+         {/* Right HUD: Ergonomic Score, Gauges & Action Recommendations */}
+         <div className="lg:col-span-4 flex flex-col gap-4">
+           {/* Main Score Card */}
+           <div className="app-card p-6 text-center relative overflow-hidden"
+             style={{
+               borderColor: status === 'bagus' ? 'rgba(16, 185, 129, 0.4)' : status === 'ringan' ? 'rgba(245, 158, 11, 0.4)' : 'rgba(239, 68, 68, 0.4)'
+             }}>
+             <div className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+               Skor Kualitas Ergonomi
+             </div>
+ 
+             {/* Circular Gauge */}
+             <div className="relative w-36 h-36 mx-auto my-2 flex items-center justify-center">
+               <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                 <circle
+                   cx="50" cy="50" r="42"
+                   strokeWidth="8"
+                   stroke="currentColor"
+                   className="text-slate-200 dark:text-slate-800"
+                   fill="transparent"
+                 />
+                 <circle
+                   cx="50" cy="50" r="42"
+                   strokeWidth="8"
+                   stroke={status === 'bagus' ? '#10b981' : status === 'ringan' ? '#f59e0b' : '#ef4444'}
+                   strokeDasharray={264}
+                   strokeDashoffset={264 - (264 * score) / 100}
+                   strokeLinecap="round"
+                   fill="transparent"
+                   className="transition-all duration-300"
+                 />
+               </svg>
+               <div className="absolute inset-0 flex flex-col items-center justify-center">
+                 <span className="text-3xl font-extrabold font-mono text-slate-900 dark:text-white">{score}</span>
+                 <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">/ 100</span>
+               </div>
+             </div>
+ 
+             <div className="mt-2">
+               <div className={`status-pill status-pill-${status}`}>
+                 {status === 'bagus' ? 'ERGONOMIS BAGUS' : status === 'ringan' ? 'DEVIASI RINGAN' : 'POSTUR BURUK'}
+               </div>
+             </div>
+ 
+             <p className="text-xs text-slate-700 dark:text-slate-300 mt-3 leading-relaxed bg-slate-100 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-700/60">
+               {feedback}
+             </p>
+           </div>
+ 
+           {/* Joint Breakdown Card */}
+           <div className="app-card p-5">
+             <h3 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4">
+               Biomechanical Telemetry
+             </h3>
+ 
+             <div className="space-y-3.5 text-xs font-mono">
+               <div>
+                 <div className="flex justify-between mb-1">
+                   <span className="text-slate-500 dark:text-slate-400">Sudut Leher (Craniovertebral):</span>
+                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">{neckAngle}° (Base 165°)</span>
+                 </div>
+                 <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                   <div
+                     className="h-full bg-emerald-500"
+                     style={{ width: `${Math.min(100, (neckAngle / 175) * 100)}%` }}
+                   ></div>
+                 </div>
+               </div>
+ 
+               <div>
+                 <div className="flex justify-between mb-1">
+                   <span className="text-slate-500 dark:text-slate-400">Sudut Punggung (Trunk):</span>
+                   <span className="text-blue-600 dark:text-blue-400 font-bold">{backAngle}° (Base 170°)</span>
+                 </div>
+                 <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                   <div
+                     className="h-full bg-blue-500"
+                     style={{ width: `${Math.min(100, (backAngle / 180) * 100)}%` }}
+                   ></div>
+                 </div>
+               </div>
+ 
+               <div>
+                 <div className="flex justify-between mb-1">
+                   <span className="text-slate-500 dark:text-slate-400">Kemiringan Bahu (Symmetry):</span>
+                   <span className="text-slate-800 dark:text-slate-200 font-bold">{(shoulderLevel * 100).toFixed(1)}%</span>
+                 </div>
+                 <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                   <div
+                     className="h-full bg-teal-500"
+                     style={{ width: `${Math.min(100, shoulderLevel * 1000)}%` }}
+                   ></div>
+                 </div>
+               </div>
+             </div>
+           </div>
+ 
+           {/* Therapy Suggestion Box */}
+           <div className="app-card p-5 bg-gradient-to-br from-emerald-500/10 via-transparent to-blue-500/5 border-emerald-500/30">
+             <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-xs font-bold mb-2">
+               <Dumbbell size={16} />
+               <span>Rekomendasi Terapi Postur</span>
+             </div>
+             <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-4">
+               Lakukan latihan <strong>Chin Tuck</strong> selama 5 detik untuk menguatkan fleksor leher dalam dan mengurangi ketegangan servikal.
+             </p>
+             {onNavigateToExercises && (
+               <button
+                 onClick={onNavigateToExercises}
+                 className="w-full btn-green py-2 text-xs cursor-pointer"
+               >
+                 Buka Menu Latihan Terapi
+               </button>
+             )}
+           </div>
+         </div>
+       </div>
+     </div>
   );
 };

@@ -251,42 +251,42 @@ export const RegisterPose = ({ onFinishCalibration }) => {
         {/* Left Column: Form Setup */}
         <div className="lg:col-span-5 flex flex-col gap-6">
           {/* User Profile Card */}
-          <div className="dev-card p-5">
-            <h3 className="text-sm font-bold font-mono text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <div className="app-card p-5">
+            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 flex items-center gap-2">
               <UserCheck size={16} className="text-blue-500" />
               <span>Profil Pengguna</span>
             </h3>
 
-            <div className="space-y-4 text-xs font-mono">
+            <div className="space-y-4 text-xs">
               <div>
-                <label className="block text-slate-400 mb-1">Nama Lengkap</label>
+                <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1.5">Nama Lengkap</label>
                 <input
                   type="text"
                   value={nama}
                   onChange={(e) => setNama(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white focus:border-blue-500 focus:outline-none"
+                  className="app-input"
                   placeholder="Misal: Alex Chandra"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-400 mb-1">Email (Opsional)</label>
+                <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1.5">Email (Opsional)</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white focus:border-blue-500 focus:outline-none"
+                  className="app-input"
                   placeholder="alex@example.com"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-400 mb-1">Pekerjaan</label>
+                <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1.5">Pekerjaan</label>
                 <input
                   type="text"
                   value={pekerjaan}
                   onChange={(e) => setPekerjaan(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white focus:border-blue-500 focus:outline-none"
+                  className="app-input"
                   placeholder="Software Engineer / Designer"
                 />
               </div>
@@ -294,14 +294,14 @@ export const RegisterPose = ({ onFinishCalibration }) => {
           </div>
 
           {/* Calibration Config */}
-          <div className="dev-card p-5">
-            <h3 className="text-sm font-bold font-mono text-slate-400 uppercase tracking-wider mb-4">
+          <div className="app-card p-5">
+            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4">
               Pilih Orientasi & Tipe Pose
             </h3>
 
-            <div className="space-y-4 text-xs font-mono">
+            <div className="space-y-4 text-xs">
               <div>
-                <label className="block text-slate-400 mb-1">Sudut Kamera (Orientasi):</label>
+                <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1.5">Sudut Kamera (Orientasi):</label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { id: 'frontal', label: 'Frontal' },
@@ -314,8 +314,8 @@ export const RegisterPose = ({ onFinishCalibration }) => {
                       onClick={() => setOrientasi(item.id)}
                       className={`py-2 px-2 rounded-lg border text-center cursor-pointer transition-all ${
                         orientasi === item.id
-                          ? 'bg-blue-600/20 border-blue-500 text-blue-400 font-bold'
-                          : 'bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-700'
+                          ? 'bg-blue-600/10 border-blue-500 text-blue-600 dark:text-blue-400 font-bold'
+                          : 'btn-outline text-slate-600 dark:text-slate-300'
                       }`}
                     >
                       {item.label}
@@ -325,11 +325,11 @@ export const RegisterPose = ({ onFinishCalibration }) => {
               </div>
 
               <div>
-                <label className="block text-slate-400 mb-1">Tipe Pose Target:</label>
+                <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1.5">Tipe Pose Target:</label>
                 <select
                   value={tipePose}
                   onChange={(e) => setTipePose(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white focus:border-blue-500 focus:outline-none"
+                  className="app-input"
                 >
                   <option value="duduk_tegak">Duduk Tegak (Ideal Ergonomis)</option>
                   <option value="duduk_rileks">Duduk Rileks (Posisi Kerja Alami)</option>
@@ -465,26 +465,26 @@ export const RegisterPose = ({ onFinishCalibration }) => {
 
           {/* Calibrated Items Summary Table */}
           {collectedBaselines.length > 0 && (
-            <div className="dev-card p-5">
+            <div className="app-card p-5">
               <div className="flex items-center justify-between mb-3">
-                <h4 className="text-sm font-bold font-mono text-emerald-400 flex items-center gap-2">
+                <h4 className="text-sm font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
                   <CheckCircle2 size={16} />
                   <span>{collectedBaselines.length} Pose Siap Disimpan</span>
                 </h4>
                 <button
                   onClick={handleSubmitToBackend}
                   disabled={isSubmitting}
-                  className="btn-primary py-1.5 px-4 text-xs font-mono cursor-pointer"
+                  className="btn-primary py-1.5 px-4 text-xs font-semibold cursor-pointer"
                 >
                   <Save size={14} />
-                  <span>{isSubmitting ? 'Menyimpan...' : 'Simpan Profil ke MySQL'}</span>
+                  <span>{isSubmitting ? 'Menyimpan...' : 'Simpan Profil Kalibrasi'}</span>
                 </button>
               </div>
 
               <div className="overflow-x-auto">
                 <table className="w-full text-xs font-mono text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-slate-800 text-slate-400">
+                    <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold">
                       <th className="py-2">Orientasi</th>
                       <th className="py-2">Tipe Pose</th>
                       <th className="py-2">Rata2 Leher</th>
@@ -494,12 +494,12 @@ export const RegisterPose = ({ onFinishCalibration }) => {
                   </thead>
                   <tbody>
                     {collectedBaselines.map((b, idx) => (
-                      <tr key={idx} className="border-b border-slate-800/50">
-                        <td className="py-2 font-bold text-blue-400">{b.orientasi}</td>
-                        <td className="py-2 text-slate-300">{b.tipe_pose}</td>
-                        <td className="py-2 text-emerald-400">{b.sudut_leher}°</td>
-                        <td className="py-2 text-blue-300">{b.sudut_punggung}°</td>
-                        <td className="py-2 text-slate-400">±{b.std_leher}°</td>
+                      <tr key={idx} className="border-b border-slate-100 dark:border-slate-800/60">
+                        <td className="py-2.5 font-bold text-blue-600 dark:text-blue-400">{b.orientasi}</td>
+                        <td className="py-2.5 text-slate-700 dark:text-slate-300">{b.tipe_pose}</td>
+                        <td className="py-2.5 text-emerald-600 dark:text-emerald-400 font-bold">{b.sudut_leher}°</td>
+                        <td className="py-2.5 text-blue-600 dark:text-blue-300 font-bold">{b.sudut_punggung}°</td>
+                        <td className="py-2.5 text-slate-500 dark:text-slate-400">±{b.std_leher}°</td>
                       </tr>
                     ))}
                   </tbody>
@@ -507,15 +507,15 @@ export const RegisterPose = ({ onFinishCalibration }) => {
               </div>
 
               {submitSuccess && (
-                <div className="mt-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 size={16} />
-                    <span>Profil kalibrasi personal berhasil disimpan ke database MySQL!</span>
+                <div className="mt-4 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 text-xs flex items-center justify-between">
+                  <div className="flex items-center gap-2 font-medium">
+                    <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
+                    <span>Profil kalibrasi personal berhasil disimpan ke sistem!</span>
                   </div>
                   {onFinishCalibration && (
                     <button
                       onClick={() => onFinishCalibration()}
-                      className="inline-flex items-center gap-1 font-bold text-white underline cursor-pointer"
+                      className="inline-flex items-center gap-1 font-bold text-emerald-700 dark:text-white underline cursor-pointer"
                     >
                       Buka Live Monitor <ChevronRight size={14} />
                     </button>

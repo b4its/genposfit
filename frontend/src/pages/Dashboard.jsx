@@ -93,22 +93,22 @@ export const Dashboard = () => {
       {/* Page Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono mb-2 border border-blue-500/30 bg-blue-500/10 text-blue-400">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-2 border border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400">
             <BarChart3 size={13} />
-            <span>METRICS & POSTURE INTELLIGENCE</span>
+            <span>METRIK & ANALITIK POSTUR</span>
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight font-mono">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
             Dashboard Progres Postur
           </h1>
-          <p className="text-xs text-slate-400 font-mono mt-1">
-            Data telemetri postur pengguna #1 (Alex Chandra) tersimpan di MySQL database
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Ringkasan analitik dan telemetri kesehatan ergonomis pengguna (Alex Chandra)
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={fetchData}
-            className="p-2 rounded-lg border border-slate-700 bg-slate-900 text-slate-300 hover:text-white cursor-pointer"
+            className="btn-outline p-2 text-slate-600 dark:text-slate-300 cursor-pointer"
             title="Refresh Data"
           >
             <RefreshCw size={15} />
@@ -116,7 +116,7 @@ export const Dashboard = () => {
 
           <button
             onClick={exportJSON}
-            className="btn-outline py-1.5 px-3 text-xs font-mono cursor-pointer flex items-center gap-1.5"
+            className="btn-outline py-1.5 px-3 text-xs font-medium cursor-pointer flex items-center gap-1.5"
           >
             <Download size={14} />
             <span>Export JSON</span>
@@ -127,65 +127,65 @@ export const Dashboard = () => {
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
         {/* Card 1: Ergonomic Health Score */}
-        <div className="dev-card p-5">
+        <div className="app-card p-5">
           <div className="flex justify-between items-start mb-2">
-            <span className="text-xs font-mono text-slate-400">Rata-rata Skor Postur</span>
+            <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Rata-rata Skor Postur</span>
             <span className="status-pill status-pill-bagus">7 HARI</span>
           </div>
-          <div className="text-3xl font-extrabold font-mono text-emerald-400 my-1">
-            {stats.avg_skor} <span className="text-sm font-normal text-slate-500">/ 100</span>
+          <div className="text-3xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400 my-1">
+            {stats.avg_skor} <span className="text-sm font-normal text-slate-400">/ 100</span>
           </div>
-          <div className="text-[11px] font-mono text-slate-400 flex items-center gap-1">
-            <TrendingUp size={13} className="text-emerald-400" />
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
+            <TrendingUp size={13} className="text-emerald-500" />
             <span>+3.4% peningkatan vs minggu lalu</span>
           </div>
         </div>
 
         {/* Card 2: Bagus Compliance */}
-        <div className="dev-card p-5">
+        <div className="app-card p-5">
           <div className="flex justify-between items-start mb-2">
-            <span className="text-xs font-mono text-slate-400">Kepatuhan Ergonomis</span>
-            <CheckCircle2 size={15} className="text-emerald-400" />
+            <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Kepatuhan Ergonomis</span>
+            <CheckCircle2 size={15} className="text-emerald-500" />
           </div>
-          <div className="text-3xl font-extrabold font-mono text-blue-400 my-1">
+          <div className="text-3xl font-extrabold font-mono text-blue-600 dark:text-blue-400 my-1">
             {stats.persentase_bagus}%
           </div>
-          <div className="text-[11px] font-mono text-slate-400">
+          <div className="text-[11px] text-slate-500 dark:text-slate-400">
             {stats.distribusi.bagus} dari {stats.total_logs} interval evaluasi
           </div>
         </div>
 
         {/* Card 3: Neck Angle Deviation */}
-        <div className="dev-card p-5">
+        <div className="app-card p-5">
           <div className="flex justify-between items-start mb-2">
-            <span className="text-xs font-mono text-slate-400">Rata-rata Sudut Leher</span>
-            <Shield size={15} className="text-teal-400" />
+            <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Rata-rata Sudut Leher</span>
+            <Shield size={15} className="text-teal-500" />
           </div>
-          <div className="text-3xl font-extrabold font-mono text-slate-200 my-1">
+          <div className="text-3xl font-extrabold font-mono text-slate-900 dark:text-white my-1">
             {stats.avg_leher}°
           </div>
-          <div className="text-[11px] font-mono text-slate-400">
+          <div className="text-[11px] text-slate-500 dark:text-slate-400">
             Deviasi rata-rata: ±1.8° dari baseline ideal
           </div>
         </div>
 
         {/* Card 4: Posture Logs Recorded */}
-        <div className="dev-card p-5">
+        <div className="app-card p-5">
           <div className="flex justify-between items-start mb-2">
-            <span className="text-xs font-mono text-slate-400">Total Telemetri Tersimpan</span>
-            <Clock size={15} className="text-amber-400" />
+            <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Total Telemetri Tersimpan</span>
+            <Clock size={15} className="text-amber-500" />
           </div>
-          <div className="text-3xl font-extrabold font-mono text-slate-100 my-1">
+          <div className="text-3xl font-extrabold font-mono text-slate-900 dark:text-white my-1">
             {stats.total_logs.toLocaleString()}
           </div>
-          <div className="text-[11px] font-mono text-slate-400">
-            Tabel MySQL: <code>posture_logs</code>
+          <div className="text-[11px] text-slate-500 dark:text-slate-400">
+            Sampel telemetri biometrik aktif
           </div>
         </div>
       </div>
 
       {/* Main Chart Section: Timeline Fluctuation */}
-      <div className="dev-card p-6 mb-8">
+      <div className="app-card p-6 mb-8">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b"
           style={{ borderColor: 'var(--border)' }}>
           <div>
@@ -248,75 +248,111 @@ export const Dashboard = () => {
         </div>
       </div>
 
-      {/* Lower Row: Exercise Sessions History & Raw DevTools Query */}
+      {/* Lower Row: Exercise Sessions History & Posture Distribution Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Therapy Sessions */}
-        <div className="lg:col-span-6 dev-card p-5">
+        <div className="lg:col-span-6 app-card p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold font-mono text-slate-300 flex items-center gap-2">
-              <Dumbbell size={16} className="text-emerald-400" />
-              <span>Riwayat Sesi Terapi Postur (Mode B)</span>
+            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+              <Dumbbell size={16} className="text-emerald-500" />
+              <span>Riwayat Sesi Terapi Postur</span>
             </h3>
-            <span className="text-xs font-mono text-slate-500">Tabel: exercise_sessions</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Terverifikasi AI</span>
           </div>
 
           <div className="space-y-3">
             {exerciseHistory.map(ex => (
               <div
                 key={ex.id}
-                className="flex items-center justify-between p-3 rounded-lg bg-slate-900/60 border border-slate-800 text-xs font-mono"
+                className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 text-xs"
               >
                 <div>
-                  <div className="font-bold text-slate-200">{ex.nama}</div>
-                  <div className="text-[11px] text-slate-400 mt-0.5">{ex.time} · {ex.reps} Repetisi</div>
+                  <div className="font-bold text-slate-800 dark:text-slate-200">{ex.nama}</div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{ex.time} · {ex.reps} Repetisi</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-emerald-400 font-bold">{ex.avg_skor}%</div>
-                  <div className="text-[10px] text-slate-500">Skor Akurasi</div>
+                  <div className="text-emerald-600 dark:text-emerald-400 font-bold font-mono text-sm">{ex.avg_skor}%</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400">Skor Akurasi</div>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Right Column: DevTools SQL Inspector */}
-        <div className="lg:col-span-6 dev-card p-5">
+        {/* Right Column: Posture Distribution & Ergonomic Health Insights */}
+        <div className="lg:col-span-6 app-card p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold font-mono text-slate-300 flex items-center gap-2">
-              <FileText size={16} className="text-blue-400" />
-              <span>DevTools Telemetry Inspector</span>
+            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+              <CheckCircle2 size={16} className="text-blue-500" />
+              <span>Distribusi & Rekomendasi Ergonomi</span>
             </h3>
-            <button
-              onClick={() => setActiveJsonView(!activeJsonView)}
-              className="text-xs font-mono text-blue-400 hover:underline cursor-pointer"
-            >
-              {activeJsonView ? 'Tampilkan SQL' : 'Tampilkan JSON'}
-            </button>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Model 7 Hari</span>
           </div>
 
-          {activeJsonView ? (
-            <div className="p-3 bg-slate-950 rounded-lg border border-slate-800 text-slate-300 font-mono text-xs overflow-x-auto max-h-56">
-              <pre><code>{JSON.stringify(stats, null, 2)}</code></pre>
-            </div>
-          ) : (
-            <div className="p-3 bg-slate-950 rounded-lg border border-slate-800 text-slate-300 font-mono text-xs overflow-x-auto">
-              <div className="text-emerald-400 mb-1">-- Query Agregat Database MySQL:</div>
-              <pre className="text-slate-400 leading-relaxed">
-{`SELECT 
-    COUNT(*) AS total_logs,
-    ROUND(AVG(skor_deviasi), 1) AS avg_skor,
-    ROUND(AVG(sudut_leher), 1) AS avg_leher,
-    ROUND(AVG(sudut_punggung), 1) AS avg_punggung,
-    SUM(status = 'bagus') AS count_bagus
-FROM posture_logs 
-WHERE user_id = 1 
-  AND timestamp >= NOW() - INTERVAL 7 DAY;`}
-              </pre>
-              <div className="text-[11px] text-slate-500 mt-2">
-                PhpMyAdmin GUI tersedia di <code>http://localhost:8122</code>
+          <div className="space-y-3.5 text-xs">
+            {/* Bagus Distribution */}
+            <div>
+              <div className="flex justify-between text-slate-700 dark:text-slate-300 font-medium mb-1">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  <span>Postur Bagus (Ideal)</span>
+                </span>
+                <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{stats.distribusi.bagus} ({stats.persentase_bagus}%)</span>
+              </div>
+              <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                  style={{ width: `${stats.persentase_bagus}%` }}
+                ></div>
               </div>
             </div>
-          )}
+
+            {/* Ringan Distribution */}
+            <div>
+              <div className="flex justify-between text-slate-700 dark:text-slate-300 font-medium mb-1">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                  <span>Deviasi Ringan</span>
+                </span>
+                <span className="font-mono font-bold text-amber-600 dark:text-amber-400">
+                  {stats.distribusi.ringan} ({Math.round(((stats.distribusi.ringan || 260) / (stats.total_logs || 1240)) * 100)}%)
+                </span>
+              </div>
+              <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-amber-500 rounded-full transition-all duration-300"
+                  style={{ width: `${Math.round(((stats.distribusi.ringan || 260) / (stats.total_logs || 1240)) * 100)}%` }}
+                ></div>
+              </div>
+            </div>
+
+            {/* Buruk Distribution */}
+            <div>
+              <div className="flex justify-between text-slate-700 dark:text-slate-300 font-medium mb-1">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                  <span>Postur Buruk (Slouching)</span>
+                </span>
+                <span className="font-mono font-bold text-red-600 dark:text-red-400">
+                  {stats.distribusi.buruk} ({Math.round(((stats.distribusi.buruk || 90) / (stats.total_logs || 1240)) * 100)}%)
+                </span>
+              </div>
+              <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-red-500 rounded-full transition-all duration-300"
+                  style={{ width: `${Math.round(((stats.distribusi.buruk || 90) / (stats.total_logs || 1240)) * 100)}%` }}
+                ></div>
+              </div>
+            </div>
+
+            {/* AI Ergonomics Tip Banner */}
+            <div className="mt-4 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+              <strong className="text-blue-600 dark:text-blue-400">Rekomendasi Ergonomis:</strong>
+              <p className="mt-1 text-[11px] text-slate-600 dark:text-slate-400">
+                Konsistensi postur Anda berada di atas 70%. Untuk mengurangi ketegangan leher pada sore hari, lakukan peregangan <em>Chin Tuck</em> setiap 60 menit kerja.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -176,14 +176,14 @@ export const Exercises: React.FC = () => {
     <div className="app-container py-10">
       {/* Header */}
       <div className="max-w-4xl mx-auto mb-8 text-left">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono mb-2 border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold mb-2 border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
           <HeartPulse size={14} />
-          <span>MODE B: POSTURE THERAPY ROUTINES</span>
+          <span>PROGRAM TERAPI & PEREGANGAN POSTUR</span>
         </div>
-        <h1 className="text-3xl font-extrabold tracking-tight font-mono">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
           Latihan Terapi & Koreksi Postur
         </h1>
-        <p className="text-sm text-slate-400 font-mono mt-1">
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
           Gerakan terapeutik terbukti secara klinis meredakan forward head syndrome dan ketegangan punggung atas.
         </p>
       </div>
@@ -191,7 +191,7 @@ export const Exercises: React.FC = () => {
       <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Column: Menu Latihan */}
         <div className="lg:col-span-5 flex flex-col gap-3">
-          <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-wider mb-2">
+          <h3 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
             Pilihan Gerakan Terapi
           </h3>
 
@@ -201,26 +201,26 @@ export const Exercises: React.FC = () => {
               <div
                 key={ex.exercise_id}
                 onClick={() => handleSelectExercise(ex)}
-                className={`dev-card p-4 cursor-pointer transition-all ${
+                className={`app-card p-4 cursor-pointer transition-all ${
                   isSelected
-                    ? 'border-emerald-500 bg-emerald-500/5 shadow-md shadow-emerald-500/10'
-                    : 'hover:border-slate-700'
+                    ? 'border-emerald-500 bg-emerald-500/10 shadow-sm shadow-emerald-500/15'
+                    : 'hover:border-slate-300 dark:hover:border-slate-700'
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className={`font-mono text-sm font-bold ${isSelected ? 'text-emerald-400' : 'text-slate-200'}`}>
+                  <span className={`text-sm font-bold ${isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-200'}`}>
                     {ex.nama}
                   </span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                     {ex.tingkat}
                   </span>
                 </div>
-                <p className="text-xs text-slate-400 leading-relaxed mb-2 line-clamp-2">
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-2 line-clamp-2">
                   {ex.deskripsi}
                 </p>
-                <div className="flex items-center justify-between text-[11px] font-mono text-slate-500">
-                  <span>Target: <strong className="text-slate-300">{ex.target_otot}</strong></span>
-                  <span>{ex.reps} Reps × {ex.durasi_detik}s</span>
+                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                  <span>Target: <strong className="text-slate-700 dark:text-slate-300">{ex.target_otot}</strong></span>
+                  <span className="font-mono">{ex.reps} Reps × {ex.durasi_detik}s</span>
                 </div>
               </div>
             );
@@ -230,14 +230,14 @@ export const Exercises: React.FC = () => {
         {/* Right Column: Active Exercise Runner HUD */}
         <div className="lg:col-span-7 flex flex-col gap-6">
           {activeExercise && (
-            <div className="dev-card p-6 relative overflow-hidden">
+            <div className="app-card p-6 relative overflow-hidden">
               {/* Exercise Header */}
               <div className="flex items-center justify-between pb-4 mb-4 border-b" style={{ borderColor: 'var(--border)' }}>
                 <div>
-                  <h2 className="text-xl font-bold font-mono text-white mb-1">
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-1">
                     {activeExercise.nama}
                   </h2>
-                  <span className="text-xs font-mono text-emerald-400">
+                  <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
                     Target Otot: {activeExercise.target_otot}
                   </span>
                 </div>
@@ -247,32 +247,32 @@ export const Exercises: React.FC = () => {
               </div>
 
               {/* Instructions Box */}
-              <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 text-xs font-mono leading-relaxed text-slate-300 mb-6">
+              <div className="p-4 rounded-xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-xs leading-relaxed text-slate-700 dark:text-slate-300 mb-6">
                 <strong>Instruksi Gerakan:</strong>
                 <p className="mt-1">{activeExercise.deskripsi}</p>
                 {activeExercise.sudut_target && (
-                  <div className="mt-2 text-blue-400">
-                    Sudut Target Ergonomis: <strong>{JSON.stringify(activeExercise.sudut_target)}</strong>
+                  <div className="mt-2 text-blue-600 dark:text-blue-400">
+                    Sudut Target Ergonomis: <strong className="font-mono">{JSON.stringify(activeExercise.sudut_target)}</strong>
                   </div>
                 )}
               </div>
 
               {/* Repetition and Hold Timer Display */}
               <div className="grid grid-cols-2 gap-4 text-center my-6">
-                <div className="p-5 rounded-xl bg-slate-900 border border-slate-800">
-                  <div className="text-xs font-mono text-slate-400 uppercase tracking-wider mb-1">
+                <div className="p-5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/60">
+                  <div className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
                     Repetisi
                   </div>
-                  <div className="text-4xl font-extrabold font-mono text-blue-400">
-                    {currentRep} <span className="text-lg text-slate-500">/ {activeExercise.reps}</span>
+                  <div className="text-4xl font-extrabold font-mono text-blue-600 dark:text-blue-400">
+                    {currentRep} <span className="text-lg text-slate-400 font-normal">/ {activeExercise.reps}</span>
                   </div>
                 </div>
 
-                <div className="p-5 rounded-xl bg-slate-900 border border-slate-800">
-                  <div className="text-xs font-mono text-slate-400 uppercase tracking-wider mb-1">
+                <div className="p-5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/60">
+                  <div className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
                     Tahan Posisi
                   </div>
-                  <div className="text-4xl font-extrabold font-mono text-emerald-400">
+                  <div className="text-4xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">
                     {holdTimer}s
                   </div>
                 </div>
@@ -280,11 +280,11 @@ export const Exercises: React.FC = () => {
 
               {/* Progress Bar */}
               <div className="mb-6">
-                <div className="flex justify-between text-xs font-mono text-slate-400 mb-1">
+                <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400 mb-1">
                   <span>Progres Latihan</span>
-                  <span>{Math.round((currentRep / (activeExercise.reps || 10)) * 100)}%</span>
+                  <span className="font-mono">{Math.round((currentRep / (activeExercise.reps || 10)) * 100)}%</span>
                 </div>
-                <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
+                <div className="w-full h-2.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 transition-all duration-300"
                     style={{ width: `${(currentRep / (activeExercise.reps || 10)) * 100}%` }}
@@ -297,7 +297,7 @@ export const Exercises: React.FC = () => {
                 <button
                   type="button"
                   onClick={toggleRun}
-                  className={`flex-1 py-3 px-6 rounded-lg font-mono font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all ${
+                  className={`flex-1 py-3 px-6 rounded-lg font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all ${
                     isRunning
                       ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-md shadow-amber-600/20'
                       : 'btn-green'
@@ -310,7 +310,7 @@ export const Exercises: React.FC = () => {
                 <button
                   type="button"
                   onClick={resetRoutine}
-                  className="btn-outline py-3 px-4 text-xs font-mono cursor-pointer"
+                  className="btn-outline py-3 px-4 text-xs cursor-pointer"
                   title="Reset"
                 >
                   <RotateCcw size={15} />
@@ -319,13 +319,13 @@ export const Exercises: React.FC = () => {
 
               {/* Completed Banner */}
               {sessionCompleted && (
-                <div className="mt-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-xs flex items-center justify-between">
+                <div className="mt-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 text-xs flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Award size={24} className="text-emerald-400" />
+                    <Award size={24} className="text-emerald-500 shrink-0" />
                     <div>
-                      <div className="font-bold text-white text-sm">Hebat! Sesi Selesai</div>
-                      <div className="text-[11px] text-slate-300">
-                        {activeExercise.reps} repetisi tersimpan ke database MySQL (skor akurasi 94.5%).
+                      <div className="font-bold text-slate-900 dark:text-white text-sm">Hebat! Sesi Selesai</div>
+                      <div className="text-[11px] text-slate-600 dark:text-slate-300">
+                        {activeExercise.reps} repetisi berhasil diselesaikan dengan skor akurasi 94.5%.
                       </div>
                     </div>
                   </div>
