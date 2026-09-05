@@ -8,7 +8,6 @@ import { useAuth } from '../context/AuthContext';
 import { Card, Input, Label, Textarea, Select, Badge, Pill, PillContent, Button } from '@/components/ui';
 import { SkeletonOverlay, type Landmark } from '../components/SkeletonOverlay';
 import { usePoseDetector } from '../hooks/usePoseDetector';
-import { useCamera } from '../hooks/useCamera';
 import { cn } from '@/lib/utils';
 import { getApiUrl } from '../lib/api';
 
@@ -80,10 +79,15 @@ export const AdminExercises: React.FC = () => {
 
   // Camera & skeleton recording
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const { error: camError, started: camStarted, stream: camStream, start: startCam, stop: stopCam } = useCamera();
-  const { landmarks: realLandmarks } = usePoseDetector(videoRef, camStarted);
   const [camActive, setCamActive] = useState(false);
   const [previewLandmarks, setPreviewLandmarks] = useState<Landmark[]>(() => generateIdleLandmarks());
+
+  // usePoseDetector menangani kamera sekaligus deteksi skeleton (single-source camera).
+  // Dipicu via `active`; nilai fresh disimpan di ref agar interval capture menggunakannya.
+  const { landmarks: realLandmarks, errorMsg: poseError } = usePoseDetector(videoRef, camActive);
+  const [camError, setCamError] = useState<string | null>(null);
+  const realLandmarksRef = useRef<Landmark[] | null>(null);
+  realLandmarksRef.current = (realLandmarks && realLandmarks.length >= 25) ? realLandmarks : realLandmarksRef.current;
 
   // Recording state
   const [recording, setRecording] = useState(false);
@@ -97,15 +101,15 @@ export const AdminExercises: React.FC = () => {
   const recordingRef = useRef(false);
 
   useEffect(() => {
-    if (videoRef.current && camStream) {
-      videoRef.current.srcObject = camStream;
+    if (videoRef.current) {
       videoRef.current.play();
     }
-  }, [camStream]);
+  }, [camActive]);
 
+  // Propagate mediapipe startup errors to the visible camError banner.
   useEffect(() => {
-    setCamActive(camStarted);
-  }, [camStarted]);
+    if (poseError) setCamError(poseError);
+  }, [poseError]);
 
   useEffect(() => {
     if (camActive && realLandmarks && realLandmarks.length >= 25) {
@@ -165,11 +169,8 @@ export const AdminExercises: React.FC = () => {
 
   const beginRecording = async () => {
     setShowDurationModal(false);
-    const ok = await startCam();
-    if (!ok) {
-      if (camError) setError(camError);
-      return;
-    }
+    setCamError(null);
+    setCamActive(true);
     setRecording(true);
     setCapturedFrames([]);
     recordingRef.current = true;
@@ -184,8 +185,9 @@ export const AdminExercises: React.FC = () => {
 
     captureTimerRef.current = setInterval(() => {
       if (!recordingRef.current || frames >= maxFrames) return;
-      if (realLandmarks && realLandmarks.length >= 25) {
-        setCapturedFrames(prev => [...prev, realLandmarks.map(p => ({ ...p }))]);
+      const lms = realLandmarksRef.current;
+      if (lms && lms.length >= 25) {
+        setCapturedFrames(prev => [...prev, lms.map(p => ({ ...p }))]);
         frames++;
       }
     }, intervalMs);
@@ -255,7 +257,6 @@ export const AdminExercises: React.FC = () => {
   };
 
   const stopCamIfActive = () => {
-    stopCam();
     setCamActive(false);
     setRecording(false);
     setRecordingCountdown(0);
@@ -264,8 +265,9 @@ export const AdminExercises: React.FC = () => {
   };
 
   const captureSinglePose = () => {
-    if (camActive && realLandmarks && realLandmarks.length >= 25) {
-      setChildSkeleton(realLandmarks.map(p => ({ ...p })));
+    const lms = realLandmarksRef.current;
+    if (camActive && lms && lms.length >= 25) {
+      setChildSkeleton(lms.map(p => ({ ...p })));
     }
   };
 
@@ -594,7 +596,7 @@ export const AdminExercises: React.FC = () => {
                             <Button variant="outline" size="sm" className="flex-1" onClick={startDurationModal}>
                               <Timer size={14} /> Rekam Ulang ({recordingDuration}s)
                             </Button>
-                            <Button variant="success" size="sm" className="flex-1" onClick={captureSinglePose} disabled={!realLandmarks || realLandmarks.length < 25}>
+                            <Button variant="success" size="sm" className="flex-1" onClick={captureSinglePose} disabled={!realLandmarksRef.current || realLandmarksRef.current.length < 25}>
                               <Target size={14} /> Tangkap Sekarang
                             </Button>
                           </>

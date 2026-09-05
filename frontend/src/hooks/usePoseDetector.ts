@@ -54,6 +54,7 @@ export function usePoseDetector(
 ) {
   const [status, setStatus] = useState<PoseDetectorStatus>('idle');
   const [landmarks, setLandmarks] = useState<PoseLandmark[] | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const poseRef = useRef<{ setOptions: (opts: Record<string, unknown>) => void; onResults: (cb: (results: { poseLandmarks: PoseLandmark[] | null }) => void) => void; send: (input: { image: HTMLVideoElement }) => Promise<void>; close: () => void } | null>(null);
   const cameraRef = useRef<{ start: () => Promise<void>; stop: () => void } | null>(null);
   const initializedRef = useRef(false);
@@ -63,7 +64,16 @@ export function usePoseDetector(
   const start = useCallback(async () => {
     if (initializedRef.current) return;
     const video = videoRef.current;
+    if (!window.isSecureContext) {
+      setErrorMsg(
+        'Akses kamera membutuhkan koneksi HTTPS. Halaman ini diakses melalui HTTP yang tidak aman — ' +
+        'akses melalui https:// atau gunakan localhost.'
+      );
+      setStatus('error');
+      return;
+    }
     if (!video || !window.Pose || !window.Camera) {
+      setErrorMsg('Motor pendeteksi pose (MediaPipe) belum termuat.');
       setStatus('error');
       return;
     }
@@ -108,6 +118,7 @@ export function usePoseDetector(
       await camera.start();
       setStatus('ready');
     } catch {
+      setErrorMsg('Gagal mengakses kamera melalui MediaPipe. Pastikan kamera tersedia dan izin diberikan.');
       setStatus('error');
     }
   }, [videoRef, opts.modelComplexity, opts.smoothLandmarks,
@@ -126,6 +137,7 @@ export function usePoseDetector(
     initializedRef.current = false;
     setStatus('idle');
     setLandmarks(null);
+    setErrorMsg(null);
   }, []);
 
   useEffect(() => {
@@ -139,5 +151,5 @@ export function usePoseDetector(
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [active, start, stop]);
 
-  return { status, landmarks };
+  return { status, landmarks, errorMsg };
 }

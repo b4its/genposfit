@@ -76,13 +76,21 @@ export function useCamera(options: CameraOptions = {}) {
   }, []);
 
   const start = useCallback(async (): Promise<boolean> => {
+    if (!window.isSecureContext) {
+      setError(
+        'Akses kamera membutuhkan koneksi HTTPS. Halaman ini diakses melalui HTTP yang tidak aman — ' +
+        'akses melalui https:// atau gunakan localhost.'
+      );
+      setPermission('denied');
+      return false;
+    }
+
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       setError('Browser tidak mendukung akses kamera (getUserMedia).');
       setPermission('denied');
       return false;
     }
 
-    // Jika izin sudah ditolak permanen, jangan coba lagi — tampilkan panduan.
     if (permission === 'denied') {
       setError(
         'Izin kamera ditolak. Aktifkan akses kamera pada pengaturan situs browser, lalu muat ulang halaman.'
