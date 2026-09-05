@@ -14,7 +14,9 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.database import get_db
-from app.models import Exercise, ExerciseType, ExerciseSession, PostureLog, Room, User
+from app.models import (
+    Exercise, ExerciseType, ExerciseSession, PointLedger, PostureLog, Quest, Room, User,
+)
 from app.security import decode_access_token
 from app.services.pose_analysis import analisis_postur_dari_landmarks
 
@@ -310,6 +312,89 @@ def get_leaderboard(limit: int = 100, admin: User = Depends(require_admin), db: 
             "role": u.role or "user",
         })
     return {"count": len(lb), "users": lb}
+
+
+
+# ---------------- MISI / QUEST (CRUD Admin) ----------------
+
+class QuestCreate(BaseModel):
+    kode: Optional[str] = None
+    judul: str = Field(..., min_length=1, max_length=120)
+    deskripsi: Optional[str] = Field(None, max_length=300)
+    kategori: str = Field(default="harian")   # harian | mingguan
+    metrik: str = Field(default="latihan_selesai")
+    target: int = Field(default=5, ge=1)
+    reward_poin: int = Field(default=10, ge=1)
+
+class QuestUpdate(BaseModel):
+    judul: Optional[str] = None
+    deskripsi: Optional[str] = None
+    kategori: Optional[str] = None
+    metrik: Optional[str] = None
+    target: Optional[int] = Field(None, ge=1)
+    reward_poin: Optional[int] = Field(None, ge=1)
+    aktif: Optional[bool] = None
+
+def quest_dict(q: Quest) -> dict:
+    return {
+        "quest_id": q.quest_id, "kode": q.kode, "judul": q.judul, "deskripsi": q.deskripsi,
+        "kategori": q.kategori, "metrik": q.metrik, "target": q.target,
+        "reward_poin": q.reward_poin, "aktif": bool(q.aktif),
+    }
+
+@router.get("/quests", response_model=List[dict])
+def admin_list_quests(admin: User = Depends(require_admin), db: Session = Depends(get_db)):
+    from app.services.quests import ensure_quests
+    ensure_quests(db)
+    return [quest_dict(q) for q in db.query(Quest).order_by(Quest.kategori, Quest.quest_id).all()]
+
+@router.post("/quests", response_model=dict, status_code=201)
+def admin_create_quest(payload: QuestCreate, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
+    kode = payload.kode or f"misi_{abs(hash(payload.judul)) % 10**8:08d}"
+    if db.query(Quest).filter_by(kode=kode).first():
+        raise HTTPException(409, f"Kode misi '{kode}' sudah dipakai.")
+    q = Quest(
+        kode=kode, judul=payload.judul, deskripsi=payload.deskripsi,
+        kategori=payload.kategori, metrik=payload.metrik,
+        target=payload.target, reward_poin=payload.reward_poin, aktif=1,
+    )
+    db.add(q)
+    db.commit()
+    db.refresh(q)
+    logger.info("Admin %s membuat misi %s", admin.username, q.kode)
+    return quest_dict(q)
+
+@router.put("/quests/{quest_id}", response_model=dict)
+def admin_update_quest(quest_id: int, payload: QuestUpdate, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
+    q = db.query(Quest).filter_by(quest_id=quest_id).first()
+    if not q:
+        raise HTTPException(404, "Misi tidak ditemukan.")
+    data = payload.model_dump(exclude_unset=True)
+    data["aktif"] = int(data["aktif"]) if "aktif" in data and data["aktif"] is not None else None
+    for key, val in data.items():
+        if val is not None:
+            setattr(q, key, val)
+    db.commit()
+    db.refresh(q)
+    return quest_dict(q)
+
+@router.delete("/quests/{quest_id}", status_code=204)
+def admin_delete_quest(quest_id: int, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
+    """Soft-delete (dinonaktifkan) agar ledger/klaim lama tetap konsisten."""
+    q = db.query(Quest).filter_by(quest_id=quest_id).first()
+    if not q:
+        raise HTTPException(404, "Misi tidak ditemukan.")
+    q.aktif = 0
+    db.commit()
+
+
+# ---------------- LEADERBOARD BULANAN (dipakai juga oleh publik) ----------------
+
+@router.get("/leaderboard/monthly")
+def admin_leaderboard_monthly(musim: Optional[str] = None, limit: int = 50, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
+    """Peringkat poin murni per musim (bulan) dari PointLedger."""
+    from app.services.leaderboard import peringkat_bulanan
+    return peringkat_bulanan(db, musim=musim, limit=limit)
 
 
 # Resolve forward reference (ExerciseTypeOut → ExerciseOut) setelah ExerciseOut didefinisikan.
