@@ -183,6 +183,9 @@ async def multiplayer_ws(websocket: WebSocket, room_code: str):
     await websocket.accept()
     code = room_code.strip().upper()
     db = SessionLocal()
+    guest_key = ""
+    name = "Player"
+    warna = "#22c55e"
     try:
         data = json.loads(await websocket.receive_text())
         guest_key = data.get("guest_key", "")

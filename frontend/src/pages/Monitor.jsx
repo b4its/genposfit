@@ -119,7 +119,9 @@ export const Monitor = ({ onNavigateToExercises }) => {
 
   // Connect WebSocket to FastAPI backend
   useEffect(() => {
-    const wsUrl = `ws://localhost:8042/api/monitoring/ws/${currentUserId}`;
+    const apiUrl = import.meta.env?.VITE_API_URL || 'http://localhost:8042';
+    const wsBase = apiUrl.replace(/^http/, 'ws');
+    const wsUrl = `${wsBase}/api/monitoring/ws/${currentUserId}`;
     let ws;
 
     try {

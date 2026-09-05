@@ -108,7 +108,11 @@ class Room(Base):
     room_code = Column(String(20), unique=True, nullable=False, index=True)
     nama = Column(String(100), nullable=False)
     password_hash = Column(String(255), nullable=False)
-    host_player_id = Column(Integer, ForeignKey("room_players.player_id"), nullable=True)
+    host_player_id = Column(
+        Integer,
+        ForeignKey("room_players.player_id", use_alter=True, name="fk_rooms_host"),
+        nullable=True,
+    )
     status = Column(String(20), default="waiting")  # 'waiting', 'playing', 'ended'
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -6,11 +6,12 @@ import hashlib
 import secrets
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import User
 from app.security import hash_password as _hash_pwd
+from app.security import create_access_token
 
 router = APIRouter(prefix="/api/users", tags=["Users"])
 
@@ -39,7 +40,7 @@ def get_all_users(db: Session = Depends(get_db)):
     return db.query(User).order_by(User.user_id.desc()).all()
 
 
-@router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", status_code=status.HTTP_201_CREATED)
 def create_user(payload: UserCreate, db: Session = Depends(get_db)):
     """Membuat pengguna baru jika email belum ada."""
     if payload.email:
@@ -47,11 +48,18 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db)):
         if existing:
             return existing
 
-    gen_username = (payload.email or payload.nama or f"user_{secrets.token_hex(4)}").replace(" ", "_").lower()[:50]
-    gen_password = _hash_pwd(hashlib.sha256(secrets.token_bytes(32)).hexdigest())
+    base_username = (payload.email or payload.nama or f"user_{secrets.token_hex(4)}").replace(" ", "_").lower()[:50]
+    gen_username = base_username
+    counter = 1
+    while db.query(User).filter_by(username=gen_username).first():
+        gen_username = f"{base_username}_{counter}"[:50]
+        counter += 1
+
+    # Buat password acak yang dikembalikan sekali sehingga akun tetap dapat dipakai untuk login.
+    plain_password = secrets.token_urlsafe(12)
     user = User(
         username=gen_username,
-        hashed_password=gen_password,
+        hashed_password=_hash_pwd(plain_password),
         nama=payload.nama,
         email=payload.email,
         pekerjaan=payload.pekerjaan,
@@ -60,7 +68,18 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
-    return user
+
+    return {
+        "user_id": user.user_id,
+        "username": gen_username,
+        "nama": user.nama,
+        "password": plain_password,
+        "email": user.email,
+        "pekerjaan": user.pekerjaan,
+        "jam_kerja_hari": user.jam_kerja_hari,
+        "access_token": create_access_token(data={"sub": user.username, "user_id": user.user_id}),
+        "message": "Akun dibuat. Gunakan username dan password di atas untuk login melalui /api/auth/login."
+    }
 
 
 @router.get("/{user_id}", response_model=UserResponse)

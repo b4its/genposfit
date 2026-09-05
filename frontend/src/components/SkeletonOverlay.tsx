@@ -95,7 +95,10 @@ export const SkeletonOverlay: React.FC<SkeletonOverlayProps> = ({
     // Custom persona color override (multiplayer)
     if (color) {
       strokeColor = color;
-      glowColor = `color-mix(in srgb, ${color} 40%, transparent)`;
+      const rr = parseInt(color.slice(1, 3), 16);
+      const gg = parseInt(color.slice(3, 5), 16);
+      const bb = parseInt(color.slice(5, 7), 16);
+      glowColor = `rgba(${rr}, ${gg}, ${bb}, 0.4)`;
       jointFill = color;
     } else if (status === 'ringan') {
       strokeColor = '#f59e0b'; // Amber / Yellow

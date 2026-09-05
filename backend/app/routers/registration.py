@@ -48,7 +48,12 @@ def submit_registrasi(payload: PoseBaselineIn, db: Session = Depends(get_db)):
         user = db.query(User).filter_by(email=payload.email).first()
 
     if not user:
-        gen_username = (payload.email or payload.nama or f"user_{secrets.token_hex(4)}").replace(" ", "_").lower()[:50]
+        base_username = (payload.email or payload.nama or f"user_{secrets.token_hex(4)}").replace(" ", "_").lower()[:50]
+        gen_username = base_username
+        counter = 1
+        while db.query(User).filter_by(username=gen_username).first():
+            gen_username = f"{base_username}_{counter}"[:50]
+            counter += 1
         gen_password = _hash_pwd(hashlib.sha256(secrets.token_bytes(32)).hexdigest())
         user = User(
             username=gen_username,
@@ -64,6 +69,16 @@ def submit_registrasi(payload: PoseBaselineIn, db: Session = Depends(get_db)):
         user.nama = payload.nama
         if payload.pekerjaan:
             user.pekerjaan = payload.pekerjaan
+        if payload.email and user.email != payload.email:
+            existing_email = db.query(User).filter(
+                User.email == payload.email, User.user_id != user.user_id
+            ).first()
+            if existing_email:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Email sudah digunakan oleh pengguna lain.",
+                )
+            user.email = payload.email
         db.commit()
 
     saved_items = []

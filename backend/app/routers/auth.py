@@ -3,7 +3,8 @@ GenPosFit — Router Autentikasi Pengguna
 Mendukung registrasi akun baru (username + password) dan login (mengembalikan JWT token).
 """
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -105,8 +106,12 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 
 
 @router.get("/me", response_model=UserInfoResponse)
-def get_current_user_info(token: str = "", db: Session = Depends(get_db)):
-    """Mengembalikan informasi akun berdasarkan token JWT yang diberikan."""
+def get_current_user_info(request: Request, token: str = "", db: Session = Depends(get_db)):
+    """Mengembalikan informasi akun berdasarkan JWT token dari header Authorization (Bearer) atau query string."""
+    if not token:
+        auth_header = request.headers.get("authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:]
     if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

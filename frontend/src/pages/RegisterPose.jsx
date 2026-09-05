@@ -11,6 +11,18 @@ import { Button, Card, Pill, PillIndicator, PillContent, Input, Select, Progress
 import { cn } from '../lib/utils';
 import { useAuth } from '../context/AuthContext';
 
+function calculateAnglesFromLandmarks(lms) {
+  if (!lms || lms.length < 25) return null;
+  const ear = lms[7] || lms[8];
+  const shoulder = lms[11] || lms[12];
+  const hip = lms[23] || lms[24];
+  if (!ear || !shoulder || !hip) return null;
+  const neckAngle = 180 - Math.atan2(shoulder.y - ear.y, shoulder.x - ear.x) * (180 / Math.PI);
+  const backAngle = 180 - Math.atan2(hip.y - shoulder.y, hip.x - shoulder.x) * (180 / Math.PI);
+  const shoulderLevel = Math.abs((lms[11]?.y || 0) - (lms[12]?.y || 0));
+  return { neck: Math.max(130, Math.min(180, neckAngle)), back: Math.max(130, Math.min(180, backAngle)), shoulder: shoulderLevel };
+}
+
 export const RegisterPose = ({ onFinishCalibration }) => {
   const { user } = useAuth();
   const [nama, setNama] = useState(user?.nama || '');
@@ -48,8 +60,21 @@ export const RegisterPose = ({ onFinishCalibration }) => {
   useEffect(() => {
     if (isCameraActive && realLandmarks && realLandmarks.length >= 25) {
       setCurrentLandmarks(realLandmarks);
+
+      // If recording with live camera, buffer real landmarks
+      if (isRecording) {
+        const angles = calculateAnglesFromLandmarks(realLandmarks);
+        if (angles) {
+          frameBufferRef.current.push(angles);
+          setRecordedFrames(prev => {
+            const next = prev + 1;
+            if (next >= 90) finishRecording();
+            return next;
+          });
+        }
+      }
     }
-  }, [isCameraActive, realLandmarks]);
+  }, [isCameraActive, realLandmarks, isRecording]);
 
   // Sync camera started state
   useEffect(() => {

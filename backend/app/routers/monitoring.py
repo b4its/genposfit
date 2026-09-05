@@ -7,7 +7,7 @@ import json
 import logging
 import time
 from datetime import datetime, timedelta
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Literal
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -45,7 +45,7 @@ class LogPostureDirectRequest(BaseModel):
     sudut_punggung: float
     level_bahu: Optional[float] = 0.0
     skor_deviasi: float
-    status: str  # 'bagus', 'ringan', 'buruk'
+    status: Literal['bagus', 'ringan', 'buruk']  # 'bagus', 'ringan', 'buruk'
 
 
 @router.post("/evaluate")

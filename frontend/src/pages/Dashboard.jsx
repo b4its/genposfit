@@ -38,36 +38,27 @@ export const Dashboard = () => {
     setLoading(true);
     const apiUrl = import.meta.env?.VITE_API_URL || 'http://localhost:8042';
 
+    // timeRange: '7d' → 7, '30d' → 30, '1d' → 1
+    const days = timeRange === '1d' ? 1 : timeRange === '30d' ? 30 : 7;
+
     try {
-      const res = await fetch(`${apiUrl}/api/monitoring/summary/${currentUserId}?days=7`);
+      const res = await fetch(`${apiUrl}/api/monitoring/summary/${currentUserId}?days=${days}`);
       if (res.ok) {
         const data = await res.json();
-setStats(prev => ({
-        ...prev,
-        total_logs: data.total_logs ?? prev.total_logs,
-        avg_skor: data.avg_skor ?? prev.avg_skor,
-        avg_leher: data.avg_leher ?? prev.avg_leher,
-        avg_punggung: data.avg_punggung ?? prev.avg_punggung,
-        distribusi: data.distribusi || prev.distribusi,
-        persentase_bagus: data.persentase_bagus ?? prev.persentase_bagus,
-      }));
-      }
-
-      // Fetch timeline logs
-      const tlRes = await fetch(`${apiUrl}/api/monitoring/summary/${currentUserId}?days=7`);
-      if (tlRes.ok) {
-        const tlData = await tlRes.json();
-        const timelineRaw = tlData.timeline ?? [];
-        if (Array.isArray(timelineRaw) && timelineRaw.length > 0) {
-          setStats(prev => ({
-            ...prev,
-            timeline: timelineRaw.map(item => ({
-              time: new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-              skor: Math.round(item.skor ?? item.skor_deviasi ?? 80),
-              status: item.status,
-            }))
-          }));
-        }
+        setStats(prev => ({
+          ...prev,
+          total_logs: data.total_logs ?? prev.total_logs,
+          avg_skor: data.avg_skor ?? prev.avg_skor,
+          avg_leher: data.avg_leher ?? prev.avg_leher,
+          avg_punggung: data.avg_punggung ?? prev.avg_punggung,
+          distribusi: data.distribusi || prev.distribusi,
+          persentase_bagus: data.persentase_bagus ?? prev.persentase_bagus,
+          timeline: (data.timeline ?? []).map(item => ({
+            time: new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            skor: Math.round(item.skor ?? item.skor_deviasi ?? 80),
+            status: item.status,
+          }))
+        }));
       }
     } catch (e) {
       console.debug('Using fallback mock data for dashboard:', e);
@@ -117,11 +108,22 @@ setStats(prev => ({
             Dashboard Progres Postur
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Ringkasan analitik dan telemetri kesehatan ergonomis pengguna (Alex Chandra)
+            Ringkasan analitik dan telemetri kesehatan ergonomis {user ? user.nama : ''}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Time range selector */}
+          <select
+            value={timeRange}
+            onChange={(e) => setTimeRange(e.target.value)}
+            className="h-8 px-2.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+          >
+            <option value="1d">1 Hari</option>
+            <option value="7d">7 Hari</option>
+            <option value="30d">30 Hari</option>
+          </select>
+
           <Button
             variant="outline"
             size="icon-sm"
@@ -149,7 +151,7 @@ setStats(prev => ({
         <Card className="p-5">
           <div className="flex justify-between items-start mb-2">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Rata-rata Skor Postur</span>
-            <Badge variant="success">7 HARI</Badge>
+            <Badge variant="success">{timeRange === '1d' ? '1 HARI' : timeRange === '30d' ? '30 HARI' : '7 HARI'}</Badge>
           </div>
           <div className="text-3xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400 my-1">
             {stats.avg_skor} <span className="text-sm font-normal text-slate-500 dark:text-slate-400">/ 100</span>

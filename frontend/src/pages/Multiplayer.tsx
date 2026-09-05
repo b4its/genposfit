@@ -169,10 +169,12 @@ export const Multiplayer: React.FC = () => {
     return () => clearInterval(interval);
   }, [mode, camStarted]);
 
-  const currentKey = () => (myPlayerKey);
+  const currentKey = () => (guestKey || (user ? `u:${user.user_id}` : ''));
 
   const connectWS = (code: string) => {
-    const socket = new WebSocket(`ws://localhost:8042/api/multiplayer/ws/${code}`);
+    const apiUrl = API_URL();
+    const wsBase = apiUrl.replace(/^http/, 'ws');
+    const socket = new WebSocket(`${wsBase}/api/multiplayer/ws/${code}`);
     wsRef.current = socket;
     socket.onopen = () => {
       socket.send(JSON.stringify({
@@ -182,21 +184,24 @@ export const Multiplayer: React.FC = () => {
         warna: selectedColor,
       }));
     };
+    // Unify identity key: guests keyed by bare guest_key, logged-in users keyed by "u:<id>".
+    // Both sides of WS messages and the room-player seed must use this same scheme.
+    const identityKey = () => (guestKey || (user ? `u:${user.user_id}` : ''));
     socket.onmessage = (ev) => {
       try {
         const msg = JSON.parse(ev.data);
         if (msg.type === 'skeleton') {
-          setPlayers((prev) => {
-            const key = msg.guest_key || `u${msg.user_id}`;
-            return { ...prev, [key]: { ...msg, guest_key: msg.guest_key, user_id: msg.user_id, landmarks: msg.landmarks } };
-          });
+          const key = msg.guest_key || (msg.user_id ? `u:${msg.user_id}` : '');
+          if (key) {
+            setPlayers((prev) => ({ ...prev, [key]: { guest_key: msg.guest_key, user_id: msg.user_id, display_name: msg.display_name, warna: msg.warna, landmarks: msg.landmarks } }));
+          }
         } else if (msg.type === 'presence') {
-          setPlayers((prev) => {
-            const key = msg.guest_key || `u${msg.user_id}`;
-            return { ...prev, [key]: { guest_key: msg.guest_key, user_id: msg.user_id, display_name: msg.display_name, warna: msg.warna, landmarks: null } };
-          });
+          const key = msg.guest_key || (msg.user_id ? `u:${msg.user_id}` : '');
+          if (key) {
+            setPlayers((prev) => ({ ...prev, [key]: { guest_key: msg.guest_key, user_id: msg.user_id, display_name: msg.display_name, warna: msg.warna, landmarks: null } }));
+          }
         } else if (msg.type === 'leave') {
-          const key = msg.guest_key || `u${msg.user_id}`;
+          const key = msg.guest_key || (msg.user_id ? `u:${msg.user_id}` : '');
           setPlayers((prev) => {
             const next = { ...prev };
             delete next[key];
@@ -236,7 +241,7 @@ export const Multiplayer: React.FC = () => {
       const data = await res.json();
       if (!res.ok) { setError(data?.detail || 'Gagal membuat room.'); return; }
       setGuestKey(data.guest_key);
-      setMyPlayerKey(`g:${data.guest_key}`);
+      setMyPlayerKey(data.guest_key);
       setRoom(data);
       setMode('room');
       connectWS(data.room_code);
@@ -257,14 +262,14 @@ export const Multiplayer: React.FC = () => {
       const data = await res.json();
       if (!res.ok) { setError(data?.detail || 'Gagal masuk room.'); return; }
       setGuestKey(data.guest_key);
-      setMyPlayerKey(`g:${data.guest_key}`);
+      setMyPlayerKey(data.guest_key);
       setRoom(data);
       setMode('room');
       connectWS(data.room_code);
       // Seed existing players from room response
       const seed: Record<string, RemotePlayer> = {};
       data.players?.forEach((p: any) => {
-        const key = p.user_id ? `u${p.user_id}` : `g:${p.guest_key}`;
+        const key = p.user_id ? `u:${p.user_id}` : (p.guest_key || '');
         seed[key] = { ...p, landmarks: null };
       });
       setPlayers(seed);
