@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
-  Eye, EyeOff, RotateCcw, RefreshCw, Sliders
+  Eye, EyeOff, RotateCcw, Sliders
 } from 'lucide-react';
-import { SkeletonOverlay, type Landmark } from '../components/SkeletonOverlay';
+import { type Landmark } from '../components/SkeletonOverlay';
 import { Button, Card, Pill, PillIndicator, PillContent } from '../components/ui';
 import { cn } from '../lib/utils';
+
+const IMG_W = 1000;
+const IMG_H = 1018;
 
 function degToRad(deg: number) {
   return (deg * Math.PI) / 180;
@@ -82,13 +85,10 @@ function generateTpostLandmarks(
 
   lms[23] = { x: cx - 0.031, y: 0.690, visibility: 0.95 };
   lms[24] = { x: cx + 0.031, y: 0.690, visibility: 0.95 };
-
   lms[25] = { x: cx - 0.034, y: 0.808, visibility: 0.9 };
   lms[26] = { x: cx + 0.034, y: 0.808, visibility: 0.9 };
-
   lms[27] = { x: cx - 0.042, y: 0.916, visibility: 0.9 };
   lms[28] = { x: cx + 0.042, y: 0.916, visibility: 0.9 };
-
   lms[29] = { x: cx - 0.048, y: 0.960, visibility: 0.85 };
   lms[30] = { x: cx + 0.048, y: 0.960, visibility: 0.85 };
   lms[31] = { x: cx - 0.045, y: 0.955, visibility: 0.8 };
@@ -97,15 +97,194 @@ function generateTpostLandmarks(
   return lms;
 }
 
+const POSE_CONNECTIONS: [number, number][] = [
+  [0, 1], [1, 2], [2, 3], [3, 7],
+  [0, 4], [4, 5], [5, 6], [6, 8],
+  [9, 10],
+  [11, 12], [11, 23], [12, 24], [23, 24],
+  [11, 13], [13, 15],
+  [12, 14], [14, 16],
+  [23, 25], [25, 27], [27, 29], [29, 31],
+  [24, 26], [26, 28], [28, 30], [30, 32],
+];
+
+function drawSkeleton(ctx: CanvasRenderingContext2D, landmarks: Landmark[], status: string) {
+  const w = ctx.canvas.width;
+  const h = ctx.canvas.height;
+  if (!landmarks || landmarks.length < 25) return;
+
+  let strokeColor = '#10b981';
+  let glowColor = 'rgba(16, 185, 129, 0.4)';
+  let jointFill = '#34d399';
+
+  if (status === 'ringan') {
+    strokeColor = '#f59e0b';
+    glowColor = 'rgba(245, 158, 11, 0.4)';
+    jointFill = '#fbbf24';
+  } else if (status === 'buruk') {
+    strokeColor = '#ef4444';
+    glowColor = 'rgba(239, 68, 68, 0.4)';
+    jointFill = '#f87171';
+  }
+
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = strokeColor;
+  ctx.shadowColor = glowColor;
+  ctx.shadowBlur = 8;
+
+  POSE_CONNECTIONS.forEach(([startIdx, endIdx]) => {
+    const p1 = landmarks[startIdx];
+    const p2 = landmarks[endIdx];
+    if (!p1 || !p2) return;
+    const vis1 = p1.visibility ?? 1.0;
+    const vis2 = p2.visibility ?? 1.0;
+    if (vis1 < 0.35 || vis2 < 0.35) return;
+    ctx.beginPath();
+    ctx.moveTo(p1.x * w, p1.y * h);
+    ctx.lineTo(p2.x * w, p2.y * h);
+    ctx.stroke();
+  });
+
+  const lSh = landmarks[11];
+  const rSh = landmarks[12];
+  const lHip = landmarks[23];
+  const rHip = landmarks[24];
+  if (lSh && rSh && lHip && rHip) {
+    const mx = ((lSh.x + rSh.x) / 2) * w;
+    const my = ((lSh.y + rSh.y) / 2) * h;
+    const hx = ((lHip.x + rHip.x) / 2) * w;
+    const hy = ((lHip.y + rHip.y) / 2) * h;
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = '#38bdf8';
+    ctx.beginPath();
+    ctx.moveTo(mx, my);
+    ctx.lineTo(hx, hy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  landmarks.forEach((pt, idx) => {
+    const vis = pt.visibility ?? 1.0;
+    if (vis < 0.35) return;
+    const px = pt.x * w;
+    const py = pt.y * h;
+    const isKeyJoint = [0, 7, 8, 11, 12, 13, 14, 23, 24].includes(idx);
+    const radius = isKeyJoint ? 5 : 3;
+    ctx.beginPath();
+    ctx.arc(px, py, radius, 0, 2 * Math.PI);
+    ctx.fillStyle = isKeyJoint ? '#ffffff' : jointFill;
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = strokeColor;
+    ctx.stroke();
+  });
+}
+
+interface RigCanvasProps {
+  leftArmAngle: number;
+  rightArmAngle: number;
+  neckTilt: number;
+  hipShift: number;
+  showSkeleton: boolean;
+}
+
+const RigCanvas: React.FC<RigCanvasProps> = ({
+  leftArmAngle, rightArmAngle, neckTilt, hipShift, showSkeleton,
+}) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => {
+      imgRef.current = img;
+      setLoaded(true);
+    };
+    img.src = '/assets/maskot/front_tpost.webp';
+  }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !loaded || !imgRef.current) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const w = IMG_W;
+    const h = IMG_H;
+    canvas.width = w;
+    canvas.height = h;
+
+    ctx.clearRect(0, 0, w, h);
+
+    const neckDev = Math.abs(neckTilt - 165);
+    const status = neckDev >= 20 ? 'buruk' : neckDev >= 8 ? 'ringan' : 'bagus';
+    const lArmRad = degToRad(leftArmAngle);
+    const rArmRad = degToRad(rightArmAngle);
+    const cx = (0.5 + hipShift) * w;
+
+    const lShoulderX = cx - 0.052 * w;
+    const rShoulderX = cx + 0.052 * w;
+    const shoulderY = 0.502 * h;
+
+    ctx.save();
+    ctx.drawImage(imgRef.current, 0, 0, w, h);
+
+    ctx.globalCompositeOperation = 'destination-out';
+
+    ctx.clearRect(lShoulderX - 175, shoulderY - 35, 175, 70);
+    ctx.clearRect(rShoulderX, shoulderY - 35, 175, 70);
+
+    ctx.globalCompositeOperation = 'source-over';
+
+    ctx.save();
+    ctx.translate(lShoulderX, shoulderY);
+    ctx.rotate(lArmRad);
+    ctx.drawImage(
+      imgRef.current,
+      lShoulderX - 175, shoulderY - 35, 175, 70,
+      -175, -35, 175, 70,
+    );
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(rShoulderX, shoulderY);
+    ctx.rotate(rArmRad);
+    ctx.drawImage(
+      imgRef.current,
+      rShoulderX, shoulderY - 35, 175, 70,
+      0, -35, 175, 70,
+    );
+    ctx.restore();
+
+    ctx.restore();
+
+    if (showSkeleton) {
+      const landmarks = generateTpostLandmarks(leftArmAngle, rightArmAngle, neckTilt, hipShift);
+      drawSkeleton(ctx, landmarks, status);
+    }
+  }, [leftArmAngle, rightArmAngle, neckTilt, hipShift, showSkeleton, loaded]);
+
+  return (
+    <div className="relative w-full h-full flex items-center justify-center">
+      <canvas
+        ref={canvasRef}
+        className="max-w-full max-h-full object-contain"
+        style={{ width: 'auto', height: '100%', aspectRatio: `${IMG_W}/${IMG_H}` }}
+      />
+    </div>
+  );
+};
+
 export const SkeletonPreview: React.FC = () => {
   const [showSkeleton, setShowSkeleton] = useState(true);
-  const [mirror, setMirror] = useState(false);
   const [leftArmAngle, setLeftArmAngle] = useState(0);
   const [rightArmAngle, setRightArmAngle] = useState(0);
   const [neckTilt, setNeckTilt] = useState(168);
   const [hipShift, setHipShift] = useState(0);
-
-  const landmarks = generateTpostLandmarks(leftArmAngle, rightArmAngle, neckTilt, hipShift);
 
   const neckDev = Math.abs(neckTilt - 165);
   const status = neckDev >= 20 ? 'buruk' : neckDev >= 8 ? 'ringan' : 'bagus';
@@ -122,13 +301,13 @@ export const SkeletonPreview: React.FC = () => {
       <div className="max-w-4xl mx-auto mb-8 text-left">
         <Pill variant="info" size="md" className="mb-2">
           <Eye size={14} />
-          <PillContent>OVERLAY SKELETON PADA MASKOT T-POSE</PillContent>
+          <PillContent>RIGGING SKELETON PADA MASKOT T-POSE</PillContent>
         </Pill>
         <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-          Preview Skeleton Biomekanika
+          Rigging Skeleton Biomekanika
         </h1>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          33 landmark MediaPipe Pose dioverlay presisi pada maskot GenPosFit. Setiap sendi skeleton mengikuti pergerakan pengaturan di samping.
+          Skeleton tertempel (rigging) langsung pada objek maskot. Saat skeleton bergerak, gambar maskot ikut bergerak secara real-time.
         </p>
       </div>
 
@@ -145,27 +324,15 @@ export const SkeletonPreview: React.FC = () => {
             )}
           >
             <div className="relative w-full h-[520px] rounded-lg bg-slate-950 flex items-center justify-center overflow-hidden border border-slate-800">
-              <img
-                src="/assets/maskot/front_tpost.webp"
-                alt="Maskot T-Pose"
-                className="w-full h-full object-contain select-none pointer-events-none"
-                draggable={false}
+              <RigCanvas
+                leftArmAngle={leftArmAngle}
+                rightArmAngle={rightArmAngle}
+                neckTilt={neckTilt}
+                hipShift={hipShift}
+                showSkeleton={showSkeleton}
               />
 
-              {showSkeleton && (
-                <SkeletonOverlay
-                  landmarks={landmarks}
-                  width={1000}
-                  height={1018}
-                  status={status}
-                  sudutLeher={neckTilt}
-                  orientasi="frontal"
-                  showAngles
-                  mirror={mirror}
-                />
-              )}
-
-              <div className="absolute top-3 left-3 flex items-center gap-2 z-20">
+              <div className="absolute top-3 left-3 z-20">
                 <Button
                   variant={showSkeleton ? "default" : "outline"}
                   size="sm"
@@ -175,21 +342,10 @@ export const SkeletonPreview: React.FC = () => {
                   {showSkeleton ? <EyeOff size={14} /> : <Eye size={14} />}
                   <span>{showSkeleton ? 'Skeleton ON' : 'Skeleton OFF'}</span>
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setMirror(!mirror)}
-                  className="text-xs bg-slate-900/85 hover:bg-slate-800 border-slate-700 backdrop-blur-sm"
-                >
-                  <RefreshCw size={14} />
-                  <span>{mirror ? 'Mirror ON' : 'Mirror OFF'}</span>
-                </Button>
               </div>
 
               <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between px-3 py-1.5 rounded-lg bg-slate-900/85 backdrop-blur-sm border border-slate-800 text-xs font-mono z-20">
                 <span className="text-slate-400">
-                  Titik: <strong className="text-white">33 MediaPipe</strong>
-                  {' | '}
                   Tangan Kiri: <strong className="text-blue-400">{leftArmAngle}°</strong>
                   {' | '}
                   Tangan Kanan: <strong className="text-emerald-400">{rightArmAngle}°</strong>
@@ -308,19 +464,18 @@ export const SkeletonPreview: React.FC = () => {
 
           <Card className="p-5">
             <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3">
-              Tentang Halaman Ini
+              Cara Kerja Rigging
             </h3>
             <div className="text-xs text-slate-600 dark:text-slate-400 space-y-2 leading-relaxed">
               <p>
-                Skeleton <strong className="text-slate-900 dark:text-white">33 titik MediaPipe Pose</strong> ditumpuk tepat di atas maskot T-Pose GenPosFit. 
-                Setiap landmark dipetakan sesuai dimensi asli gambar (1000×1018 px).
+                Maskot <strong className="text-slate-900 dark:text-white">front_tpost.webp</strong> digambar di atas kanvas bersama skeleton 33 titik MediaPipe.
               </p>
               <p>
-                Gunakan slider <strong className="text-slate-900 dark:text-white">Tangan Kiri/Tangan Kanan</strong> untuk memutar lengan di sekitar sendi bahu.
-                Skeleton mengikuti rotasi ini, memperlihatkan perubahan posisi siku dan pergelangan tangan.
+                <strong className="text-slate-900 dark:text-white">Rigging:</strong> area lengan pada gambar diekstrak sebagai bagian terpisah dan diputar di sekitar sendi bahu. 
+                Gunakan slider <strong className="text-slate-900 dark:text-white">Tangan Kiri/Tangan Kanan</strong> untuk melihat lengan maskot bergerak mengikuti skeleton.
               </p>
               <p className="text-[11px] text-slate-400 border-t border-slate-200 dark:border-slate-800 pt-2 mt-2">
-                Maskot <strong>front_tpost.webp</strong> — pose T-Pose frontal. Sudut 0° = lengan horizontal (T-Pose sempurna).
+                Sudut 0° = lengan horizontal (T-Pose). Semakin besar sudut, lengan terangkat ke atas; sudut negatif = lengan turun.
               </p>
             </div>
           </Card>
