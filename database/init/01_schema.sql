@@ -89,6 +89,7 @@ CREATE TABLE IF NOT EXISTS rooms (
     password_hash VARCHAR(255) NOT NULL,
     host_player_id INT,
     status VARCHAR(20) DEFAULT 'waiting',
+    max_score INT DEFAULT 10 NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_room_code (room_code)

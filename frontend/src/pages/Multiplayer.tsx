@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Users, Plus, LogIn, KeyRound, DoorOpen, Check, X,
-  Wifi, Monitor, Smartphone, Globe, Server, Camera
+  Wifi, Monitor, Smartphone, Globe, Server, Camera, Swords, Star, Target as TargetIcon
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { SkeletonOverlay, type Landmark } from '../components/SkeletonOverlay';
-import { Button, Card, Input, Pill, PillIndicator, PillContent, Badge } from '@/components/ui';
+import { Button, Card, Input, Pill, PillIndicator, PillContent, Badge, Select } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
 interface RemotePlayer {
@@ -83,6 +83,7 @@ export const Multiplayer: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [selectedColor, setSelectedColor] = useState('#22c55e');
+  const [maxScore, setMaxScore] = useState(10);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -100,6 +101,14 @@ export const Multiplayer: React.FC = () => {
   const [camStarted, setCamStarted] = useState(false);
   const [localLandmarks, setLocalLandmarks] = useState<Landmark[] | null>(null);
 
+  // Battle state
+  const [battleExercises, setBattleExercises] = useState<any[]>([]);
+  const [selectedBattleMove, setSelectedBattleMove] = useState<any | null>(null);
+  const [battleScores, setBattleScores] = useState<Record<string, number>>({});
+  const [battlePoints, setBattlePoints] = useState<Record<string, number>>({});
+  const [winnerKey, setWinnerKey] = useState<string | null>(null);
+  const [myBattleScore, setMyBattleScore] = useState<number>(0);
+
   const browserInfo = getBrowserInfo();
   const osInfo = getOsInfo();
 
@@ -109,6 +118,16 @@ export const Multiplayer: React.FC = () => {
     os: osInfo,
     language: navigator.language?.split('-')[0] || 'en',
     screen: `${window.screen?.width || 0}x${window.screen?.height || 0}`,
+  };
+
+  const loadBattleMoves = async () => {
+    try {
+      const res = await fetch(`${API_URL()}/api/exercises`);
+      if (res.ok) {
+        const all = await res.json();
+        setBattleExercises(all.filter((e: any) => e.is_battle && e.skeleton_data));
+      }
+    } catch { /* ignore */ }
   };
 
   const fetchColors = async () => {
@@ -169,6 +188,36 @@ export const Multiplayer: React.FC = () => {
     return () => clearInterval(interval);
   }, [mode, camStarted]);
 
+  // Scoring loop for battle: periodically evaluate my pose vs selected battle move
+  const scoreMyMove = async () => {
+    if (!selectedBattleMove || !localLandmarks || localLandmarks.length < 25) return;
+    try {
+      const res = await fetch(`${API_URL()}/api/exercises/score`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ landmarks: localLandmarks, exercise_id: selectedBattleMove.exercise_id }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMyBattleScore(data.score || 0);
+        if (wsRef.current?.readyState === WebSocket.OPEN && data.score >= 60) {
+          wsRef.current.send(JSON.stringify({
+            type: 'battle_score',
+            score: data.score,
+            points: data.score >= 85 ? 1 : 0,
+            move_name: selectedBattleMove.nama,
+          }));
+        }
+      }
+    } catch { /* ignore */ }
+  };
+
+  useEffect(() => {
+    if (mode !== 'room' || !selectedBattleMove) return;
+    const interval = setInterval(scoreMyMove, 2000);
+    return () => clearInterval(interval);
+  }, [mode, selectedBattleMove, localLandmarks]);
+
   const currentKey = () => (guestKey || (user ? `u:${user.user_id}` : ''));
 
   const connectWS = (code: string) => {
@@ -207,6 +256,18 @@ export const Multiplayer: React.FC = () => {
             delete next[key];
             return next;
           });
+        } else if (msg.type === 'battle_score') {
+          const key = msg.guest_key || (msg.user_id ? `u:${msg.user_id}` : '');
+          if (key) {
+            setBattleScores(prev => ({ ...prev, [key]: msg.score }));
+            setBattlePoints(prev => {
+              const next: Record<string, number> = { ...prev, [key]: (prev[key] || 0) + (msg.points || 0) };
+              const limit = room?.max_score || maxScore;
+              const champ = Object.keys(next).find(k => next[k] >= limit);
+              if (champ) setWinnerKey(champ);
+              return next;
+            });
+          }
         }
       } catch { /* ignore */ }
     };
@@ -223,6 +284,11 @@ export const Multiplayer: React.FC = () => {
     setCamStarted(false);
     setMode('lobby');
     setError(null);
+    setSelectedBattleMove(null);
+    setBattleScores({});
+    setBattlePoints({});
+    setWinnerKey(null);
+    setMyBattleScore(0);
   };
 
   const handleCreate = async () => {
@@ -236,7 +302,7 @@ export const Multiplayer: React.FC = () => {
       const res = await fetch(`${API_URL()}/api/multiplayer/rooms`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nama: roomName, password, display_name: displayName, warna: selectedColor, user_id: user?.user_id || null }),
+        body: JSON.stringify({ nama: roomName, password, display_name: displayName, warna: selectedColor, user_id: user?.user_id || null, max_score: maxScore }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data?.detail || 'Gagal membuat room.'); return; }
@@ -245,6 +311,7 @@ export const Multiplayer: React.FC = () => {
       setRoom(data);
       setMode('room');
       connectWS(data.room_code);
+      loadBattleMoves();
     } catch { setError('Tidak dapat terhubung ke server.'); } finally { setLoading(false); }
   };
 
@@ -340,6 +407,86 @@ export const Multiplayer: React.FC = () => {
           </Button>
           <span className="text-[11px] text-slate-400">Skeleton Anda muncul real-time untuk pemain lain.</span>
         </div>
+
+        {/* Battle Panel */}
+        <Card className="p-5 mb-6 border-purple-500/30">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-2">
+              <span className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-500">
+                <Swords size={16} />
+              </span>
+              <div>
+                <div className="text-sm font-bold text-purple-600 dark:text-purple-400 flex items-center gap-1.5">
+                  Mode Battle
+                  <Star size={14} />
+                </div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Target menang: {room?.max_score || maxScore} poin · Pemain dengan poin tertinggi memenangkan battle
+                </div>
+              </div>
+            </div>
+            {/* Her score */}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-xs">
+              <Star size={13} className="text-purple-400" />
+              <span className="font-mono font-bold text-purple-600 dark:text-purple-400">Skor saya: {myBattleScore}</span>
+            </div>
+          </div>
+
+          {/* Battle move selector */}
+          {battleExercises.length > 0 ? (
+            <div className="mb-4">
+              <label className="block text-xs text-slate-600 dark:text-slate-300 font-medium mb-1.5">
+                Pilih Gerakan Battle (dari latihan admin)
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {battleExercises.map((m: any) => (
+                  <Button
+                    key={m.exercise_id}
+                    type="button"
+                    variant={selectedBattleMove?.exercise_id === m.exercise_id ? "secondary" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedBattleMove(m)}
+                    className="text-xs"
+                  >
+                    <TargetIcon size={13} className="text-purple-500" />
+                    {m.nama}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="text-[11px] text-slate-400 mb-3">
+              Belum ada gerakan battle yang ditambahkan admin.
+            </p>
+          )}
+
+          {/* Battle leaderboard */}
+          {Object.keys(battlePoints).length > 0 && (
+            <div className="space-y-2">
+              <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Papan Skor Battle</div>
+              {Object.entries(battlePoints).map(([key, pts]) => {
+                const p = players[key] ?? { display_name: 'Pemain', warna: '#8b5cf6' };
+                const isWinner = winnerKey === key;
+                return (
+                  <div key={key} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800" style={isWinner ? { borderColor: '#f59e0b', backgroundColor: '#f59e0b12' } : undefined}>
+                    <div className="flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-white">
+                      <span className="w-3 h-3 rounded-full" style={{ backgroundColor: p.warna }} />
+                      {p.display_name} {isWinner && <Badge variant="warning">PEMENANG!</Badge>}
+                    </div>
+                    <div className="font-mono font-bold text-purple-600 dark:text-purple-400">{pts} <span className="text-[10px] text-slate-400 font-normal">/ {room?.max_score || maxScore}</span></div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {winnerKey && (
+            <div className="mt-3 p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-xs flex items-center gap-2">
+              <Star size={14} />
+              <span><strong>Battle selesai!</strong> {players[winnerKey]?.display_name || 'Pemain'} mencapai batas poin dan memenangkan battle!</span>
+            </div>
+          )}
+        </Card>
 
         {/* Players grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
@@ -449,6 +596,15 @@ export const Multiplayer: React.FC = () => {
               onChange={setSelectedColor}
               taken={room?.players?.map((p: any) => p.warna) || []}
             />
+
+            {/* Battle max points (set by room creator / host) */}
+            <div>
+              <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1.5 flex items-center gap-1.5">
+                <Swords size={13} className="text-purple-500" />
+                Max Skor Battle (jumlah poin menang)
+              </label>
+              <Input type="number" min={1} max={999} value={String(maxScore)} onChange={(e) => setMaxScore(Math.max(1, Number(e.target.value) || 1))} />
+            </div>
 
             <Button variant="default" size="lg" className="w-full mt-2" disabled={loading} onClick={handleCreate}>
               <Plus size={16} /> {loading ? 'Membuat...' : 'Buat Room'}

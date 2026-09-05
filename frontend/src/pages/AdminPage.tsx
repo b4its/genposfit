@@ -9,6 +9,8 @@ import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from '@/components/ui';
 import { SkeletonOverlay, type Landmark } from '../components/SkeletonOverlay';
+import { usePoseDetector } from '../hooks/usePoseDetector';
+import { useCamera } from '../hooks/useCamera';
 
 interface ExerciseItem {
   exercise_id: number;
@@ -62,13 +64,33 @@ export const AdminPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // Camera pose recording
+  // Camera pose recording via MediaPipe
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const {
+    permission: camPermission,
+    error: camError,
+    started: camStarted,
+    stream: camStream,
+    start: startCam,
+    stop: stopCam,
+  } = useCamera();
+  const { landmarks: realLandmarks } = usePoseDetector(videoRef, camStarted);
   const [recording, setRecording] = useState(false);
   const [recordedLandmarks, setRecordedLandmarks] = useState<Landmark[] | null>(null);
   const [previewLandmarks, setPreviewLandmarks] = useState<Landmark[]>(() => generateIdleLandmarks());
-  const captureLoopRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (camStarted && realLandmarks && realLandmarks.length >= 25) {
+      setPreviewLandmarks(realLandmarks);
+    }
+  }, [camStarted, realLandmarks]);
+
+  useEffect(() => {
+    if (videoRef.current && camStream) {
+      videoRef.current.srcObject = camStream;
+      videoRef.current.play();
+    }
+  }, [camStream]);
 
   const isAdmin = user?.role === 'admin';
 
@@ -202,50 +224,22 @@ export const AdminPage: React.FC = () => {
     }
   };
 
-  // ---- Camera pose recording ----
+  // ---- Camera pose recording (MediaPipe) ----
   const startRecord = async () => {
     setError(null);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-      setRecording(true);
-      captureLoopRef.current = window.setInterval(captureFrame, 200);
-    } catch {
-      setError('Kamera tidak tersedia atau izin ditolak.');
-      setRecording(false);
-    }
+    const ok = await startCam();
+    if (ok) setRecording(true);
+    else if (camError) setError(camError);
   };
 
   const stopRecord = () => {
-    if (captureLoopRef.current) {
-      clearInterval(captureLoopRef.current);
-      captureLoopRef.current = null;
-    }
-    const v = videoRef.current;
-    if (v?.srcObject) {
-      (v.srcObject as MediaStream).getTracks().forEach(t => t.stop());
-      v.srcObject = null;
-    }
+    stopCam();
     setRecording(false);
   };
 
-  const captureFrame = () => {
-    const v = videoRef.current;
-    const c = canvasRef.current;
-    if (!v || !c || v.readyState < 2) return;
-    c.width = v.videoWidth || 640;
-    c.height = v.videoHeight || 480;
-    const ctx = c.getContext('2d');
-    if (!ctx) return;
-    ctx.drawImage(v, 0, 0, c.width, c.height);
-    setPreviewLandmarks(generateIdleLandmarks());
-  };
-
   const capturePose = () => {
-    setRecordedLandmarks(previewLandmarks.map(p => ({ ...p })));
+    const lms = realLandmarks && realLandmarks.length >= 25 ? realLandmarks : previewLandmarks;
+    setRecordedLandmarks(lms.map(p => ({ ...p })));
     setError(null);
   };
 
@@ -292,6 +286,79 @@ export const AdminPage: React.FC = () => {
           </h2>
 
           <div className="space-y-4 text-xs">
+            {/* Pose Recording via Camera */}
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-3">
+              <div className="flex items-center justify-between mb-2">
+                <Label className="p-0">Rekam Pose dari Kamera</Label>
+                {/* is_battle toggle */}
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.is_battle}
+                    onChange={(e) => setForm(prev => ({ ...prev, is_battle: e.target.checked }))}
+                    className="accent-purple-500"
+                  />
+                  <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-400">Bisa Battle</span>
+                </label>
+              </div>
+
+              {/* Camera viewport + skeleton overlay */}
+              <div className="relative w-full h-44 rounded-lg bg-slate-950 border border-slate-800 overflow-hidden mb-2">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className={`w-full h-full object-cover ${recording ? 'block' : 'hidden'}`}
+                />
+                <SkeletonOverlay
+                  landmarks={recordedLandmarks || previewLandmarks}
+                  width={320}
+                  height={176}
+                  orientasi="frontal"
+                  showAngles={false}
+                  color="#8b5cf6"
+                  className="absolute inset-0"
+                />
+                {!recording && !recordedLandmarks && (
+                  <div className="absolute inset-0 flex items-center justify-center text-[11px] text-slate-400">
+                    Aktifkan kamera lalu lakukan pose untuk direkam
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-2">
+                {!recording ? (
+                  <Button variant="outline" size="sm" className="flex-1" onClick={startRecord}>
+                    <Camera size={14} /> Rekam Pose
+                  </Button>
+                ) : (
+                  <Button variant="secondary" size="sm" className="flex-1" onClick={stopRecord}>
+                    <CameraOff size={14} /> Hentikan
+                  </Button>
+                )}
+                <Button variant="success" size="sm" className="flex-1" onClick={capturePose} disabled={!recording && !previewLandmarks}>
+                  <Target size={14} /> Simpan Pose
+                </Button>
+                {recordedLandmarks && (
+                  <Button variant="ghost" size="sm" onClick={clearRecorded} title="Hapus pose">
+                    <Trash2 size={14} />
+                  </Button>
+                )}
+              </div>
+              {recordedLandmarks && (
+                <div className="mt-2 flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-[11px] font-medium">
+                  <CheckCircle2 size={13} />
+                  Skeleton pose terekam ({recordedLandmarks.length} titik) — akan dipakai sebagai referensi latihan/battle.
+                </div>
+              )}
+              {camError && (
+                <div className="mt-2 flex items-center gap-1.5 text-rose-600 dark:text-rose-400 text-[11px]">
+                  <AlertTriangle size={13} /> {camError}
+                </div>
+              )}
+            </div>
+
             <div>
               <Label className="mb-1.5 block">Nama Latihan *</Label>
               <Input type="text" value={form.nama} onChange={set('nama')} placeholder="Chin Tuck" />

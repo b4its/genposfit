@@ -119,6 +119,7 @@ class Room(Base):
         nullable=True,
     )
     status = Column(String(20), default="waiting")  # 'waiting', 'playing', 'ended'
+    max_score = Column(Integer, default=10, nullable=False)  # batas poin pemenang battle (ditetapkan host)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

@@ -38,6 +38,7 @@ class CreateRoomRequest(BaseModel):
     display_name: str = Field(..., min_length=1, max_length=100)
     warna: str
     user_id: Optional[int] = None
+    max_score: int = Field(default=10, ge=1, le=999)
 
 
 class JoinRoomRequest(BaseModel):
@@ -84,6 +85,7 @@ def room_dict(db: Session, room: Room) -> dict:
         "room_code": room.room_code,
         "nama": room.nama,
         "status": room.status,
+        "max_score": room.max_score,
         "host_player_id": room.host_player_id,
         "players": [{"player_id": p.player_id, "display_name": p.display_name, "warna": p.warna, "is_host": bool(p.is_host), "user_id": p.user_id} for p in players],
     }
@@ -100,7 +102,7 @@ def create_room(payload: CreateRoomRequest, request: Request, db: Session = Depe
     code = secrets.token_hex(3).upper()
     while db.query(Room).filter_by(room_code=code).first():
         code = secrets.token_hex(3).upper()
-    room = Room(room_code=code, nama=payload.nama, password_hash=hash_password(payload.password))
+    room = Room(room_code=code, nama=payload.nama, password_hash=hash_password(payload.password), max_score=payload.max_score)
     db.add(room)
     db.flush()
     p = register_player(db, room, payload.display_name, payload.warna, payload.user_id, guest_key, is_host=True)
@@ -199,6 +201,19 @@ async def multiplayer_ws(websocket: WebSocket, room_code: str):
         while True:
             raw = await websocket.receive_text()
             msg = json.loads(raw)
+            msg_type = msg.get("type", "skeleton")
+            if msg_type == "battle_score":
+                # Skor battle dari pemain; broadcast ke semua (excl sender).
+                await hub.broadcast(code, {
+                    "type": "battle_score",
+                    "guest_key": guest_key,
+                    "display_name": name,
+                    "warna": warna,
+                    "score": msg.get("score", 0),
+                    "points": msg.get("points", 0),
+                    "move_name": msg.get("move_name", ""),
+                }, exclude=client)
+                continue
             landmarks = msg.get("landmarks", [])
             if landmarks:
                 await hub.broadcast(code, {
