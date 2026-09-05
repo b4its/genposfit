@@ -4,6 +4,8 @@
    Focused on Ergonomics, Healthcare & Biomechanics
    ============================================================ */
 
+@import "tailwindcss";
+
 :root {
   /* Light Theme Defaults */
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
