@@ -66,8 +66,8 @@ export function usePoseDetector(
     const video = videoRef.current;
     if (!window.isSecureContext) {
       setErrorMsg(
-        'Akses kamera membutuhkan koneksi HTTPS. Halaman ini diakses melalui HTTP yang tidak aman — ' +
-        'akses melalui https:// atau gunakan localhost.'
+        'Kamera butuh HTTPS saat diakses lewat IP host. Buat cert dengan "make certs" ' +
+        'lalu buka https://<ip-host>:3042.'
       );
       setStatus('error');
       return;

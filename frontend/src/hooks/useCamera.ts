@@ -78,8 +78,8 @@ export function useCamera(options: CameraOptions = {}) {
   const start = useCallback(async (): Promise<boolean> => {
     if (!window.isSecureContext) {
       setError(
-        'Akses kamera membutuhkan koneksi HTTPS. Halaman ini diakses melalui HTTP yang tidak aman — ' +
-        'akses melalui https:// atau gunakan localhost.'
+        'Kamera butuh HTTPS saat diakses lewat IP host. Halaman ini HTTP tidak aman — ' +
+        'buat cert dengan "make certs" (atau "npm run certs" di frontend/), lalu buka https://<ip-host>:3042.'
       );
       setPermission('denied');
       return false;

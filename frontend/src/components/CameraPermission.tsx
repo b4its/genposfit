@@ -29,8 +29,12 @@ export function CameraPermission({ permission, error, onRequestCamera }: CameraP
             <div className="text-[11px] font-mono text-slate-500 leading-relaxed mb-4 bg-slate-900/60 p-3 rounded-lg border border-slate-800 text-left w-full">
               <p className="text-slate-400 font-semibold mb-1">Cara mengaktifkan:</p>
               <ol className="list-decimal list-inside space-y-1">
-                <li>Klik ikon 🔒 atau ℹ️ di address bar browser</li>
-                <li>Atur <strong className="text-blue-400">Kamera</strong> → <strong className="text-emerald-400">Izinkan</strong></li>
+                <li>Pastikan halaman diakses via <strong className="text-emerald-400">HTTPS</strong> atau
+                  <code className="text-emerald-400">localhost</code> (kamera diblokir di HTTP/IP, bukan
+                  masalah server &mdash; ini aturan secure-context browser).
+                  Jika pakai IP host: <code className="text-blue-300">make certs</code> lalu buka
+                  <code className="text-blue-300"> https://&lt;ip&gt;:3042</code></li>
+                <li>Klik ikon 🔒 atau ℹ️ di address bar browser → Kamera → <strong className="text-emerald-400">Izinkan</strong></li>
                 <li>Muat ulang halaman</li>
               </ol>
             </div>

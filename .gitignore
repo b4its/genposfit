@@ -48,6 +48,10 @@ Thumbs.db
 # Docker local overrides
 docker-compose.override.yml
 
+# Self-signed HTTPS dev certs (kamera butuh secure context via IP host)
+frontend/certs/
+certs/dev-*.pem
+
 # GPC — Hardhat / smart contract artifacts
 gpc-contract/artifacts/
 gpc-contract/cache/

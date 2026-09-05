@@ -303,10 +303,20 @@ make logs
 
 | Service | URL |
 |---|---|
-| Frontend | http://localhost:3042 |
+| Frontend | https://localhost:3042 (HTTPS auto — kamera butuh secure context) |
 | Backend (Swagger API) | http://localhost:8042/docs |
-| Health check | http://localhost:8042/api/health |
+| Health check | http://localhost:8042/api/health / https://localhost:3042/api/health (proxy) |
 | PhpMyAdmin | http://localhost:8122 |
+
+> **Kamera (getUserMedia):** Browser hanya mengizinkan akses kamera pada *secure context* —
+> `https://` atau `http://localhost`. Jika aplikasi diakses lewat **IP host** (mis.
+> `192.168.1.42`) via HTTP, browser otomatis memblokir kamera dengan pesan seperti
+> *"Browser tidak mendukung akses kamera"* atau *"Kamera tidak diizinkan"*. Solusi:
+> container frontend sudah otomatis membuat sertifikat **self-signed**
+> (`frontend/scripts/gen-certs.sh`, SAN `localhost` + IP host terdeteksi + `CERT_HOSTS`) dan
+> serve **https://IP_HOST:3042**. Buka URL tersebut, klik *Advanced → Proceed*
+> (warning wajar untuk cert self-signed), aktivasi kamera akan muncul dialog izin biasa.
+> Dev tanpa Docker: `cd frontend && npm run certs && npm run dev -- --host 0.0.0.0`.
 
 ### Command Makefile Berguna
 

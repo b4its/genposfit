@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local self-signed certs (HTTPS dev server agar kamera bisa diakses via IP host)
+certs/dev-*.pem

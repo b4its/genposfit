@@ -32,7 +32,7 @@ COLOR_CYAN   := \033[36m
         db db-root db-create db-drop db-tables db-count db-dump db-restore \
         migrate seed reseed seed-dummy \
         shell-backend shell-frontend shell-db \
-        install-backend install-frontend lint-backend lint-frontend \
+        install-backend install-frontend certs lint-backend lint-frontend \
         repair doctor clean nuke destroy \
         gpc-up gpc-down gpc-publish gpc-send gpc-balance gpc-owner \
         gpc-total-supply gpc-max-supply gpc-info gpc-test gpc-compile
@@ -61,7 +61,7 @@ up: ## [Docker] Build (jika perlu) + jalankan semua container di foreground
 up-detached: ## [Docker] Jalankan semua container di background (mode daemon)
 	$(COMPOSE) up -d
 	@echo "$(COLOR_GREEN)✔ Semua service GenPosFit berjalan$(COLOR_RESET)"
-	@echo "  Frontend   → http://localhost:3042"
+	@echo "  Frontend   → https://localhost:3042 (HTTPS auto — kamera via IP host)"
 	@echo "  Backend    → http://localhost:8042/docs"
 	@echo "  PhpMyAdmin → http://localhost:8122"
 
@@ -253,7 +253,7 @@ repair: ## 🔧 Perbaiki otomatis: cleanup orphan containers, rebuild stale imag
 	@echo "$(COLOR_GREEN)╔══════════════════════════════════════════════════════════════╗$(COLOR_RESET)"
 	@echo "$(COLOR_GREEN)║            Repair selesai — semua service berjalan            ║$(COLOR_RESET)"
 	@echo "$(COLOR_GREEN)╚══════════════════════════════════════════════════════════════╝$(COLOR_RESET)"
-	@echo "  Frontend   → http://localhost:3042"
+	@echo "  Frontend   → https://localhost:3042 (HTTPS auto untuk kamera via IP host)"
 	@echo "  Backend    → http://localhost:8042/docs"
 	@echo "  PhpMyAdmin → http://localhost:8122"
 
@@ -360,6 +360,11 @@ install-backend: ## [Dev] Install ulang dependency Python di container backend
 
 install-frontend: ## [Dev] Install ulang npm package di container frontend
 	$(COMPOSE) exec $(SERVICE_FRONTEND) npm install
+
+certs: ## [Dev] Generate self-signed cert HTTPS (kamera butuh secure context saat akses via IP host)
+	@cd frontend && sh scripts/gen-certs.sh $(HOST_IP)
+	@echo "Restart frontend agar Vite memuat cert baru:"
+	@echo "  make restart-frontend   (docker)   atau   cd frontend && npm run dev  (lokal)"
 
 lint-backend: ## [Dev] Cek kualitas kode backend (ruff)
 	$(COMPOSE) exec $(SERVICE_BACKEND) ruff check app/

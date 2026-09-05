@@ -65,11 +65,17 @@ services:
     environment:
       VITE_API_PROXY: http://backend:8042
       NEXT_PUBLIC_API_URL: http://backend:8042
+      # IP host (opsional) untuk SAN cert HTTPS dev; dipisah spasi. Kosong → auto-detect.
+      # Contoh: CERT_HOSTS="192.168.1.42 genposfit.local"
+      CERT_HOSTS: "${CERT_HOSTS:-}"
     ports:
       - "${FRONTEND_PORT}:3042"
     volumes:
       - ./frontend:/app
       - /app/node_modules # jangan timpa node_modules container
+    # Generate self-signed cert saat container start → Vite serve HTTPS →
+    # getUserMedia (kamera) bisa diakses dari browser via IP host tanpa "Not secure".
+    command: sh -c "sh scripts/gen-certs.sh $${CERT_HOSTS}; npm run dev -- --host 0.0.0.0 --port 3042"
     networks:
       - genposfit-net
 
