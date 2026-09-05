@@ -9,8 +9,9 @@ import {
   PieChart, Pie, Cell, AreaChart, Area
 } from 'recharts';
 import { Button, Card, Badge, Pill, PillContent } from '../components/ui';
+import { getApiUrl } from '../lib/api';
 
-const apiUrl = () => import.meta.env?.VITE_API_URL || '';
+const apiUrl = getApiUrl;
 
 const PIE_COLORS = ['#10b981', '#f59e0b', '#ef4444'];
 

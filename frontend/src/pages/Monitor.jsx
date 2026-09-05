@@ -10,6 +10,7 @@ import { usePoseDetector } from '../hooks/usePoseDetector';
 import { useAuth } from '../context/AuthContext';
 import { Button, Card, Pill, PillIndicator, PillContent, Progress, Gauge } from '../components/ui';
 import { cn } from '../lib/utils';
+import { getWsUrl } from '../lib/api';
 
 // Sound synthesizer using Web Audio API for posture warning
 function playAlertTone() {
@@ -121,9 +122,7 @@ export const Monitor = ({ onNavigateToExercises }) => {
 
   // Connect WebSocket to FastAPI backend
   useEffect(() => {
-    const apiUrl = import.meta.env?.VITE_API_URL || '';
-    const wsBase = apiUrl.replace(/^http/, 'ws');
-    const wsUrl = `${wsBase}/api/monitoring/ws/${currentUserId}`;
+    const wsUrl = `${getWsUrl()}/api/monitoring/ws/${currentUserId}`;
     let ws;
 
     try {

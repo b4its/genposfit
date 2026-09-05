@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { getApiUrl } from '../lib/api';
 
 export interface AuthUser {
   user_id: number;
@@ -30,7 +31,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const TOKEN_KEY = 'genposfit_token';
 const USER_KEY = 'genposfit_user';
 
-const apiUrl = () => import.meta.env?.VITE_API_URL || 'http://localhost:8042';
+const apiUrl = getApiUrl;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);

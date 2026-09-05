@@ -10,6 +10,7 @@ import { SkeletonOverlay, type Landmark } from '../components/SkeletonOverlay';
 import { usePoseDetector } from '../hooks/usePoseDetector';
 import { useCamera } from '../hooks/useCamera';
 import { cn } from '@/lib/utils';
+import { getApiUrl } from '../lib/api';
 
 interface ChildExercise {
   exercise_id: number;
@@ -34,7 +35,7 @@ interface ExerciseType {
   children: ChildExercise[];
 }
 
-const apiUrl = () => import.meta.env?.VITE_API_URL || 'http://localhost:8042';
+const apiUrl = getApiUrl;
 
 function generateIdleLandmarks(): Landmark[] {
   const lms: Landmark[] = [];

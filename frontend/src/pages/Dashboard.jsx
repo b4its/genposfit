@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { Button, Card, Badge, Progress, Pill, PillContent } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
+import { getApiUrl } from '../lib/api';
 
 export const Dashboard = () => {
   const { user } = useAuth();
@@ -36,7 +37,7 @@ export const Dashboard = () => {
   // Fetch real analytics from backend
   const fetchData = async () => {
     setLoading(true);
-    const apiUrl = import.meta.env?.VITE_API_URL || '';
+    const apiUrl = getApiUrl();
 
     // timeRange: '7d' → 7, '30d' → 30, '1d' → 1
     const days = timeRange === '1d' ? 1 : timeRange === '30d' ? 30 : 7;

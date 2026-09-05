@@ -10,6 +10,7 @@ import { usePoseDetector } from '../hooks/usePoseDetector';
 import { Button, Card, Pill, PillIndicator, PillContent, Input, Select, Progress } from '../components/ui';
 import { cn } from '../lib/utils';
 import { useAuth } from '../context/AuthContext';
+import { getApiUrl } from '../lib/api';
 
 function calculateAnglesFromLandmarks(lms) {
   if (!lms || lms.length < 25) return null;
@@ -221,7 +222,7 @@ export const RegisterPose = ({ onFinishCalibration }) => {
     }
 
     setIsSubmitting(true);
-    const apiUrl = import.meta.env?.VITE_API_URL || '';
+    const apiUrl = getApiUrl();
 
     try {
       const payload = {

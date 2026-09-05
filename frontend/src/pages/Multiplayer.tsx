@@ -4,6 +4,7 @@ import {
   Wifi, Monitor, Smartphone, Globe, Server, Camera, Swords, Star, Target as TargetIcon
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { getApiUrl, getWsUrl } from '../lib/api';
 import { SkeletonOverlay, type Landmark } from '../components/SkeletonOverlay';
 import { usePoseDetector } from '../hooks/usePoseDetector';
 import { Button, Card, Input, Pill, PillIndicator, PillContent, Badge, Select } from '@/components/ui';
@@ -19,7 +20,7 @@ interface RemotePlayer {
   landmarks: Landmark[] | null;
 }
 
-const API_URL = () => import.meta.env?.VITE_API_URL || 'http://localhost:8042';
+const API_URL = getApiUrl;
 
 // Fallback / demo skeleton so lobby is alive even before camera data arrives
 function generateIdleLandmarks(time: number): Landmark[] {
@@ -313,9 +314,7 @@ const loadBattleMoves = async () => {
   };
 
   const connectWS = (code: string, key?: string, name?: string, color?: string) => {
-    const apiUrl = API_URL();
-    const wsBase = apiUrl.replace(/^http/, 'ws');
-    const socket = new WebSocket(`${wsBase}/api/multiplayer/ws/${code}`);
+    const socket = new WebSocket(`${getWsUrl()}/api/multiplayer/ws/${code}`);
     wsRef.current = socket;
     // Gunakan nilai fresh (dari parameter) agar tidak stale saat join/create baru.
     const activeKey = key || guestKey;

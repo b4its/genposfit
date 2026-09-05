@@ -12,6 +12,7 @@ import { Multiplayer } from './pages/Multiplayer';
 import { AdminPage } from './pages/AdminPage';
 import { AdminExercises } from './pages/AdminExercises';
 import { ShieldCheck } from 'lucide-react';
+import { getApiUrl } from './lib/api';
 
 function AppContent() {
   const { isAuthenticated, user, loading } = useAuth();
@@ -33,7 +34,7 @@ function AppContent() {
 
   // Check backend health on mount
   useEffect(() => {
-    const apiUrl = import.meta.env?.VITE_API_URL || 'http://localhost:8042';
+    const apiUrl = getApiUrl();
     const checkHealth = () => {
       fetch(`${apiUrl}/api/health`)
         .then(res => res.json())

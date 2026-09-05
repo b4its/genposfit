@@ -5,6 +5,7 @@ import {
 import { Button, Card, Badge, Progress, Pill, PillContent } from '../components/ui';
 import { cn } from '../lib/utils';
 import { useAuth } from '../context/AuthContext';
+import { getApiUrl } from '../lib/api';
 import { SkeletonOverlay, type Landmark } from '../components/SkeletonOverlay';
 import { usePoseDetector } from '../hooks/usePoseDetector';
 import { useCamera } from '../hooks/useCamera';
@@ -28,7 +29,7 @@ interface ExerciseItem {
 
 const DEFAULT_EXERCISES: ExerciseItem[] = [];
 
-const apiUrl = () => import.meta.env?.VITE_API_URL || 'http://localhost:8042';
+const apiUrl = getApiUrl;
 
 export const Exercises: React.FC = () => {
   const { user, token } = useAuth();
