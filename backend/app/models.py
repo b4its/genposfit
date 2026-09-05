@@ -1,0 +1,99 @@
+"""
+GenPosFit — SQLAlchemy ORM Models
+Definisi tabel database sesuai skema MySQL GenPosFit.
+"""
+from datetime import datetime
+from sqlalchemy import (
+    Column, Integer, BigInt, SmallInteger, String, Text,
+    DECIMAL, DateTime, ForeignKey, UniqueConstraint, Index, JSON
+)
+from sqlalchemy.orm import relationship
+from app.database import Base
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    user_id = Column(Integer, primary_key=True, autoincrement=True)
+    nama = Column(String(100), nullable=False)
+    email = Column(String(150), unique=True, nullable=True)
+    pekerjaan = Column(String(100), nullable=True)
+    jam_kerja_hari = Column(SmallInteger, default=8)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    baselines = relationship("PoseBaseline", back_populates="user", cascade="all, delete-orphan")
+    posture_logs = relationship("PostureLog", back_populates="user", cascade="all, delete-orphan")
+    exercise_sessions = relationship("ExerciseSession", back_populates="user", cascade="all, delete-orphan")
+
+
+class PoseBaseline(Base):
+    __tablename__ = "pose_baseline"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
+    orientasi = Column(String(20), nullable=False)  # 'frontal', 'lateral_kiri', 'lateral_kanan'
+    tipe_pose = Column(String(30), nullable=False)  # 'berdiri_tegak', 'berdiri_rileks', 'duduk_tegak', 'duduk_rileks'
+    sudut_leher = Column(DECIMAL(6, 2), nullable=False)
+    sudut_punggung = Column(DECIMAL(6, 2), nullable=False)
+    level_bahu = Column(DECIMAL(6, 4), nullable=False)
+    std_leher = Column(DECIMAL(6, 3), nullable=False)
+    std_punggung = Column(DECIMAL(6, 3), nullable=False)
+    n_frame = Column(SmallInteger, nullable=False)
+    recorded_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="baselines")
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "orientasi", "tipe_pose", name="uq_user_pose"),
+    )
+
+
+class PostureLog(Base):
+    __tablename__ = "posture_logs"
+
+    id = Column(BigInt().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
+    sesi_id = Column(String(64), nullable=True)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+    sudut_leher = Column(DECIMAL(6, 2), nullable=False)
+    sudut_punggung = Column(DECIMAL(6, 2), nullable=False)
+    level_bahu = Column(DECIMAL(6, 4), nullable=True)
+    skor_deviasi = Column(DECIMAL(5, 2), nullable=False)
+    status = Column(String(20), nullable=False)  # 'bagus', 'ringan', 'buruk'
+
+    user = relationship("User", back_populates="posture_logs")
+
+    __table_args__ = (
+        Index("idx_user_time", "user_id", "timestamp"),
+    )
+
+
+class Exercise(Base):
+    __tablename__ = "exercises"
+
+    exercise_id = Column(Integer, primary_key=True, autoincrement=True)
+    nama = Column(String(100), nullable=False)
+    deskripsi = Column(Text, nullable=True)
+    target_otot = Column(String(150), nullable=True)
+    sudut_target = Column(JSON, nullable=True)
+    durasi_detik = Column(SmallInteger, nullable=True)
+    reps = Column(SmallInteger, default=10)
+    tingkat = Column(String(20), default="pemula")  # 'pemula', 'menengah', 'lanjut'
+
+    sessions = relationship("ExerciseSession", back_populates="exercise")
+
+
+class ExerciseSession(Base):
+    __tablename__ = "exercise_sessions"
+
+    session_id = Column(BigInt().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
+    exercise_id = Column(Integer, ForeignKey("exercises.exercise_id"), nullable=False)
+    total_reps = Column(SmallInteger, nullable=True)
+    avg_skor = Column(DECIMAL(5, 2), nullable=True)
+    selesai_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="exercise_sessions")
+    exercise = relationship("Exercise", back_populates="sessions")

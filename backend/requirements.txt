@@ -1,0 +1,12 @@
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+sqlalchemy==2.0.30
+pymysql==1.1.1
+cryptography==42.0.8
+python-dotenv==1.0.1
+numpy==1.26.4
+opencv-python-headless==4.10.0.84
+mediapipe==0.10.14
+websockets==12.0
+pydantic==2.7.4
+pydantic-settings==2.3.4
