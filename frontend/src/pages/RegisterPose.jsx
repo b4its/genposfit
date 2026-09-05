@@ -7,6 +7,8 @@ import { SkeletonOverlay } from '../components/SkeletonOverlay';
 import { CameraPermission } from '../components/CameraPermission';
 import { useCamera } from '../hooks/useCamera';
 import { usePoseDetector } from '../hooks/usePoseDetector';
+import { Button, Card, Pill, PillIndicator, PillContent, Input, Select, Progress } from '../components/ui';
+import { cn } from '../lib/utils';
 
 export const RegisterPose = ({ onFinishCalibration }) => {
   const [nama, setNama] = useState('Alex Chandra');
@@ -234,14 +236,14 @@ export const RegisterPose = ({ onFinishCalibration }) => {
     <div className="app-container py-10">
       {/* Header */}
       <div className="max-w-4xl mx-auto mb-8 text-left">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono mb-3 border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
-          <ShieldCheck size={14} />
-          <span>STEP 1: PERSONAL POSTURE CALIBRATION</span>
-        </div>
-        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-2">
+        <Pill variant="success" size="md" className="mb-3 font-mono">
+          <PillIndicator variant="success" pulse={false} />
+          <PillContent>STEP 1: PERSONAL POSTURE CALIBRATION</PillContent>
+        </Pill>
+        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-2 text-foreground">
           Registrasi & Kalibrasi Baseline Postur
         </h1>
-        <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 leading-relaxed">
+        <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
           Setiap individu memiliki struktur anatomi dan ergonomi yang unik. Rekam pose postur ideal Anda
           (posisi duduk/berdiri tegak) selama 3 detik untuk membangun model referensi personal di MySQL.
         </p>
@@ -251,123 +253,122 @@ export const RegisterPose = ({ onFinishCalibration }) => {
         {/* Left Column: Form Setup */}
         <div className="lg:col-span-5 flex flex-col gap-6">
           {/* User Profile Card */}
-          <div className="app-card p-5">
-            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <Card className="p-5">
+            <h3 className="text-sm font-bold text-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
               <UserCheck size={16} className="text-blue-500" />
               <span>Profil Pengguna</span>
             </h3>
 
             <div className="space-y-4 text-xs">
               <div>
-                <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1.5">Nama Lengkap</label>
-                <input
+                <label className="block text-foreground font-medium mb-1.5">Nama Lengkap</label>
+                <Input
                   type="text"
                   value={nama}
                   onChange={(e) => setNama(e.target.value)}
-                  className="app-input"
                   placeholder="Misal: Alex Chandra"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1.5">Email (Opsional)</label>
-                <input
+                <label className="block text-foreground font-medium mb-1.5">Email (Opsional)</label>
+                <Input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="app-input"
                   placeholder="alex@example.com"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1.5">Pekerjaan</label>
-                <input
+                <label className="block text-foreground font-medium mb-1.5">Pekerjaan</label>
+                <Input
                   type="text"
                   value={pekerjaan}
                   onChange={(e) => setPekerjaan(e.target.value)}
-                  className="app-input"
                   placeholder="Software Engineer / Designer"
                 />
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Calibration Config */}
-          <div className="app-card p-5">
-            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4">
+          <Card className="p-5">
+            <h3 className="text-sm font-bold text-foreground uppercase tracking-wider mb-4">
               Pilih Orientasi & Tipe Pose
             </h3>
 
             <div className="space-y-4 text-xs">
               <div>
-                <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1.5">Sudut Kamera (Orientasi):</label>
+                <label className="block text-foreground font-medium mb-1.5">Sudut Kamera (Orientasi):</label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { id: 'frontal', label: 'Frontal' },
                     { id: 'lateral_kiri', label: 'Samping Kiri' },
                     { id: 'lateral_kanan', label: 'Samping Kanan' },
                   ].map(item => (
-                    <button
+                    <Button
                       key={item.id}
                       type="button"
+                      variant={orientasi === item.id ? "default" : "outline"}
+                      size="sm"
                       onClick={() => setOrientasi(item.id)}
-                      className={`py-2 px-2 rounded-lg border text-center cursor-pointer transition-all ${
-                        orientasi === item.id
-                          ? 'bg-blue-600/10 border-blue-500 text-blue-600 dark:text-blue-400 font-bold'
-                          : 'btn-outline text-slate-600 dark:text-slate-300'
-                      }`}
+                      className={cn(
+                        "text-xs text-center py-2 px-1 h-auto",
+                        orientasi === item.id && "bg-blue-600 text-white font-bold"
+                      )}
                     >
                       {item.label}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
 
               <div>
-                <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1.5">Tipe Pose Target:</label>
-                <select
+                <label className="block text-foreground font-medium mb-1.5">Tipe Pose Target:</label>
+                <Select
                   value={tipePose}
                   onChange={(e) => setTipePose(e.target.value)}
-                  className="app-input"
                 >
                   <option value="duduk_tegak">Duduk Tegak (Ideal Ergonomis)</option>
                   <option value="duduk_rileks">Duduk Rileks (Posisi Kerja Alami)</option>
                   <option value="berdiri_tegak">Berdiri Tegak (Standing Desk)</option>
                   <option value="berdiri_rileks">Berdiri Rileks</option>
-                </select>
+                </Select>
               </div>
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* Right Column: Live Video / Canvas & Calibration Trigger */}
         <div className="lg:col-span-7 flex flex-col gap-6">
-          <div className="dev-card p-5 relative overflow-hidden">
+          <Card className="p-5 relative overflow-hidden bg-slate-950 border-slate-800 shadow-lg">
             {/* Top status header */}
-            <div className="flex items-center justify-between pb-3 mb-3 border-b" style={{ borderColor: 'var(--border)' }}>
-              <div className="flex items-center gap-2">
-                <span className={`w-2.5 h-2.5 rounded-full ${isCameraActive ? 'bg-emerald-500 animate-ping' : 'bg-blue-500'}`}></span>
-                <span className="text-xs font-mono text-slate-300">
-                  {isCameraActive ? 'LIVE WEBCAM STREAM' : 'SIMULATOR BIOMEKANIKA READY'}
-                </span>
-              </div>
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+              <Pill variant={isCameraActive ? "success" : "info"} size="sm">
+                <PillIndicator variant={isCameraActive ? "success" : "info"} pulse={isCameraActive} />
+                <PillContent>{isCameraActive ? 'LIVE WEBCAM STREAM' : 'SIMULATOR BIOMEKANIKA READY'}</PillContent>
+              </Pill>
 
               <div className="flex items-center gap-2">
                 {!isCameraActive ? (
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={handleStartCamera}
-                    className="text-xs font-mono text-emerald-400 hover:text-emerald-300 flex items-center gap-1 cursor-pointer"
+                    className="text-xs font-mono text-emerald-400 hover:text-emerald-300 hover:bg-slate-900 flex items-center gap-1.5 h-auto py-1"
                   >
                     <Camera size={13} /> Aktifkan Kamera
-                  </button>
+                  </Button>
                 ) : (
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={handleStopCamera}
-                    className="text-xs font-mono text-red-400 hover:text-red-300 flex items-center gap-1 cursor-pointer"
+                    className="text-xs font-mono text-rose-400 hover:text-rose-300 hover:bg-slate-900 flex items-center gap-1.5 h-auto py-1"
                   >
                     <CameraOff size={13} /> Matikan Kamera
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
@@ -420,16 +421,15 @@ export const RegisterPose = ({ onFinishCalibration }) => {
               {/* Recording Progress Bar */}
               {isRecording && (
                 <div className="absolute top-3 left-4 right-4 z-20">
-                  <div className="flex justify-between text-xs font-mono text-emerald-400 mb-1">
+                  <div className="flex justify-between text-xs font-mono text-emerald-400 mb-1.5">
                     <span>MEREKAM 90 FRAME ({recordedFrames}/90)</span>
                     <span>{Math.round((recordedFrames / 90) * 100)}%</span>
                   </div>
-                  <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-emerald-500 transition-all duration-75"
-                      style={{ width: `${(recordedFrames / 90) * 100}%` }}
-                    ></div>
-                  </div>
+                  <Progress
+                    value={(recordedFrames / 90) * 100}
+                    variant="success"
+                    className="h-2 bg-slate-800"
+                  />
                 </div>
               )}
 
@@ -449,42 +449,46 @@ export const RegisterPose = ({ onFinishCalibration }) => {
 
             {/* Action Buttons */}
             <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
-              <button
+              <Button
                 type="button"
+                variant="success"
+                size="lg"
                 disabled={isRecording || countdown !== null}
                 onClick={handleStartCalibration}
-                className="btn-green flex-1 cursor-pointer"
+                className="flex-1"
               >
                 <Play size={16} className="fill-current" />
                 <span>
                   {isRecording ? 'Sedang Merekam...' : `Mulai Kalibrasi (${orientasi} · ${tipePose})`}
                 </span>
-              </button>
+              </Button>
             </div>
-          </div>
+          </Card>
 
           {/* Calibrated Items Summary Table */}
           {collectedBaselines.length > 0 && (
-            <div className="app-card p-5">
+            <Card className="p-5">
               <div className="flex items-center justify-between mb-3">
                 <h4 className="text-sm font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
                   <CheckCircle2 size={16} />
                   <span>{collectedBaselines.length} Pose Siap Disimpan</span>
                 </h4>
-                <button
+                <Button
+                  variant="default"
+                  size="sm"
                   onClick={handleSubmitToBackend}
                   disabled={isSubmitting}
-                  className="btn-primary py-1.5 px-4 text-xs font-semibold cursor-pointer"
+                  className="text-xs font-semibold"
                 >
                   <Save size={14} />
                   <span>{isSubmitting ? 'Menyimpan...' : 'Simpan Profil Kalibrasi'}</span>
-                </button>
+                </Button>
               </div>
 
               <div className="overflow-x-auto">
                 <table className="w-full text-xs font-mono text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold">
+                    <tr className="border-b border-border text-muted-foreground font-semibold">
                       <th className="py-2">Orientasi</th>
                       <th className="py-2">Tipe Pose</th>
                       <th className="py-2">Rata2 Leher</th>
@@ -494,12 +498,12 @@ export const RegisterPose = ({ onFinishCalibration }) => {
                   </thead>
                   <tbody>
                     {collectedBaselines.map((b, idx) => (
-                      <tr key={idx} className="border-b border-slate-100 dark:border-slate-800/60">
+                      <tr key={idx} className="border-b border-border/60">
                         <td className="py-2.5 font-bold text-blue-600 dark:text-blue-400">{b.orientasi}</td>
-                        <td className="py-2.5 text-slate-700 dark:text-slate-300">{b.tipe_pose}</td>
+                        <td className="py-2.5 text-foreground">{b.tipe_pose}</td>
                         <td className="py-2.5 text-emerald-600 dark:text-emerald-400 font-bold">{b.sudut_leher}°</td>
                         <td className="py-2.5 text-blue-600 dark:text-blue-300 font-bold">{b.sudut_punggung}°</td>
-                        <td className="py-2.5 text-slate-500 dark:text-slate-400">±{b.std_leher}°</td>
+                        <td className="py-2.5 text-muted-foreground">±{b.std_leher}°</td>
                       </tr>
                     ))}
                   </tbody>
@@ -513,19 +517,22 @@ export const RegisterPose = ({ onFinishCalibration }) => {
                     <span>Profil kalibrasi personal berhasil disimpan ke sistem!</span>
                   </div>
                   {onFinishCalibration && (
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => onFinishCalibration()}
-                      className="inline-flex items-center gap-1 font-bold text-emerald-700 dark:text-white underline cursor-pointer"
+                      className="text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 p-1 h-auto"
                     >
                       Buka Live Monitor <ChevronRight size={14} />
-                    </button>
+                    </Button>
                   )}
                 </div>
               )}
-            </div>
+            </Card>
           )}
         </div>
       </div>
     </div>
   );
 };
+

@@ -3,6 +3,7 @@ import {
   BarChart3, TrendingUp, Clock, AlertTriangle, CheckCircle2,
   Calendar, Download, RefreshCw, FileText, Dumbbell, Shield
 } from 'lucide-react';
+import { Button, Card, Badge, Progress, Pill, PillContent } from '../components/ui';
 
 export const Dashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -29,47 +30,58 @@ export const Dashboard = () => {
 
   const [activeJsonView, setActiveJsonView] = useState(false);
 
-  // Fetch summary from backend or fallback to rich mock data
+  // Fetch real analytics from backend
   const fetchData = async () => {
     setLoading(true);
     const apiUrl = import.meta.env?.VITE_API_URL || 'http://localhost:8042';
 
     try {
-      const res = await fetch(`${apiUrl}/api/monitoring/summary/1?days=7`);
+      const res = await fetch(`${apiUrl}/api/analytics/1/summary?days=7`);
       if (res.ok) {
         const data = await res.json();
-        if (data.total_logs > 0) {
-          setStats(data);
-        } else {
-          generateFallbackTimeline();
+        setStats(prev => ({
+          ...prev,
+          total_logs: data.total_evaluasi || prev.total_logs,
+          avg_skor: data.rata_rata_skor || prev.avg_skor,
+          avg_leher: data.rata_rata_leher || prev.avg_leher,
+          avg_punggung: data.rata_rata_punggung || prev.avg_punggung,
+          distribusi: data.distribusi || prev.distribusi,
+          persentase_bagus: data.persentase_bagus || prev.persentase_bagus,
+        }));
+      }
+
+      // Fetch timeline logs
+      const tlRes = await fetch(`${apiUrl}/api/analytics/1/timeline?limit=24`);
+      if (tlRes.ok) {
+        const tlData = await tlRes.json();
+        if (Array.isArray(tlData) && tlData.length > 0) {
+          setStats(prev => ({
+            ...prev,
+            timeline: tlData.map(item => ({
+              time: new Date(item.waktu_catat).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              skor: Math.round(item.skor_deviasi || 80),
+              status: item.status,
+            }))
+          }));
         }
-      } else {
-        generateFallbackTimeline();
       }
     } catch (e) {
-      generateFallbackTimeline();
+      console.debug('Using fallback mock data for dashboard:', e);
+      // Generate synthetic 24-point timeline for rich visualization
+      const mockPoints = [];
+      for (let i = 0; i < 24; i++) {
+        const hour = 9 + Math.floor(i / 3);
+        const min = (i % 3) * 20;
+        const baseScore = 85 + Math.sin(i * 0.7) * 12;
+        mockPoints.push({
+          time: `${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`,
+          skor: Math.min(100, Math.max(45, Math.round(baseScore))),
+        });
+      }
+      setStats(prev => ({ ...prev, timeline: mockPoints }));
     } finally {
       setLoading(false);
     }
-  };
-
-  const generateFallbackTimeline = () => {
-    // Generate smooth 24-point timeline for demonstration
-    const points = [];
-    const now = Date.now();
-    for (let i = 24; i >= 0; i--) {
-      const timeStr = new Date(now - i * 3600 * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const rawScore = 85 + Math.sin(i * 0.4) * 8 - (i % 5 === 0 ? 15 : 0);
-      points.push({
-        time: timeStr,
-        skor: Math.max(50, Math.min(99, Math.round(rawScore * 10) / 10)),
-        leher: 165 - (100 - rawScore) * 0.5,
-      });
-    }
-    setStats(prev => ({
-      ...prev,
-      timeline: points
-    }));
   };
 
   useEffect(() => {
@@ -93,106 +105,108 @@ export const Dashboard = () => {
       {/* Page Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-2 border border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400">
+          <Pill variant="info" size="md" className="mb-2">
             <BarChart3 size={13} />
-            <span>METRIK & ANALITIK POSTUR</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+            <PillContent>METRIK & ANALITIK POSTUR</PillContent>
+          </Pill>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
             Dashboard Progres Postur
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             Ringkasan analitik dan telemetri kesehatan ergonomis pengguna (Alex Chandra)
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <button
+          <Button
+            variant="outline"
+            size="icon-sm"
             onClick={fetchData}
-            className="btn-outline p-2 text-slate-600 dark:text-slate-300 cursor-pointer"
             title="Refresh Data"
           >
-            <RefreshCw size={15} />
-          </button>
+            <RefreshCw size={14} />
+          </Button>
 
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={exportJSON}
-            className="btn-outline py-1.5 px-3 text-xs font-medium cursor-pointer flex items-center gap-1.5"
+            className="flex items-center gap-1.5 text-xs font-medium"
           >
             <Download size={14} />
             <span>Export JSON</span>
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
         {/* Card 1: Ergonomic Health Score */}
-        <div className="app-card p-5">
+        <Card className="p-5">
           <div className="flex justify-between items-start mb-2">
-            <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Rata-rata Skor Postur</span>
-            <span className="status-pill status-pill-bagus">7 HARI</span>
+            <span className="text-xs font-semibold text-muted-foreground">Rata-rata Skor Postur</span>
+            <Badge variant="success">7 HARI</Badge>
           </div>
           <div className="text-3xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400 my-1">
-            {stats.avg_skor} <span className="text-sm font-normal text-slate-400">/ 100</span>
+            {stats.avg_skor} <span className="text-sm font-normal text-muted-foreground">/ 100</span>
           </div>
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
+          <div className="text-[11px] text-muted-foreground flex items-center gap-1">
             <TrendingUp size={13} className="text-emerald-500" />
             <span>+3.4% peningkatan vs minggu lalu</span>
           </div>
-        </div>
+        </Card>
 
         {/* Card 2: Bagus Compliance */}
-        <div className="app-card p-5">
+        <Card className="p-5">
           <div className="flex justify-between items-start mb-2">
-            <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Kepatuhan Ergonomis</span>
+            <span className="text-xs font-semibold text-muted-foreground">Kepatuhan Ergonomis</span>
             <CheckCircle2 size={15} className="text-emerald-500" />
           </div>
           <div className="text-3xl font-extrabold font-mono text-blue-600 dark:text-blue-400 my-1">
             {stats.persentase_bagus}%
           </div>
-          <div className="text-[11px] text-slate-500 dark:text-slate-400">
+          <div className="text-[11px] text-muted-foreground">
             {stats.distribusi.bagus} dari {stats.total_logs} interval evaluasi
           </div>
-        </div>
+        </Card>
 
         {/* Card 3: Neck Angle Deviation */}
-        <div className="app-card p-5">
+        <Card className="p-5">
           <div className="flex justify-between items-start mb-2">
-            <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Rata-rata Sudut Leher</span>
+            <span className="text-xs font-semibold text-muted-foreground">Rata-rata Sudut Leher</span>
             <Shield size={15} className="text-teal-500" />
           </div>
-          <div className="text-3xl font-extrabold font-mono text-slate-900 dark:text-white my-1">
+          <div className="text-3xl font-extrabold font-mono text-foreground my-1">
             {stats.avg_leher}°
           </div>
-          <div className="text-[11px] text-slate-500 dark:text-slate-400">
+          <div className="text-[11px] text-muted-foreground">
             Deviasi rata-rata: ±1.8° dari baseline ideal
           </div>
-        </div>
+        </Card>
 
         {/* Card 4: Posture Logs Recorded */}
-        <div className="app-card p-5">
+        <Card className="p-5">
           <div className="flex justify-between items-start mb-2">
-            <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Total Telemetri Tersimpan</span>
+            <span className="text-xs font-semibold text-muted-foreground">Total Telemetri Tersimpan</span>
             <Clock size={15} className="text-amber-500" />
           </div>
-          <div className="text-3xl font-extrabold font-mono text-slate-900 dark:text-white my-1">
+          <div className="text-3xl font-extrabold font-mono text-foreground my-1">
             {stats.total_logs.toLocaleString()}
           </div>
-          <div className="text-[11px] text-slate-500 dark:text-slate-400">
+          <div className="text-[11px] text-muted-foreground">
             Sampel telemetri biometrik aktif
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Main Chart Section: Timeline Fluctuation */}
-      <div className="app-card p-6 mb-8">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b"
-          style={{ borderColor: 'var(--border)' }}>
+      <Card className="p-6 mb-8">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-border">
           <div>
-            <h3 className="text-sm font-bold font-mono text-slate-200">
+            <h3 className="text-sm font-bold font-mono text-foreground">
               Fluktuasi Skor Ergonomi Sepanjang Sesi
             </h3>
-            <span className="text-xs font-mono text-slate-400">
+            <span className="text-xs font-mono text-muted-foreground">
               Evaluasi landmark continuous time-series (Hijau: &gt;=85, Kuning: 60-84, Merah: &lt;60)
             </span>
           </div>
@@ -207,7 +221,7 @@ export const Dashboard = () => {
               <span>Ringan (60-84)</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
               <span>Buruk (&lt;60)</span>
             </div>
           </div>
@@ -218,7 +232,7 @@ export const Dashboard = () => {
           {timelineData.map((pt, idx) => {
             const val = pt.skor || 80;
             const barHeight = Math.max(15, (val / 100) * 160);
-            const colorClass = val >= 85 ? 'bg-emerald-500 hover:bg-emerald-400' : val >= 60 ? 'bg-amber-500 hover:bg-amber-400' : 'bg-red-500 hover:bg-red-400';
+            const colorClass = val >= 85 ? 'bg-emerald-500 hover:bg-emerald-400' : val >= 60 ? 'bg-amber-500 hover:bg-amber-400' : 'bg-rose-500 hover:bg-rose-400';
 
             return (
               <div
@@ -240,76 +254,70 @@ export const Dashboard = () => {
           })}
         </div>
 
-        <div className="flex justify-between text-[10px] font-mono text-slate-500 mt-2 px-2 border-t pt-2"
-          style={{ borderColor: 'var(--border)' }}>
+        <div className="flex justify-between text-[10px] font-mono text-muted-foreground mt-2 px-2 border-t border-border pt-2">
           <span>Awal Sesi</span>
           <span>Pertengahan Kerja</span>
           <span>Sekarang</span>
         </div>
-      </div>
+      </Card>
 
       {/* Lower Row: Exercise Sessions History & Posture Distribution Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Therapy Sessions */}
-        <div className="lg:col-span-6 app-card p-5">
+        <Card className="lg:col-span-6 p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
               <Dumbbell size={16} className="text-emerald-500" />
               <span>Riwayat Sesi Terapi Postur</span>
             </h3>
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Terverifikasi AI</span>
+            <span className="text-xs text-muted-foreground font-medium">Terverifikasi AI</span>
           </div>
 
           <div className="space-y-3">
             {exerciseHistory.map(ex => (
               <div
                 key={ex.id}
-                className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 text-xs"
+                className="flex items-center justify-between p-3.5 rounded-xl bg-muted/60 border border-border/80 text-xs"
               >
                 <div>
-                  <div className="font-bold text-slate-800 dark:text-slate-200">{ex.nama}</div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{ex.time} · {ex.reps} Repetisi</div>
+                  <div className="font-bold text-foreground">{ex.nama}</div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5">{ex.time} · {ex.reps} Repetisi</div>
                 </div>
                 <div className="text-right">
                   <div className="text-emerald-600 dark:text-emerald-400 font-bold font-mono text-sm">{ex.avg_skor}%</div>
-                  <div className="text-[10px] text-slate-500 dark:text-slate-400">Skor Akurasi</div>
+                  <div className="text-[10px] text-muted-foreground">Skor Akurasi</div>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </Card>
 
         {/* Right Column: Posture Distribution & Ergonomic Health Insights */}
-        <div className="lg:col-span-6 app-card p-5">
+        <Card className="lg:col-span-6 p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
               <CheckCircle2 size={16} className="text-blue-500" />
               <span>Distribusi & Rekomendasi Ergonomi</span>
             </h3>
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Model 7 Hari</span>
+            <span className="text-xs text-muted-foreground font-medium">Model 7 Hari</span>
           </div>
 
-          <div className="space-y-3.5 text-xs">
+          <div className="space-y-4 text-xs">
             {/* Bagus Distribution */}
             <div>
-              <div className="flex justify-between text-slate-700 dark:text-slate-300 font-medium mb-1">
+              <div className="flex justify-between text-foreground font-medium mb-1.5">
                 <span className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                   <span>Postur Bagus (Ideal)</span>
                 </span>
                 <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{stats.distribusi.bagus} ({stats.persentase_bagus}%)</span>
               </div>
-              <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-emerald-500 rounded-full transition-all duration-300"
-                  style={{ width: `${stats.persentase_bagus}%` }}
-                ></div>
-              </div>
+              <Progress value={stats.persentase_bagus} variant="success" className="h-2" />
             </div>
 
             {/* Ringan Distribution */}
             <div>
-              <div className="flex justify-between text-slate-700 dark:text-slate-300 font-medium mb-1">
+              <div className="flex justify-between text-foreground font-medium mb-1.5">
                 <span className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-amber-500"></span>
                   <span>Deviasi Ringan</span>
@@ -318,42 +326,40 @@ export const Dashboard = () => {
                   {stats.distribusi.ringan} ({Math.round(((stats.distribusi.ringan || 260) / (stats.total_logs || 1240)) * 100)}%)
                 </span>
               </div>
-              <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-amber-500 rounded-full transition-all duration-300"
-                  style={{ width: `${Math.round(((stats.distribusi.ringan || 260) / (stats.total_logs || 1240)) * 100)}%` }}
-                ></div>
-              </div>
+              <Progress
+                value={Math.round(((stats.distribusi.ringan || 260) / (stats.total_logs || 1240)) * 100)}
+                variant="warning"
+                className="h-2"
+              />
             </div>
 
             {/* Buruk Distribution */}
             <div>
-              <div className="flex justify-between text-slate-700 dark:text-slate-300 font-medium mb-1">
+              <div className="flex justify-between text-foreground font-medium mb-1.5">
                 <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                  <span className="w-2 h-2 rounded-full bg-rose-500"></span>
                   <span>Postur Buruk (Slouching)</span>
                 </span>
-                <span className="font-mono font-bold text-red-600 dark:text-red-400">
+                <span className="font-mono font-bold text-rose-600 dark:text-rose-400">
                   {stats.distribusi.buruk} ({Math.round(((stats.distribusi.buruk || 90) / (stats.total_logs || 1240)) * 100)}%)
                 </span>
               </div>
-              <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-red-500 rounded-full transition-all duration-300"
-                  style={{ width: `${Math.round(((stats.distribusi.buruk || 90) / (stats.total_logs || 1240)) * 100)}%` }}
-                ></div>
-              </div>
+              <Progress
+                value={Math.round(((stats.distribusi.buruk || 90) / (stats.total_logs || 1240)) * 100)}
+                variant="destructive"
+                className="h-2"
+              />
             </div>
 
             {/* AI Ergonomics Tip Banner */}
-            <div className="mt-4 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+            <div className="mt-4 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-foreground leading-relaxed">
               <strong className="text-blue-600 dark:text-blue-400">Rekomendasi Ergonomis:</strong>
-              <p className="mt-1 text-[11px] text-slate-600 dark:text-slate-400">
+              <p className="mt-1 text-[11px] text-muted-foreground">
                 Konsistensi postur Anda berada di atas 70%. Untuk mengurangi ketegangan leher pada sore hari, lakukan peregangan <em>Chin Tuck</em> setiap 60 menit kerja.
               </p>
             </div>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );
