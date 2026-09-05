@@ -19,6 +19,7 @@ interface SkeletonOverlayProps {
   showAngles?: boolean;
   mirror?: boolean;
   className?: string;
+  color?: string;
 }
 
 // MediaPipe Pose connections
@@ -54,6 +55,7 @@ export const SkeletonOverlay: React.FC<SkeletonOverlayProps> = ({
   showAngles = true,
   mirror = false,
   className = '',
+  color,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -90,7 +92,12 @@ export const SkeletonOverlay: React.FC<SkeletonOverlayProps> = ({
     let glowColor = 'rgba(16, 185, 129, 0.4)';
     let jointFill = '#34d399';
 
-    if (status === 'ringan') {
+    // Custom persona color override (multiplayer)
+    if (color) {
+      strokeColor = color;
+      glowColor = `color-mix(in srgb, ${color} 40%, transparent)`;
+      jointFill = color;
+    } else if (status === 'ringan') {
       strokeColor = '#f59e0b'; // Amber / Yellow
       glowColor = 'rgba(245, 158, 11, 0.4)';
       jointFill = '#fbbf24';
@@ -229,7 +236,7 @@ export const SkeletonOverlay: React.FC<SkeletonOverlayProps> = ({
 
       ctx.restore();
     }
-  }, [landmarks, width, height, status, sudutLeher, sudutPunggung, levelBahu, orientasi, showAngles, mirror]);
+  }, [landmarks, width, height, status, sudutLeher, sudutPunggung, levelBahu, orientasi, showAngles, mirror, color]);
 
   return (
     <canvas

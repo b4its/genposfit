@@ -1,10 +1,12 @@
-import React from 'react';
-import { Activity, ShieldCheck, Camera, BarChart3, Dumbbell, Home, LogOut, User, Eye } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  Activity, ShieldCheck, Camera, BarChart3, Dumbbell, Home, LogOut, User, Eye, Users, Menu, X
+} from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { Pill, PillIndicator, PillContent, Badge } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 
-export type PageTab = 'landing' | 'monitor' | 'register' | 'dashboard' | 'exercises' | 'skeleton';
+export type PageTab = 'landing' | 'monitor' | 'register' | 'dashboard' | 'exercises' | 'skeleton' | 'multiplayer';
 
 interface NavbarProps {
   activeTab: PageTab;
@@ -12,28 +14,35 @@ interface NavbarProps {
   apiOnline?: boolean;
 }
 
+const NAV_ITEMS = [
+  { id: 'landing', label: 'Beranda', icon: Home },
+  { id: 'monitor', label: 'Live Monitor', icon: Camera, badge: 'Live' },
+  { id: 'register', label: 'Kalibrasi', icon: ShieldCheck },
+  { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
+  { id: 'exercises', label: 'Latihan Terapi', icon: Dumbbell },
+  { id: 'skeleton', label: 'Skeleton', icon: Eye, badge: 'Preview' },
+  { id: 'multiplayer', label: 'Multiplayer', icon: Users, badge: 'Room' },
+];
+
 export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   setActiveTab,
   apiOnline = true,
 }) => {
   const { user, logout } = useAuth();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  const navItems = [
-    { id: 'landing', label: 'Beranda', icon: Home },
-    { id: 'monitor', label: 'Live Monitor', icon: Camera, badge: 'Live' },
-    { id: 'register', label: 'Kalibrasi', icon: ShieldCheck },
-    { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-    { id: 'exercises', label: 'Latihan Terapi', icon: Dumbbell },
-    { id: 'skeleton', label: 'Skeleton', icon: Eye, badge: 'Preview' },
-  ];
+  const navigate = (tab: PageTab) => {
+    setActiveTab(tab);
+    setMobileOpen(false);
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         {/* Brand */}
         <div
-          onClick={() => setActiveTab('landing')}
+          onClick={() => navigate('landing')}
           className="flex items-center gap-3 cursor-pointer group shrink-0"
         >
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 via-emerald-500 to-teal-400 p-[1.5px] shadow-sm group-hover:shadow-blue-500/25 transition-all">
@@ -54,15 +63,15 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Navigation Tabs */}
-        <nav className="hidden md:flex items-center gap-1 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-xs shrink-0">
-          {navItems.map((item) => {
+        {/* Desktop Navigation Tabs */}
+        <nav className="hidden md:flex items-center gap-1 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-xs shrink-0 overflow-x-auto max-w-[56rem]">
+          {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id as PageTab)}
+                onClick={() => navigate(item.id as PageTab)}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-all duration-150 cursor-pointer ${
                   isActive
                     ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/25'
@@ -84,57 +93,94 @@ export const Navbar: React.FC<NavbarProps> = ({
         </nav>
 
         {/* Right Side: User Info + Health Status + Theme Toggle */}
-        <div className="flex items-center gap-3 shrink-0">
-          {/* User Info */}
+        <div className="flex items-center gap-2 shrink-0">
           {user && (
-            <div className="hidden sm:flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700/60">
+            <div className="hidden lg:flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700/60">
               <User size={13} className="text-blue-500" />
               <span className="font-semibold text-slate-900 dark:text-white max-w-[80px] truncate">{user.nama}</span>
             </div>
           )}
 
-          {/* Logout */}
           <button
             onClick={logout}
             title="Keluar"
-            className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            className="hidden sm:flex p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <LogOut size={16} />
           </button>
 
-          {/* API / AI Engine Status */}
           <Pill
             variant={apiOnline ? "success" : "destructive"}
             size="md"
-            className="hidden sm:inline-flex"
+            className="hidden md:inline-flex"
           >
             <PillIndicator variant={apiOnline ? "success" : "destructive"} />
             <PillContent>{apiOnline ? 'AI Engine Online' : 'Offline'}</PillContent>
           </Pill>
 
           <ThemeToggle />
+
+          {/* Hamburger (mobile/tablet) */}
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="md:hidden p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            aria-label="Menu navigasi"
+          >
+            {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
         </div>
       </div>
 
-      {/* Mobile Nav */}
-      <div className="md:hidden flex items-center justify-around border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 py-2 px-1 text-xs">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeTab === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id as PageTab)}
-              className={`flex flex-col items-center gap-1 py-1 px-2 rounded-lg text-[11px] font-medium transition-colors ${
-                isActive ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-slate-500 dark:text-slate-400'
-              }`}
-            >
-              <Icon size={16} />
-              <span>{item.label}</span>
-            </button>
-          );
-        })}
-      </div>
+      {/* Mobile / Tablet Drawer */}
+      {mobileOpen && (
+        <nav className="md:hidden border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 py-3">
+          {/* User row for mobile */}
+          <div className="flex items-center justify-between mb-3 px-1">
+            <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+              <User size={15} className="text-blue-500" />
+              <span className="font-semibold">{user ? user.nama : 'Tamu'}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Pill variant={apiOnline ? "success" : "destructive"} size="sm">
+                <PillContent>{apiOnline ? 'Online' : 'Offline'}</PillContent>
+              </Pill>
+              <button
+                onClick={logout}
+                className="flex items-center gap-1 p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+              >
+                <LogOut size={15} />
+              </button>
+            </div>
+          </div>
+
+          <ul className="grid grid-cols-1 gap-1">
+            {NAV_ITEMS.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <li key={item.id}>
+                  <button
+                    onClick={() => navigate(item.id as PageTab)}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors cursor-pointer ${
+                      isActive
+                        ? 'bg-blue-600 text-white'
+                        : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <Icon size={16} />
+                    <span>{item.label}</span>
+                    {item.badge && (
+                      <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+      )}
     </header>
   );
 };

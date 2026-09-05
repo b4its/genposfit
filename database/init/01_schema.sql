@@ -75,3 +75,34 @@ CREATE TABLE IF NOT EXISTS exercise_sessions (
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
     FOREIGN KEY (exercise_id) REFERENCES exercises(exercise_id)
 ) ENGINE=InnoDB;
+
+-- --------------------- ROOMS --------------------------------
+CREATE TABLE IF NOT EXISTS rooms (
+    room_id INT AUTO_INCREMENT PRIMARY KEY,
+    room_code VARCHAR(20) NOT NULL UNIQUE,
+    nama VARCHAR(100) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    host_player_id INT,
+    status VARCHAR(20) DEFAULT 'waiting',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_room_code (room_code)
+) ENGINE=InnoDB;
+
+-- ------------------- ROOM PLAYERS ---------------------------
+CREATE TABLE IF NOT EXISTS room_players (
+    player_id INT AUTO_INCREMENT PRIMARY KEY,
+    room_id INT NOT NULL,
+    user_id INT,
+    guest_key VARCHAR(50),
+    display_name VARCHAR(100) NOT NULL,
+    warna VARCHAR(20) NOT NULL,
+    is_host TINYINT DEFAULT 0,
+    joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (room_id) REFERENCES rooms(room_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    UNIQUE KEY uq_room_color (room_id, warna),
+    INDEX idx_guest_key (guest_key)
+) ENGINE=InnoDB;
+
+ALTER TABLE rooms ADD FOREIGN KEY (host_player_id) REFERENCES room_players(player_id);

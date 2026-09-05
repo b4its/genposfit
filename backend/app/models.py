@@ -99,3 +99,40 @@ class ExerciseSession(Base):
 
     user = relationship("User", back_populates="exercise_sessions")
     exercise = relationship("Exercise", back_populates="sessions")
+
+
+class Room(Base):
+    __tablename__ = "rooms"
+
+    room_id = Column(Integer, primary_key=True, autoincrement=True)
+    room_code = Column(String(20), unique=True, nullable=False, index=True)
+    nama = Column(String(100), nullable=False)
+    password_hash = Column(String(255), nullable=False)
+    host_player_id = Column(Integer, ForeignKey("room_players.player_id"), nullable=True)
+    status = Column(String(20), default="waiting")  # 'waiting', 'playing', 'ended'
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    host = relationship("RoomPlayer", foreign_keys=[host_player_id], post_update=True)
+    players = relationship("RoomPlayer", foreign_keys="RoomPlayer.room_id", back_populates="room", cascade="all, delete-orphan")
+
+
+class RoomPlayer(Base):
+    __tablename__ = "room_players"
+
+    player_id = Column(Integer, primary_key=True, autoincrement=True)
+    room_id = Column(Integer, ForeignKey("rooms.room_id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=True)  # akun; kosong jika tamu
+    guest_key = Column(String(50), nullable=True, index=True)  # identitas sesi tamu (kombinasi IP/browser)
+    display_name = Column(String(100), nullable=False)
+    warna = Column(String(20), nullable=False)  # hex warna persona
+    is_host = Column(SmallInteger, default=0)
+    joined_at = Column(DateTime, default=datetime.utcnow)
+
+    room = relationship("Room", back_populates="players", foreign_keys=[room_id])
+    user = relationship("User")
+
+    __table_args__ = (
+        UniqueConstraint("room_id", "warna", name="uq_room_color"),
+        UniqueConstraint("room_id", "guest_key", name="uq_room_guest"),
+    )
