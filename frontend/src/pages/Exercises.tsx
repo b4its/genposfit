@@ -9,7 +9,7 @@ interface ExerciseItem {
   nama: string;
   deskripsi: string;
   target_otot: string;
-  sudut_target: any;
+  sudut_target: Record<string, number> | null;
   durasi_detik: number;
   reps: number;
   tingkat: string;
@@ -103,6 +103,24 @@ export const Exercises: React.FC = () => {
   }, []);
 
   // Timer loop for active rep hold
+  const saveCompletedSession = async (exerciseId: number, totalReps: number) => {
+    const apiUrl = import.meta.env?.VITE_API_URL || 'http://localhost:8000';
+    try {
+      await fetch(`${apiUrl}/api/exercises/sessions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: 1,
+          exercise_id: exerciseId,
+          total_reps: totalReps,
+          avg_skor: 94.5,
+        })
+      });
+    } catch (e) {
+      console.debug('Session record stored locally:', e);
+    }
+  };
+
   useEffect(() => {
     if (!isRunning || !activeExercise) return;
 
@@ -129,24 +147,6 @@ export const Exercises: React.FC = () => {
 
     return () => clearInterval(interval);
   }, [isRunning, activeExercise]);
-
-  const saveCompletedSession = async (exerciseId: number, totalReps: number) => {
-    const apiUrl = import.meta.env?.VITE_API_URL || 'http://localhost:8000';
-    try {
-      await fetch(`${apiUrl}/api/exercises/sessions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: 1,
-          exercise_id: exerciseId,
-          total_reps: totalReps,
-          avg_skor: 94.5,
-        })
-      });
-    } catch (e) {
-      console.debug('Session record stored locally:', e);
-    }
-  };
 
   const handleSelectExercise = (ex: ExerciseItem) => {
     setActiveExercise(ex);

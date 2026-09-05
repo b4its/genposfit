@@ -4,6 +4,7 @@ Menerima landmark MediaPipe via HTTP/WebSocket, menganalisis sudut & skor devias
 serta menyimpan log berkala ke MySQL.
 """
 import json
+import logging
 import time
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
@@ -17,6 +18,8 @@ from app.services.pose_analysis import analisis_postur_dari_landmarks
 from app.services.deviation_score import ambil_baseline, evaluasi_postur_lengkap
 
 router = APIRouter(prefix="/api/monitoring", tags=["Monitoring Postur"])
+
+logger = logging.getLogger("genposfit.monitoring")
 
 
 class LandmarkPoint(BaseModel):
@@ -202,13 +205,14 @@ async def websocket_monitor_endpoint(websocket: WebSocket, user_id: int):
     db = SessionLocal()
     frame_counter = 0
     last_db_save_time = time.time()
+    current_tipe_pose = "duduk_rileks"
 
     try:
         # Load baseline user sekali saat koneksi terbuka
         user = db.query(User).filter_by(user_id=user_id).first()
         baseline = None
         if user:
-            baseline = ambil_baseline(db, user_id=user_id)
+            baseline = ambil_baseline(db, user_id=user_id, tipe_pose=current_tipe_pose)
 
         while True:
             text_data = await websocket.receive_text()
@@ -220,6 +224,11 @@ async def websocket_monitor_endpoint(websocket: WebSocket, user_id: int):
             landmarks = data.get("landmarks", [])
             tipe_pose = data.get("tipe_pose", "duduk_rileks")
             sesi_id = data.get("sesi_id", "live-session")
+
+            # Reload baseline if pose type changed
+            if tipe_pose != current_tipe_pose and user:
+                current_tipe_pose = tipe_pose
+                baseline = ambil_baseline(db, user_id=user_id, tipe_pose=tipe_pose)
 
             analisis = analisis_postur_dari_landmarks(landmarks)
             if not analisis.get("valid"):
@@ -253,8 +262,9 @@ async def websocket_monitor_endpoint(websocket: WebSocket, user_id: int):
                     db.add(entry)
                     db.commit()
                     last_db_save_time = now_time
-                except Exception:
+                except Exception as exc:
                     db.rollback()
+                    logger.error(f"Gagal menyimpan postur log: {exc}")
 
             # Respon balik ke frontend secara realtime
             await websocket.send_json({
@@ -270,8 +280,8 @@ async def websocket_monitor_endpoint(websocket: WebSocket, user_id: int):
             })
 
     except WebSocketDisconnect:
-        pass
+        logger.info(f"WebSocket client {user_id} disconnected")
     except Exception as exc:
-        pass
+        logger.error(f"WebSocket error for user {user_id}: {exc}")
     finally:
         db.close()

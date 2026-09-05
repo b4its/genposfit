@@ -5,21 +5,6 @@ import {
 } from 'lucide-react';
 import { SkeletonOverlay } from '../components/SkeletonOverlay';
 
-// Helper to compute 3-point angle in 2D
-function calcAngle(a, b, c) {
-  if (!a || !b || !c) return 180;
-  const ba_x = a.x - b.x;
-  const ba_y = a.y - b.y;
-  const bc_x = c.x - b.x;
-  const bc_y = c.y - b.y;
-  const norm_ba = Math.hypot(ba_x, ba_y);
-  const norm_bc = Math.hypot(bc_x, bc_y);
-  if (norm_ba === 0 || norm_bc === 0) return 180;
-  const cosine = (ba_x * bc_x + ba_y * bc_y) / (norm_ba * norm_bc);
-  const angle = (Math.acos(Math.max(-1, Math.min(1, cosine))) * 180) / Math.PI;
-  return Math.round(angle * 10) / 10;
-}
-
 export const RegisterPose = ({ onFinishCalibration }) => {
   const [nama, setNama] = useState('Alex Chandra');
   const [email, setEmail] = useState('developer@genposfit.local');
@@ -233,8 +218,7 @@ export const RegisterPose = ({ onFinishCalibration }) => {
       }
     } catch (err) {
       console.error('Error submitting baselines:', err);
-      // Fallback local save indication
-      setSubmitSuccess(true);
+      alert('Gagal menyimpan profil ke server. Periksa koneksi backend dan coba lagi.');
     } finally {
       setIsSubmitting(false);
     }

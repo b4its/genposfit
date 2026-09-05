@@ -4,7 +4,7 @@ Definisi tabel database sesuai skema MySQL GenPosFit.
 """
 from datetime import datetime
 from sqlalchemy import (
-    Column, Integer, BigInt, SmallInteger, String, Text,
+    Column, Integer, BigInteger, SmallInteger, String, Text,
     DECIMAL, DateTime, ForeignKey, UniqueConstraint, Index, JSON
 )
 from sqlalchemy.orm import relationship
@@ -53,7 +53,7 @@ class PoseBaseline(Base):
 class PostureLog(Base):
     __tablename__ = "posture_logs"
 
-    id = Column(BigInt().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
+    id = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
     sesi_id = Column(String(64), nullable=True)
     timestamp = Column(DateTime, default=datetime.utcnow)
@@ -88,7 +88,7 @@ class Exercise(Base):
 class ExerciseSession(Base):
     __tablename__ = "exercise_sessions"
 
-    session_id = Column(BigInt().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
+    session_id = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
     exercise_id = Column(Integer, ForeignKey("exercises.exercise_id"), nullable=False)
     total_reps = Column(SmallInteger, nullable=True)

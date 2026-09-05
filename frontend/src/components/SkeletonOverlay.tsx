@@ -167,7 +167,7 @@ export const SkeletonOverlay: React.FC<SkeletonOverlayProps> = ({
 
       if (ear && shoulder && sudutLeher !== undefined) {
         let labelX = (shoulder.x * width);
-        let labelY = (shoulder.y * height) - 20;
+        const labelY = (shoulder.y * height) - 20;
         if (mirror) labelX = width - labelX;
 
         // Badge pill background
@@ -194,8 +194,8 @@ export const SkeletonOverlay: React.FC<SkeletonOverlayProps> = ({
 
       const hip = landmarks[orientasi === 'lateral_kanan' ? 24 : 23];
       if (hip && sudutPunggung !== undefined) {
+        const labelY = (hip.y * height) - 10;
         let labelX = (hip.x * width);
-        let labelY = (hip.y * height) - 10;
         if (mirror) labelX = width - labelX;
 
         ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
