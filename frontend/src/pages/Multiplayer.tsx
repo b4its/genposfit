@@ -8,6 +8,7 @@ import { SkeletonOverlay, type Landmark } from '../components/SkeletonOverlay';
 import { usePoseDetector } from '../hooks/usePoseDetector';
 import { Button, Card, Input, Pill, PillIndicator, PillContent, Badge, Select } from '@/components/ui';
 import { cn } from '@/lib/utils';
+import { Crown } from 'lucide-react';
 
 interface RemotePlayer {
   guest_key?: string | null;
@@ -112,6 +113,7 @@ export const Multiplayer: React.FC = () => {
   const [battlePoints, setBattlePoints] = useState<Record<string, number>>({});
   const [winnerKey, setWinnerKey] = useState<string | null>(null);
   const [myBattleScore, setMyBattleScore] = useState<number>(0);
+  const [challengeIds, setChallengeIds] = useState<number[]>([]);
 
   const browserInfo = getBrowserInfo();
   const osInfo = getOsInfo();
@@ -124,15 +126,44 @@ export const Multiplayer: React.FC = () => {
     screen: `${window.screen?.width || 0}x${window.screen?.height || 0}`,
   };
 
-  const loadBattleMoves = async () => {
+const loadBattleMoves = async () => {
     try {
-      const res = await fetch(`${API_URL()}/api/exercises`);
+      const res = await fetch(`${API_URL()}/api/exercises/types`);
       if (res.ok) {
-        const all = await res.json();
-        setBattleExercises(all.filter((e: any) => e.is_battle && e.skeleton_data));
+        const types = await res.json();
+        const all: any[] = [];
+        types.forEach((t: any) => {
+          (t.children || []).forEach((c: any) => all.push({ ...c, type: t.nama, type_id: t.type_id }));
+        });
+        if (all.length === 0) {
+          const res2 = await fetch(`${API_URL()}/api/exercises`);
+          if (res2.ok) {
+            const flat = await res2.json();
+            all.push(...flat);
+          }
+        }
+        const filtered = all.filter((e: any) => e.skeleton_data && e.skeleton_data.length >= 25);
+        setBattleExercises(filtered);
+        return filtered;
+      } else {
+        const res2 = await fetch(`${API_URL()}/api/exercises`);
+        if (res2.ok) {
+          const flat = await res2.json();
+          const filtered = flat.filter((e: any) => e.skeleton_data && e.skeleton_data.length >= 25);
+          setBattleExercises(filtered);
+          return filtered;
+        }
       }
     } catch { /* ignore */ }
+    return [];
   };
+
+  // Setelah battle exercises loaded, terapkan challenge dari room
+  useEffect(() => {
+    if (battleExercises.length > 0 && room?.challenge_exercise_ids?.length > 0) {
+      applyChallengeIds(room.challenge_exercise_ids);
+    }
+  }, [battleExercises.length, room?.challenge_exercise_ids?.length]);
 
   const fetchColors = async () => {
     try {
@@ -212,6 +243,7 @@ export const Multiplayer: React.FC = () => {
         const data = await res.json();
         setMyBattleScore(data.score || 0);
         if (wsRef.current?.readyState === WebSocket.OPEN && data.score >= 60) {
+          // +1 poin setiap kecocokan terhadap gerakan aktif yang sedang ditantangkan
           wsRef.current.send(JSON.stringify({
             type: 'battle_score',
             score: data.score,
@@ -229,7 +261,56 @@ export const Multiplayer: React.FC = () => {
     return () => clearInterval(interval);
   }, [mode, selectedBattleMove, localLandmarks]);
 
+  // Sinkronkan challenge (daftar gerakan) yang dipilih host
+  const applyChallengeIds = (ids: number[] | undefined | null) => {
+    if (!ids || !Array.isArray(ids)) return;
+    setChallengeIds(ids);
+    // Set move aktif = gerakan pertama yang dipilih host
+    const first = battleExercises.find(m => m.exercise_id === ids[0]);
+    if (first) setSelectedBattleMove(first);
+  };
+
+  // Host memilih/membatalkan tantangan → simpan ke backend & broadcast
+  const persistChallenges = async (ids: number[]) => {
+    if (!roomRef.current?.room_code) return;
+    try {
+      const res = await fetch(`${API_URL()}/api/multiplayer/rooms/${roomRef.current.room_code}/challenges`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ challenge_exercise_ids: ids }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setRoom(data);
+      }
+    } catch { /* ignore */ }
+  };
+
   const currentKey = () => (guestKey || (user ? `u:${user.user_id}` : ''));
+  const isHost = () => {
+    const myKey = currentKey();
+    if (!room?.players) return false;
+    return room.players.some((p: any) => {
+      const pKey = p.guest_key || (p.user_id ? `u:${p.user_id}` : '');
+      return pKey === myKey && p.is_host;
+    });
+  };
+
+  const toggleChallenge = (exerciseId: number) => {
+    setChallengeIds(prev => {
+      const next = prev.includes(exerciseId) ? prev.filter(id => id !== exerciseId) : [...prev, exerciseId];
+      // Hanya host yang boleh mengatur; kirim via WS lalu simpan via REST
+      if (isHost()) {
+        setTimeout(() => {
+          if (wsRef.current?.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify({ type: 'challenge_update', challenge_exercise_ids: next }));
+          }
+          persistChallenges(next);
+        }, 0);
+      }
+      return next;
+    });
+  };
 
   const connectWS = (code: string) => {
     const apiUrl = API_URL();
@@ -266,7 +347,7 @@ export const Multiplayer: React.FC = () => {
           });
         } else if (msg.type === 'battle_score') {
           const key = msg.guest_key || (msg.user_id ? `u:${msg.user_id}` : '');
-          if (key) {
+          if (key && key !== currentKey()) {
             setBattleScores(prev => ({ ...prev, [key]: msg.score }));
             setBattlePoints(prev => {
               const next: Record<string, number> = { ...prev, [key]: (prev[key] || 0) + (msg.points || 0) };
@@ -275,6 +356,19 @@ export const Multiplayer: React.FC = () => {
               if (champ) setWinnerKey(champ);
               return next;
             });
+          }
+        } else if (msg.type === 'challenge_update') {
+          const key = msg.guest_key || (msg.user_id ? `u:${msg.user_id}` : '');
+          // Hanya host yang boleh mengirim; semua (termasuk host) terapkan
+          applyChallengeIds(msg.challenge_exercise_ids);
+          if (wsRef.current?.readyState === WebSocket.OPEN && msg.guest_key !== guestKey) {
+            // Non-host: minta snapshot room terbaru
+            fetch(`${API_URL()}/api/multiplayer/rooms/${roomRef.current?.room_code}`).then(r => r.json()).then(d => { if (d) setRoom(d); }).catch(() => {});
+          }
+        } else if (msg.type === 'room_update') {
+          if (msg.room) {
+            setRoom(msg.room);
+            applyChallengeIds(msg.room.challenge_exercise_ids);
           }
         }
       } catch { /* ignore */ }
@@ -297,6 +391,7 @@ export const Multiplayer: React.FC = () => {
     setBattlePoints({});
     setWinnerKey(null);
     setMyBattleScore(0);
+    setChallengeIds([]);
   };
 
   const handleCreate = async () => {
@@ -318,6 +413,7 @@ export const Multiplayer: React.FC = () => {
       setMyPlayerKey(data.guest_key);
       setRoom(data);
       setMode('room');
+      setChallengeIds(data.challenge_exercise_ids || []);
       connectWS(data.room_code);
       loadBattleMoves();
     } catch { setError('Tidak dapat terhubung ke server.'); } finally { setLoading(false); }
@@ -444,27 +540,54 @@ export const Multiplayer: React.FC = () => {
           {battleExercises.length > 0 ? (
             <div className="mb-4">
               <label className="block text-xs text-slate-600 dark:text-slate-300 font-medium mb-1.5">
-                Pilih Gerakan Battle (dari latihan admin)
+                {isHost()
+                  ? 'Pilih Gerakan Battle (klik untuk pilih, support multi-select)'
+                  : 'Gerakan Battle yang Ditantangkan Host'}
               </label>
+              {/* Show selected challenge IDs first, then unselected */}
               <div className="flex flex-wrap gap-2">
-                {battleExercises.map((m: any) => (
-                  <Button
-                    key={m.exercise_id}
-                    type="button"
-                    variant={selectedBattleMove?.exercise_id === m.exercise_id ? "secondary" : "outline"}
-                    size="sm"
-                    onClick={() => setSelectedBattleMove(m)}
-                    className="text-xs"
-                  >
-                    <TargetIcon size={13} className="text-purple-500" />
-                    {m.nama}
-                  </Button>
+                {(['selected', 'unselected'] as const).map(group => (
+                  battleExercises
+                    .filter(m => group === 'selected' ? challengeIds.includes(m.exercise_id) : !challengeIds.includes(m.exercise_id))
+                    .map((m: any) => {
+                      const checked = challengeIds.includes(m.exercise_id);
+                      const amHost = isHost();
+                      return (
+                        <Button
+                          key={m.exercise_id}
+                          type="button"
+                          variant={checked ? "secondary" : "outline"}
+                          size="sm"
+                          onClick={() => {
+                            if (!amHost) { setSelectedBattleMove(m); return; }
+                            toggleChallenge(m.exercise_id);
+                          }}
+                          className={cn(
+                            "text-xs",
+                            challengeIds.length > 0 && challengeIds[0] === m.exercise_id && "ring-2 ring-amber-400"
+                          )}
+                        >
+                          <TargetIcon size={13} className="text-purple-500" />
+                          {m.nama}
+                          {checked && <Check size={12} className="text-emerald-400" />}
+                          {m.type && (
+                            <Badge variant="info" className="text-[9px] h-4 px-1">{m.type}</Badge>
+                          )}
+                        </Button>
+                      );
+                    })
                 ))}
               </div>
+              {challengeIds.length > 0 && (
+                <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1.5">
+                  <Star size={10} className="inline mr-0.5" />
+                  {challengeIds.length} gerakan ditantangkan · lakukan gerakan berlabel ⭐ untuk mencocokkan pose
+                </p>
+              )}
             </div>
           ) : (
             <p className="text-[11px] text-slate-400 mb-3">
-              Belum ada gerakan battle yang ditambahkan admin.
+              Belum ada gerakan battle. Admin harus menambah gerakan dengan skeleton-data melalui halaman Kelola Latihan.
             </p>
           )}
 

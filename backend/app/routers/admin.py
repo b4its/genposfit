@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.database import get_db
-from app.models import Exercise, ExerciseSession, PostureLog, Room, User
+from app.models import Exercise, ExerciseType, ExerciseSession, PostureLog, Room, User
 from app.security import decode_access_token
 from app.services.pose_analysis import analisis_postur_dari_landmarks
 
@@ -33,7 +33,24 @@ def require_admin(request: Request, db: Session = Depends(get_db)) -> User:
     return user
 
 
+class ExerciseTypeCreate(BaseModel):
+    nama: str = Field(..., min_length=1, max_length=100)
+    deskripsi: Optional[str] = None
+
+
+class ExerciseTypeOut(BaseModel):
+    type_id: int
+    nama: str
+    deskripsi: Optional[str] = None
+    created_at: Optional[datetime] = None
+    children: List["ExerciseOut"] = []
+
+    class Config:
+        from_attributes = True
+
+
 class ExerciseCreate(BaseModel):
+    type_id: Optional[int] = None
     nama: str = Field(..., min_length=1, max_length=100)
     deskripsi: Optional[str] = None
     target_otot: Optional[str] = None
@@ -46,6 +63,7 @@ class ExerciseCreate(BaseModel):
 
 
 class ExerciseUpdate(BaseModel):
+    type_id: Optional[int] = None
     nama: Optional[str] = None
     deskripsi: Optional[str] = None
     target_otot: Optional[str] = None
@@ -59,6 +77,7 @@ class ExerciseUpdate(BaseModel):
 
 class ExerciseOut(BaseModel):
     exercise_id: int
+    type_id: Optional[int] = None
     nama: str
     deskripsi: Optional[str] = None
     target_otot: Optional[str] = None
@@ -77,13 +96,78 @@ class ExerciseOut(BaseModel):
 
 @router.get("/exercises", response_model=List[ExerciseOut])
 def admin_get_exercises(admin: User = Depends(require_admin), db: Session = Depends(get_db)):
-    return db.query(Exercise).all()
+    return db.query(Exercise).order_by(Exercise.type_id, Exercise.nama).all()
+
+
+# ---------------- JENIS LATIHAN (parent) ----------------
+
+@router.get("/exercise-types", response_model=List[ExerciseTypeOut])
+def admin_get_exercise_types(admin: User = Depends(require_admin), db: Session = Depends(get_db)):
+    """Daftar jenis latihan (parent) beserta gerakan anaknya (children)."""
+    return db.query(ExerciseType).order_by(ExerciseType.nama).all()
+
+
+@router.post("/exercise-types", response_model=ExerciseTypeOut, status_code=201)
+def admin_create_exercise_type(payload: ExerciseTypeCreate, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
+    """Buat jenis latihan baru (parent)."""
+    ex_type = ExerciseType(nama=payload.nama, deskripsi=payload.deskripsi)
+    db.add(ex_type)
+    db.commit()
+    db.refresh(ex_type)
+    return ex_type
+
+
+@router.put("/exercise-types/{type_id}", response_model=ExerciseTypeOut)
+def admin_update_exercise_type(type_id: int, payload: ExerciseTypeCreate, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
+    ex_type = db.query(ExerciseType).filter_by(type_id=type_id).first()
+    if not ex_type:
+        raise HTTPException(404, "Jenis latihan tidak ditemukan.")
+    if payload.nama:
+        ex_type.nama = payload.nama
+    ex_type.deskripsi = payload.deskripsi
+    db.commit()
+    db.refresh(ex_type)
+    return ex_type
+
+
+@router.delete("/exercise-types/{type_id}", status_code=204)
+def admin_delete_exercise_type(type_id: int, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
+    ex_type = db.query(ExerciseType).filter_by(type_id=type_id).first()
+    if not ex_type:
+        raise HTTPException(404, "Jenis latihan tidak ditemukan.")
+    db.delete(ex_type)  # cascade menghapus semua children
+    db.commit()
+
+
+@router.post("/exercise-types/{type_id}/exercises", response_model=ExerciseOut, status_code=201)
+def admin_create_child_exercise(type_id: int, payload: ExerciseCreate, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
+    """Tambah gerakan (child) ke dalam jenis latihan. skeleton_data direkam dari kamera admin."""
+    ex_type = db.query(ExerciseType).filter_by(type_id=type_id).first()
+    if not ex_type:
+        raise HTTPException(404, "Jenis latihan tidak ditemukan.")
+    data = payload.model_dump()
+    data["type_id"] = type_id
+    skeleton = data.get("skeleton_data")
+    if skeleton and len(skeleton) >= 25:
+        analisis = analisis_postur_dari_landmarks(skeleton)
+        if analisis.get("valid"):
+            data["sudut_leher"] = analisis["sudut_leher"]
+            data["sudut_punggung"] = analisis["sudut_punggung"]
+    ex = Exercise(**data)
+    db.add(ex)
+    db.commit()
+    db.refresh(ex)
+    return ex
 
 
 @router.post("/exercises", response_model=ExerciseOut, status_code=201)
 def admin_create_exercise(payload: ExerciseCreate, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
     """Buat latihan baru. Jika menyertakan skeleton_data, hitung sudut otomatis."""
     data = payload.model_dump()
+    if data.get("type_id"):
+        ex_type = db.query(ExerciseType).filter_by(type_id=data["type_id"]).first()
+        if not ex_type:
+            raise HTTPException(404, "Jenis latihan tidak ditemukan.")
     skeleton = data.get("skeleton_data")
     if skeleton and len(skeleton) >= 25:
         analisis = analisis_postur_dari_landmarks(skeleton)
@@ -122,6 +206,10 @@ def admin_update_exercise(exercise_id: int, payload: ExerciseUpdate, admin: User
     if not ex:
         raise HTTPException(404, "Latihan tidak ditemukan.")
     data = payload.model_dump(exclude_unset=True)
+    if data.get("type_id"):
+        ex_type = db.query(ExerciseType).filter_by(type_id=data["type_id"]).first()
+        if not ex_type:
+            raise HTTPException(404, "Jenis latihan tidak ditemukan.")
     skeleton = data.get("skeleton_data")
     if skeleton and len(skeleton) >= 25:
         analisis = analisis_postur_dari_landmarks(skeleton)
@@ -219,3 +307,7 @@ def get_leaderboard(limit: int = 100, admin: User = Depends(require_admin), db: 
             "role": u.role or "user",
         })
     return {"count": len(lb), "users": lb}
+
+
+# Resolve forward reference (ExerciseTypeOut → ExerciseOut) setelah ExerciseOut didefinisikan.
+ExerciseTypeOut.model_rebuild()

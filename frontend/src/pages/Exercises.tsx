@@ -11,6 +11,8 @@ import { useCamera } from '../hooks/useCamera';
 
 interface ExerciseItem {
   exercise_id: number;
+  type_id?: number;
+  type?: string;
   nama: string;
   deskripsi: string;
   target_otot: string;
@@ -68,14 +70,28 @@ export const Exercises: React.FC = () => {
     }
   }, [camStarted, realLandmarks]);
 
-  // Fetch from backend exercises endpoint
+  // Fetch from backend exercises endpoint (hierarchical: types → children)
   useEffect(() => {
-    fetch(`${apiUrl()}/api/exercises`)
+    fetch(`${apiUrl()}/api/exercises/types`)
       .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          setExercises(data);
-          setActiveExercise(data[0]);
+      .then((types: any[]) => {
+        const all: ExerciseItem[] = [];
+        types.forEach((t: any) => {
+          (t.children || []).forEach((c: any) => all.push({ ...c, type: t.nama, type_id: t.type_id }));
+        });
+        if (all.length > 0) {
+          setExercises(all);
+          setActiveExercise(all[0]);
+        } else {
+          fetch(`${apiUrl()}/api/exercises`)
+            .then(res => res.json())
+            .then(data => {
+              if (Array.isArray(data) && data.length > 0) {
+                setExercises(data);
+                setActiveExercise(data[0]);
+              }
+            })
+            .catch(() => {});
         }
       })
       .catch(() => {});
@@ -203,6 +219,7 @@ export const Exercises: React.FC = () => {
                 <div className="flex items-center justify-between mb-1">
                   <span className={cn("text-sm font-bold", isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white')}>{ex.nama}</span>
                   <div className="flex gap-1">
+                    {ex.type && <Badge variant="info" className="text-[9px] h-4 px-1">{ex.type}</Badge>}
                     {ex.is_battle && <Badge variant="warning">Battle</Badge>}
                     <Badge variant={ex.tingkat === 'pemula' ? 'success' : 'info'}>{ex.tingkat}</Badge>
                   </div>

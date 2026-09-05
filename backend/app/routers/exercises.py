@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models import Exercise, ExerciseSession, User
+from app.models import Exercise, ExerciseSession, ExerciseType, User
 from app.services.pose_analysis import analisis_postur_dari_landmarks
 from app.services.deviation_score import skor_deviasi_tunggal
 
@@ -18,6 +18,7 @@ router = APIRouter(prefix="/api/exercises", tags=["Latihan Postur"])
 
 class ExerciseOut(BaseModel):
     exercise_id: int
+    type_id: Optional[int] = None
     nama: str
     deskripsi: Optional[str] = None
     target_otot: Optional[str] = None
@@ -29,6 +30,16 @@ class ExerciseOut(BaseModel):
     reps: Optional[int] = 10
     tingkat: Optional[str] = "pemula"
     is_battle: bool = False
+
+    class Config:
+        from_attributes = True
+
+
+class ExerciseTypeOut(BaseModel):
+    type_id: int
+    nama: str
+    deskripsi: Optional[str] = None
+    children: List["ExerciseOut"] = []
 
     class Config:
         from_attributes = True
@@ -48,6 +59,15 @@ def get_exercises(tingkat: Optional[str] = None, db: Session = Depends(get_db)):
     if tingkat:
         query = query.filter_by(tingkat=tingkat)
     return query.all()
+
+
+@router.get("/types", response_model=List[ExerciseTypeOut])
+def get_exercise_types(db: Session = Depends(get_db)):
+    """Mengambil semua jenis latihan (parent) beserta gerakan anaknya (children)."""
+    return db.query(ExerciseType).order_by(ExerciseType.nama).all()
+
+
+ExerciseTypeOut.model_rebuild()
 
 
 @router.get("/{exercise_id}", response_model=ExerciseOut)

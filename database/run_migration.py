@@ -77,16 +77,43 @@ def run():
         else:
             print("  · tabel users belum ada — migrasi dilewati")
 
+        if not table_exists(db, "exercise_types"):
+            db.execute(text("""
+                CREATE TABLE IF NOT EXISTS exercise_types (
+                    type_id INT AUTO_INCREMENT PRIMARY KEY,
+                    nama VARCHAR(100) NOT NULL,
+                    deskripsi TEXT,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                ) ENGINE=InnoDB
+            """))
+            db.commit()
+            print("  ✔ exercise_types dibuat")
+        else:
+            print("  · exercise_types — (sudah ada)")
+
         if table_exists(db, "exercises"):
             add_column(db, "exercises", "skeleton_data", "JSON NULL AFTER sudut_target")
             add_column(db, "exercises", "sudut_leher", "DECIMAL(6,2) NULL AFTER skeleton_data")
             add_column(db, "exercises", "sudut_punggung", "DECIMAL(6,2) NULL AFTER sudut_leher")
             add_column(db, "exercises", "is_battle", "TINYINT DEFAULT 0 AFTER tingkat")
+            if not column_exists(db, "exercises", "type_id"):
+                # Add type_id column and FK (nullable — existing exercises get type_id = NULL)
+                db.execute(text("""
+                    ALTER TABLE exercises
+                    ADD COLUMN type_id INT NULL AFTER exercise_id,
+                    ADD INDEX idx_type_id (type_id),
+                    ADD FOREIGN KEY fk_exercise_type (type_id) REFERENCES exercise_types(type_id) ON DELETE CASCADE
+                """))
+                db.commit()
+                print("  ✔ exercises.type_id ditambahkan")
+            else:
+                print("  · exercises.type_id — (sudah ada)")
         else:
             print("  · tabel exercises belum ada — migrasi dilewati")
 
         if table_exists(db, "rooms"):
             add_column(db, "rooms", "max_score", "INT NOT NULL DEFAULT 10 AFTER status")
+            add_column(db, "rooms", "exercises_json", "JSON NULL AFTER max_score")
         else:
             print("  · tabel rooms belum ada — migrasi dilewati")
 

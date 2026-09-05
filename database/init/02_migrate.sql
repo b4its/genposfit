@@ -40,7 +40,27 @@ CALL add_col('users', 'role', "VARCHAR(20) DEFAULT 'user' AFTER jam_kerja_hari")
 CALL add_col('users', 'poin', "INT DEFAULT 0 AFTER role");
 CALL add_col('users', 'saldo', "DECIMAL(18,2) DEFAULT 0.00 AFTER poin");
 
+-- ====================== EXERCISE TYPES ======================
+CREATE TABLE IF NOT EXISTS exercise_types (
+    type_id INT AUTO_INCREMENT PRIMARY KEY,
+    nama VARCHAR(100) NOT NULL,
+    deskripsi TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
 -- ====================== EXERCISES ======================
+CALL add_col('exercises', 'type_id', 'INT NULL AFTER exercise_id');
+-- Add index jika belum ada
+SET @has_typeidx = (SELECT COUNT(*) FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'exercises' AND INDEX_NAME = 'idx_type_id');
+SET @sql = IF(@has_typeidx = 0, 'ALTER TABLE exercises ADD INDEX idx_type_id (type_id)', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+-- Add FK jika belum ada (gunakan FK name tetap agar idempotent)
+SET @has_fk = (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'exercises' AND CONSTRAINT_NAME = 'fk_exercise_type');
+SET @sql = IF(@has_fk = 0, 'ALTER TABLE exercises ADD FOREIGN KEY fk_exercise_type (type_id) REFERENCES exercise_types(type_id) ON DELETE CASCADE', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
 CALL add_col('exercises', 'skeleton_data', 'JSON NULL AFTER sudut_target');
 CALL add_col('exercises', 'sudut_leher', 'DECIMAL(6,2) NULL AFTER skeleton_data');
 CALL add_col('exercises', 'sudut_punggung', 'DECIMAL(6,2) NULL AFTER sudut_leher');
@@ -48,6 +68,7 @@ CALL add_col('exercises', 'is_battle', "TINYINT DEFAULT 0 AFTER tingkat");
 
 -- ====================== ROOMS ======================
 CALL add_col('rooms', 'max_score', 'INT NOT NULL DEFAULT 10 AFTER status');
+CALL add_col('rooms', 'exercises_json', 'JSON NULL AFTER max_score');
 
 -- Bersihkan prosedur temporary
 DROP PROCEDURE IF EXISTS add_col;
