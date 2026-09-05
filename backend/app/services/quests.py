@@ -240,10 +240,19 @@ def ringkas_telemetri(db: Session, user_id: int, menit: int = 5) -> Dict[str, An
         PostureLog.user_id == user_id, PostureLog.timestamp >= sejak
     ).all()
     q_vals = [float(l.kualitas_data) for l in logs if l.kualitas_data is not None]
+    dari_baseline = db.query(PoseBaseline).filter_by(user_id=user_id).order_by(PoseBaseline.recorded_at.desc()).first()
+    from app.services.deviation_score import status_referensi
+    ref = status_referensi(dari_baseline)
     return {
         "user_id": user_id,
         "dalam_menit_terakhir": menit,
         "jumlah_sampel": len(logs),
         "kualitas_rata": round(sum(q_vals) / len(q_vals), 1) if q_vals else None,
-        "persen_bag_us": round(100.0 * sum(1 for l in logs if l.status == "bagus") / len(logs), 1) if logs else None,
+        "persentase_bag_us": round(100.0 * sum(1 for l in logs if l.status == "bagus") / len(logs), 1) if logs else None,
+        "baseline": {
+            "ada": ref["status"] != "default",
+            "status": ref["status"],
+            "usia_hari": ref["usia_hari"],
+            "perlu_kalibrasi_ulang": ref["status"] == "kedaluwarsa",
+        },
     }

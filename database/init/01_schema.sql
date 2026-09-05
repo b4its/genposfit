@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
     role VARCHAR(20) DEFAULT 'user',
     poin INT DEFAULT 0,
     saldo DECIMAL(18,2) DEFAULT 0.00,
+    wallet_address VARCHAR(42) NULL UNIQUE,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_username (username)
@@ -206,3 +207,20 @@ SELECT u.user_id, u.poin, 'backfill_lama', DATE_FORMAT(NOW(), '%Y-%m'), 'legacy'
 FROM users u
 WHERE u.poin > 0
   AND NOT EXISTS (SELECT 1 FROM point_ledger pl WHERE pl.user_id = u.user_id);
+
+CREATE TABLE IF NOT EXISTS gpc_reward_tx (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    periode VARCHAR(7) NOT NULL,
+    user_id INT NOT NULL,
+    rank INT NOT NULL,
+    wallet_address VARCHAR(42) NOT NULL,
+    jumlah DECIMAL(18, 2) NOT NULL,
+    tx_hash VARCHAR(80) NULL,
+    status VARCHAR(16) NOT NULL DEFAULT 'pending',
+    error TEXT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_gpc_periode_user (periode, user_id),
+    INDEX idx_gpc_periode (periode),
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+) ENGINE=InnoDB;

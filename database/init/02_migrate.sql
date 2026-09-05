@@ -157,5 +157,30 @@ INSERT IGNORE INTO quests (kode, judul, deskripsi, kategori, metrik, target, rew
  ('konsistensi_pekan','Konsistensi Sepekan','Pantau postur minimal 40 sampel berkualitas di pekan ini.','mingguan','postur_qty',40,30,1),
  ('duel_pilar','Duel Pilar Postur','Menangkan 1 battle multiplayer minggu ini.','mingguan','battle_menang',1,25,1);
 
+
+-- ====================== WALLET EVM + RIWAYAT DISTRIBUTION GPC ======================
+CALL add_col('users', 'wallet_address', 'VARCHAR(42) NULL AFTER saldo');
+SET @has_widx = (SELECT COUNT(*) FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND INDEX_NAME = 'uq_users_wallet');
+SET @sql = IF(@has_widx = 0, 'ALTER TABLE users ADD UNIQUE INDEX uq_users_wallet (wallet_address)', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+CREATE TABLE IF NOT EXISTS gpc_reward_tx (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    periode VARCHAR(7) NOT NULL,
+    user_id INT NOT NULL,
+    rank INT NOT NULL,
+    wallet_address VARCHAR(42) NOT NULL,
+    jumlah DECIMAL(18, 2) NOT NULL,
+    tx_hash VARCHAR(80) NULL,
+    status VARCHAR(16) NOT NULL DEFAULT 'pending',
+    error TEXT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_gpc_periode_user (periode, user_id),
+    INDEX idx_gpc_periode (periode),
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 -- Bersihkan prosedur temporary
 DROP PROCEDURE IF EXISTS add_col;
