@@ -11,7 +11,7 @@ from app.config import CORS_ORIGINS, CORS_ORIGIN_REGEX
 from app.database import engine, Base, check_db_connection
 from app.routers import (
     users, registration, monitoring, exercises, auth, multiplayer, admin,
-    quests, leaderboard,
+    quests, leaderboard, wallet,
 )
 
 logging.basicConfig(
@@ -64,6 +64,7 @@ app.include_router(monitoring.router)
 app.include_router(exercises.router)
 app.include_router(multiplayer.router)
 app.include_router(admin.router)
+app.include_router(wallet.router)
 app.include_router(quests.router)
 app.include_router(leaderboard.router)
 
