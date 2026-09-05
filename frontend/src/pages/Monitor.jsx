@@ -6,6 +6,7 @@ import {
 import { SkeletonOverlay } from '../components/SkeletonOverlay';
 import { CameraPermission } from '../components/CameraPermission';
 import { useCamera } from '../hooks/useCamera';
+import { usePoseDetector } from '../hooks/usePoseDetector';
 
 // Sound synthesizer using Web Audio API for posture warning
 function playAlertTone() {
@@ -75,6 +76,10 @@ export const Monitor = ({ onNavigateToExercises }) => {
   const wsRef = useRef(null);
   const badPostureTimerRef = useRef(0);
 
+  // MediaPipe pose detection — runs on live camera frames and returns
+  // real per-user landmarks, so the skeleton matches the user's anatomy.
+  const { landmarks: realLandmarks } = usePoseDetector(videoRef, camStarted);
+
   // Attach camera stream to <video> when it changes
   useEffect(() => {
     if (videoRef.current && camStream) {
@@ -82,6 +87,21 @@ export const Monitor = ({ onNavigateToExercises }) => {
       videoRef.current.play();
     }
   }, [camStream]);
+
+  // Sync real landmarks from MediaPipe to skeleton & send to WebSocket
+  const realLandmarksRef = useRef(realLandmarks);
+  realLandmarksRef.current = realLandmarks;
+  useEffect(() => {
+    if (!camStarted || !realLandmarks || realLandmarks.length < 25) return;
+    setLandmarks(realLandmarks);
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        landmarks: realLandmarks,
+        tipe_pose: 'duduk_tegak',
+        sesi_id: 'live-monitor-session',
+      }));
+    }
+  }, [camStarted, realLandmarks]);
 
   // Session clock
   useEffect(() => {
@@ -160,6 +180,10 @@ export const Monitor = ({ onNavigateToExercises }) => {
     if (!isLive) return;
 
     const interval = setInterval(() => {
+      // When live camera landmarks are streaming, skip synthetic simulation.
+      if (camStarted && realLandmarksRef.current && realLandmarksRef.current.length >= 25) {
+        return;
+      }
       // If user is controlling sliders in simulator mode
       const t = Date.now() / 900;
       const effectiveNeck = simMode ? simNeck : 165.0 + Math.sin(t) * 2;
@@ -229,7 +253,7 @@ export const Monitor = ({ onNavigateToExercises }) => {
     }, 60);
 
     return () => clearInterval(interval);
-  }, [isLive, simMode, simNeck, simBack, audioAlerts]);
+  }, [isLive, simMode, simNeck, simBack, audioAlerts, camStarted]);
 
   // Format time HH:MM:SS
   const formatTime = (secs) => {
@@ -303,7 +327,7 @@ camActive
         <div className="lg:col-span-8 flex flex-col gap-4">
           <div className="dev-card p-2 relative overflow-hidden bg-slate-950">
             {/* Viewport Frame */}
-            <div className="relative w-full h-[420px] rounded-lg bg-slate-950 flex items-center justify-center overflow-hidden border border-slate-800">
+            <div className="relative w-full h-[340px] sm:h-[420px] rounded-lg bg-slate-950 flex items-center justify-center overflow-hidden border border-slate-800">
               {/* Actual Video Tag */}
               <video
                 ref={videoRef}

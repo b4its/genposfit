@@ -6,6 +6,7 @@ import {
 import { SkeletonOverlay } from '../components/SkeletonOverlay';
 import { CameraPermission } from '../components/CameraPermission';
 import { useCamera } from '../hooks/useCamera';
+import { usePoseDetector } from '../hooks/usePoseDetector';
 
 export const RegisterPose = ({ onFinishCalibration }) => {
   const [nama, setNama] = useState('Alex Chandra');
@@ -33,6 +34,18 @@ export const RegisterPose = ({ onFinishCalibration }) => {
   const videoRef = useRef(null);
   const frameBufferRef = useRef([]);
   const animFrameIdRef = useRef(null);
+
+  // MediaPipe pose detection — real per-user landmarks for the skeleton.
+  const { landmarks: realLandmarks } = usePoseDetector(videoRef, camStarted);
+
+  // Sync real landmarks from MediaPipe when camera is live.
+  const realLandmarksRef = useRef(realLandmarks);
+  realLandmarksRef.current = realLandmarks;
+  useEffect(() => {
+    if (isCameraActive && realLandmarks && realLandmarks.length >= 25) {
+      setCurrentLandmarks(realLandmarks);
+    }
+  }, [isCameraActive, realLandmarks]);
 
   // Sync camera started state
   useEffect(() => {
@@ -360,7 +373,7 @@ export const RegisterPose = ({ onFinishCalibration }) => {
             </div>
 
             {/* Video + Overlay Viewport */}
-            <div className="relative w-full h-80 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden">
+            <div className="relative w-full h-72 sm:h-80 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden">
               {/* Actual Video Element */}
               <video
                 ref={videoRef}

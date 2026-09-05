@@ -115,7 +115,7 @@ export function useCamera(options: CameraOptions = {}) {
       }
       return false;
     }
-  }, [permission, video, audio]);
+  }, [permission, video, audio, setActiveStream]);
 
   const stop = useCallback(() => {
     if (streamRef.current) {

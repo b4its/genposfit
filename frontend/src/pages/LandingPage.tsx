@@ -154,10 +154,10 @@ asyncio.run(stream_posture())`,
             </p>
 
             {/* CTA Buttons */}
-            <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
               <button
                 onClick={() => setActiveTab('monitor')}
-                className="btn-primary flex-1 sm:flex-initial"
+                className="btn-primary w-full sm:w-auto"
               >
                 <Play size={16} className="fill-current" />
                 <span>Launch Live Monitor</span>
@@ -166,7 +166,7 @@ asyncio.run(stream_posture())`,
 
               <button
                 onClick={() => setActiveTab('register')}
-                className="btn-outline flex-1 sm:flex-initial"
+                className="btn-outline w-full sm:w-auto"
               >
                 <Shield size={16} className="text-emerald-500" />
                 <span>Calibrate Personal Baseline</span>
@@ -174,7 +174,7 @@ asyncio.run(stream_posture())`,
 
               <button
                 onClick={() => setActiveTab('exercises')}
-                className="btn-outline flex-1 sm:flex-initial text-emerald-500 border-emerald-500/30"
+                className="btn-outline w-full sm:w-auto text-emerald-500 border-emerald-500/30"
               >
                 <HeartPulse size={16} />
                 <span>Therapy Stretches</span>
@@ -182,7 +182,7 @@ asyncio.run(stream_posture())`,
             </div>
 
             {/* Quick Metrics Bar */}
-            <div className="grid grid-cols-3 gap-6 pt-10 mt-10 border-t w-full"
+            <div className="grid grid-cols-3 gap-4 sm:gap-6 pt-10 mt-10 border-t w-full"
               style={{ borderColor: 'var(--border)' }}>
               <div>
                 <div className="text-2xl font-bold font-mono text-blue-500">30 FPS</div>
