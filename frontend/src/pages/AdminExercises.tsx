@@ -2,7 +2,8 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   ShieldCheck, Plus, Pencil, Trash2, Save, X, AlertTriangle, RefreshCw,
   Camera, CameraOff, CheckCircle2, Target, FolderOpen,
-  Timer, Square, Sparkles, Layers, Search, Filter, Check, Eye, ChevronRight
+  Timer, Square, Sparkles, Layers, Search, Filter, Check, Eye, ChevronRight,
+  Play, Swords, Info
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Card, Input, Label, Textarea, Select, Badge, Pill, PillContent, Button } from '@/components/ui';
@@ -10,6 +11,19 @@ import { SkeletonOverlay, type Landmark } from '../components/SkeletonOverlay';
 import { usePoseDetector } from '../hooks/usePoseDetector';
 import { cn } from '@/lib/utils';
 import { getApiUrl } from '../lib/api';
+
+export interface PoseStep {
+  step_id: string;
+  urutan: number;
+  nama_step: string;
+  instruksi?: string;
+  durasi_tahan_detik: number;
+  landmarks: Landmark[] | null;
+  sudut_leher?: number;
+  sudut_punggung?: number;
+  toleransi_derajat?: number;
+  pose_key?: string;
+}
 
 export interface SudutTargetMeta {
   sudut_leher?: number;
@@ -21,6 +35,7 @@ export interface SudutTargetMeta {
   variasi_gerakan?: string;
   peralatan?: string;
   petunjuk_koreksi?: string;
+  pose_steps?: PoseStep[];
 }
 
 export interface ChildExercise {
@@ -29,7 +44,7 @@ export interface ChildExercise {
   nama: string;
   deskripsi: string | null;
   target_otot: string | null;
-  sudut_target: SudutTargetMeta | Record<string, any> | null;
+  sudut_target: (SudutTargetMeta & { pose_steps?: PoseStep[] }) | Record<string, any> | null;
   skeleton_data: Landmark[] | null;
   sudut_leher: number | null;
   sudut_punggung: number | null;
@@ -37,6 +52,7 @@ export interface ChildExercise {
   reps: number;
   tingkat: string;
   is_battle: boolean;
+  pose_steps?: PoseStep[];
 }
 
 export interface ExercisePreset {
@@ -62,6 +78,7 @@ export interface ExercisePreset {
   pose_key: string;
   skeleton_data?: Landmark[];
   sudut_target?: SudutTargetMeta;
+  pose_steps?: PoseStep[];
 }
 
 interface ExerciseType {
@@ -113,6 +130,21 @@ export const AdminExercises: React.FC = () => {
   const [childIsBattle, setChildIsBattle] = useState(false);
   const [childSkeleton, setChildSkeleton] = useState<Landmark[] | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Multi-step pose skeleton list & active selection for trainer
+  const [childPoseSteps, setChildPoseSteps] = useState<PoseStep[]>([
+    {
+      step_id: 'step-1',
+      urutan: 1,
+      nama_step: 'Fase 1: Posisi Atas (Plank Awal)',
+      instruksi: 'Pertahankan postur tubuh tegak & lurus',
+      durasi_tahan_detik: 2,
+      landmarks: null,
+    },
+  ]);
+  const [activeStepIndex, setActiveStepIndex] = useState<number>(0);
+  const [isPlayingStepPreview, setIsPlayingStepPreview] = useState<boolean>(false);
+  const stepPreviewIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Extended pose recording & movement variation items
   const [childVariasi, setChildVariasi] = useState('Standar');
@@ -300,15 +332,16 @@ export const AdminExercises: React.FC = () => {
   useEffect(() => {
     if (recording) return;
     if (capturedFrames.length === 0) return;
-    setChildSkeleton(averageLandmarks(capturedFrames));
+    const avg = averageLandmarks(capturedFrames);
+    setChildSkeleton(avg);
+    setChildPoseSteps(prev => {
+      const copy = [...prev];
+      if (copy[activeStepIndex]) {
+        copy[activeStepIndex] = { ...copy[activeStepIndex], landmarks: avg };
+      }
+      return copy;
+    });
   }, [capturedFrames, recording]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (capturedFrames.length > 1 && !recording) {
-      const avg = averageLandmarks(capturedFrames);
-      setChildSkeleton(avg);
-    }
-  }, [recording, capturedFrames.length]);
 
   const averageLandmarks = (frames: Landmark[][]): Landmark[] => {
     if (frames.length === 0) return [];
@@ -344,11 +377,98 @@ export const AdminExercises: React.FC = () => {
   const captureSinglePose = () => {
     const lms = realLandmarksRef.current;
     if (camActive && lms && lms.length >= 25) {
-      setChildSkeleton(lms.map(p => ({ ...p })));
+      const cloned = lms.map(p => ({ ...p }));
+      setChildPoseSteps(prev => {
+        const copy = [...prev];
+        if (copy[activeStepIndex]) {
+          copy[activeStepIndex] = { ...copy[activeStepIndex], landmarks: cloned };
+        }
+        return copy;
+      });
+      if (activeStepIndex === 0 || !childSkeleton) {
+        setChildSkeleton(cloned);
+      }
     }
   };
 
-  const clearSkeleton = () => setChildSkeleton(null);
+  const clearSkeleton = () => {
+    setChildPoseSteps(prev => {
+      const copy = [...prev];
+      if (copy[activeStepIndex]) {
+        copy[activeStepIndex] = { ...copy[activeStepIndex], landmarks: null };
+      }
+      return copy;
+    });
+    if (activeStepIndex === 0) {
+      setChildSkeleton(null);
+    }
+  };
+
+  // Step Management Actions for Trainer
+  const handleAddPoseStep = () => {
+    const nextUrutan = childPoseSteps.length + 1;
+    const newStep: PoseStep = {
+      step_id: `step-${Date.now()}`,
+      urutan: nextUrutan,
+      nama_step: nextUrutan === 2
+        ? 'Fase 2: Posisi Turun (Dada Rendah / Siku 90°)'
+        : nextUrutan === 3
+        ? 'Fase 3: Dorong Naik Kembali ke Atas (+1 Rep)'
+        : `Fase ${nextUrutan}: Gerakan Lanjutan`,
+      instruksi: 'Tahan pose target di depan kamera pelatih',
+      durasi_tahan_detik: 2,
+      landmarks: null,
+    };
+    setChildPoseSteps(prev => [...prev, newStep]);
+    setActiveStepIndex(childPoseSteps.length);
+  };
+
+  const handleRemovePoseStep = (idxToRemove: number) => {
+    if (childPoseSteps.length <= 1) {
+      alert('Minimal harus ada 1 model skeleton gerakan.');
+      return;
+    }
+    const updated = childPoseSteps
+      .filter((_, idx) => idx !== idxToRemove)
+      .map((s, idx) => ({ ...s, urutan: idx + 1 }));
+    setChildPoseSteps(updated);
+    setActiveStepIndex(prev => Math.min(prev, updated.length - 1));
+  };
+
+  const updateActiveStep = (field: keyof PoseStep, value: unknown) => {
+    setChildPoseSteps(prev => {
+      const copy = [...prev];
+      if (copy[activeStepIndex]) {
+        copy[activeStepIndex] = { ...copy[activeStepIndex], [field]: value };
+      }
+      return copy;
+    });
+  };
+
+  const togglePlayStepPreview = () => {
+    if (isPlayingStepPreview) {
+      if (stepPreviewIntervalRef.current) clearInterval(stepPreviewIntervalRef.current);
+      setIsPlayingStepPreview(false);
+      return;
+    }
+    if (childPoseSteps.length <= 1) {
+      alert('Tambahkan minimal 2 model skeleton untuk memutar simulasi urutan gerakan.');
+      return;
+    }
+    setIsPlayingStepPreview(true);
+    let curIdx = 0;
+    setActiveStepIndex(0);
+    stepPreviewIntervalRef.current = setInterval(() => {
+      curIdx = (curIdx + 1) % childPoseSteps.length;
+      setActiveStepIndex(curIdx);
+    }, 1400);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (stepPreviewIntervalRef.current) clearInterval(stepPreviewIntervalRef.current);
+    };
+  }, []);
 
   const resetChildForm = () => {
     setShowChildForm(false);
@@ -370,6 +490,19 @@ export const AdminExercises: React.FC = () => {
     setChildDurasi('5');
     setChildIsBattle(false);
     setChildSkeleton(null);
+    setChildPoseSteps([
+      {
+        step_id: `step-${Date.now()}`,
+        urutan: 1,
+        nama_step: 'Fase 1: Posisi Atas (Plank Awal)',
+        instruksi: 'Pertahankan postur tubuh tegak & lurus',
+        durasi_tahan_detik: 2,
+        landmarks: null,
+      },
+    ]);
+    setActiveStepIndex(0);
+    if (stepPreviewIntervalRef.current) clearInterval(stepPreviewIntervalRef.current);
+    setIsPlayingStepPreview(false);
     stopCamIfActive();
   };
 
@@ -454,6 +587,29 @@ export const AdminExercises: React.FC = () => {
     setChildToleransi(String(st?.toleransi_derajat ?? 15));
     setChildAmbangAkurasi(String(st?.ambang_akurasi ?? 75));
     setChildPetunjukKoreksi(st?.petunjuk_koreksi || '');
+
+    const existingSteps = (st?.pose_steps || child.pose_steps);
+    if (existingSteps && Array.isArray(existingSteps) && existingSteps.length > 0) {
+      setChildPoseSteps(existingSteps.map((s: PoseStep, i: number) => ({
+        ...s,
+        urutan: i + 1,
+        durasi_tahan_detik: Number(s.durasi_tahan_detik) || 2,
+      })));
+    } else {
+      setChildPoseSteps([
+        {
+          step_id: `step-${Date.now()}`,
+          urutan: 1,
+          nama_step: 'Fase 1: Posisi Target Referensi',
+          instruksi: st?.petunjuk_koreksi || 'Pertahankan postur target',
+          durasi_tahan_detik: Number(child.durasi_detik) || 5,
+          landmarks: child.skeleton_data || null,
+        },
+      ]);
+    }
+    setActiveStepIndex(0);
+    if (stepPreviewIntervalRef.current) clearInterval(stepPreviewIntervalRef.current);
+    setIsPlayingStepPreview(false);
   };
 
   // Preset Application to Form
@@ -475,9 +631,34 @@ export const AdminExercises: React.FC = () => {
     setChildTingkat(preset.tingkat || 'pemula');
     setChildDurasi(String(preset.durasi_detik || 5));
     setChildIsBattle(!!preset.is_battle);
-    if (preset.skeleton_data && preset.skeleton_data.length >= 25) {
-      setChildSkeleton(preset.skeleton_data);
+
+    const presetSteps = preset.pose_steps || preset.sudut_target?.pose_steps;
+    if (presetSteps && Array.isArray(presetSteps) && presetSteps.length > 0) {
+      setChildPoseSteps(presetSteps.map((s, i) => ({
+        ...s,
+        urutan: i + 1,
+        durasi_tahan_detik: Number(s.durasi_tahan_detik) || 2,
+      })));
+      setChildSkeleton(presetSteps[0].landmarks || preset.skeleton_data || null);
+    } else {
+      setChildPoseSteps([
+        {
+          step_id: `${preset.preset_id}-step-1`,
+          urutan: 1,
+          nama_step: `Fase 1: ${preset.nama}`,
+          instruksi: preset.petunjuk_koreksi || 'Pertahankan postur target',
+          durasi_tahan_detik: Number(preset.durasi_detik) || 5,
+          landmarks: preset.skeleton_data || null,
+        },
+      ]);
+      if (preset.skeleton_data && preset.skeleton_data.length >= 25) {
+        setChildSkeleton(preset.skeleton_data);
+      }
     }
+    setActiveStepIndex(0);
+    if (stepPreviewIntervalRef.current) clearInterval(stepPreviewIntervalRef.current);
+    setIsPlayingStepPreview(false);
+
     setShowPresetsModal(false);
   };
 
@@ -490,6 +671,7 @@ export const AdminExercises: React.FC = () => {
     setSaving(true);
     setError(null);
     try {
+      const steps = preset.pose_steps || preset.sudut_target?.pose_steps;
       const payload = {
         type_id: selectedType.type_id,
         nama: preset.nama,
@@ -499,7 +681,7 @@ export const AdminExercises: React.FC = () => {
         durasi_detik: preset.durasi_detik,
         reps: preset.reps,
         is_battle: preset.is_battle,
-        skeleton_data: preset.skeleton_data,
+        skeleton_data: preset.skeleton_data || (steps && steps[0]?.landmarks) || null,
         sudut_target: preset.sudut_target || {
           sudut_leher: preset.sudut_leher,
           sudut_punggung: preset.sudut_punggung,
@@ -510,6 +692,7 @@ export const AdminExercises: React.FC = () => {
           variasi_gerakan: preset.variasi,
           peralatan: preset.peralatan,
           petunjuk_koreksi: preset.petunjuk_koreksi,
+          pose_steps: steps,
         },
       };
       const res = await fetch(`${apiUrl()}/api/admin/exercise-types/${selectedType.type_id}/exercises`, {
@@ -538,27 +721,31 @@ export const AdminExercises: React.FC = () => {
     setError(null);
     try {
       const selectedItems = presets.filter(p => selectedPresetIds.includes(p.preset_id));
-      const payload = selectedItems.map(p => ({
-        nama: p.nama,
-        deskripsi: p.deskripsi,
-        target_otot: p.target_otot,
-        tingkat: p.tingkat,
-        durasi_detik: p.durasi_detik,
-        reps: p.reps,
-        is_battle: p.is_battle,
-        skeleton_data: p.skeleton_data,
-        sudut_target: p.sudut_target || {
-          sudut_leher: p.sudut_leher,
-          sudut_punggung: p.sudut_punggung,
-          toleransi_derajat: p.toleransi_derajat,
-          ambang_akurasi: p.ambang_akurasi,
-          orientasi_kamera: p.orientasi_kamera,
-          posisi_tubuh: p.posisi_tubuh,
-          variasi_gerakan: p.variasi,
-          peralatan: p.peralatan,
-          petunjuk_koreksi: p.petunjuk_koreksi,
-        },
-      }));
+      const payload = selectedItems.map(p => {
+        const steps = p.pose_steps || p.sudut_target?.pose_steps;
+        return {
+          nama: p.nama,
+          deskripsi: p.deskripsi,
+          target_otot: p.target_otot,
+          tingkat: p.tingkat,
+          durasi_detik: p.durasi_detik,
+          reps: p.reps,
+          is_battle: p.is_battle,
+          skeleton_data: p.skeleton_data || (steps && steps[0]?.landmarks) || null,
+          sudut_target: p.sudut_target || {
+            sudut_leher: p.sudut_leher,
+            sudut_punggung: p.sudut_punggung,
+            toleransi_derajat: p.toleransi_derajat,
+            ambang_akurasi: p.ambang_akurasi,
+            orientasi_kamera: p.orientasi_kamera,
+            posisi_tubuh: p.posisi_tubuh,
+            variasi_gerakan: p.variasi,
+            peralatan: p.peralatan,
+            petunjuk_koreksi: p.petunjuk_koreksi,
+            pose_steps: steps,
+          },
+        };
+      });
 
       const res = await fetch(`${apiUrl()}/api/admin/exercise-types/${selectedType.type_id}/batch-exercises`, {
         method: 'POST',
@@ -586,6 +773,18 @@ export const AdminExercises: React.FC = () => {
     if (!childNama.trim()) { setError('Nama gerakan wajib diisi.'); return; }
     if (!selectedType) { setError('Pilih jenis latihan terlebih dahulu.'); return; }
     setSaving(true);
+
+    const validSteps: PoseStep[] = childPoseSteps.map((s, idx) => ({
+      ...s,
+      urutan: idx + 1,
+      durasi_tahan_detik: Math.max(1, Number(s.durasi_tahan_detik) || 2),
+      landmarks: s.landmarks || null,
+    }));
+
+    const totalDurasi = validSteps.length > 1
+      ? validSteps.reduce((sum, s) => sum + (s.durasi_tahan_detik || 0), 0)
+      : Number(childDurasi || 5);
+
     const payload: Record<string, unknown> = {
       type_id: selectedType.type_id,
       nama: childNama.trim(),
@@ -593,7 +792,7 @@ export const AdminExercises: React.FC = () => {
       target_otot: childTarget || null,
       reps: Number(childReps || 10),
       tingkat: childTingkat,
-      durasi_detik: Number(childDurasi || 5),
+      durasi_detik: totalDurasi,
       is_battle: childIsBattle,
       sudut_target: {
         sudut_leher: Number(childSudutLeher || 168),
@@ -605,9 +804,13 @@ export const AdminExercises: React.FC = () => {
         variasi_gerakan: childVariasi || 'Standar',
         peralatan: childPeralatan,
         petunjuk_koreksi: childPetunjukKoreksi || 'Pertahankan postur tegak ergonomis.',
+        pose_steps: validSteps,
       },
     };
-    if (childSkeleton && childSkeleton.length >= 25) {
+
+    if (validSteps[0]?.landmarks && validSteps[0].landmarks.length >= 25) {
+      payload.skeleton_data = validSteps[0].landmarks;
+    } else if (childSkeleton && childSkeleton.length >= 25) {
       payload.skeleton_data = childSkeleton;
     }
     const isEdit = editingChildId != null;
@@ -849,7 +1052,7 @@ export const AdminExercises: React.FC = () => {
                   <div className="space-y-4 text-xs">
                     {/* Camera recording & pose settings */}
                     <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-4">
-                      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                         <div className="flex items-center gap-2">
                           <Camera size={15} className="text-purple-500" />
                           <Label className="p-0 font-bold text-slate-900 dark:text-white">Rekam Gerakan Pose dari Kamera Pelatih</Label>
@@ -857,10 +1060,160 @@ export const AdminExercises: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <label className="flex items-center gap-1.5 cursor-pointer bg-purple-500/10 px-2.5 py-1 rounded-lg border border-purple-500/20">
                             <input type="checkbox" checked={childIsBattle} onChange={e => setChildIsBattle(e.target.checked)} className="accent-purple-500" />
-                            <span className="text-[11px] font-semibold text-purple-700 dark:text-purple-300">Bisa Battle Multiplayer</span>
+                            <span className="text-[11px] font-bold text-purple-700 dark:text-purple-300 flex items-center gap-1">
+                              <Swords size={11} /> Bisa Battle Multiplayer
+                            </span>
                           </label>
                         </div>
                       </div>
+
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-3">
+                        Contoh pada latihan push up: <strong>Step 1 (Posisi Atas/Plank)</strong> → <strong>Step 2 (Turun Dada Rendah)</strong> → <strong>Step 3 (Dorong Naik Kembali)</strong> baru repetisi dihitung <strong>+1</strong>. Anda dapat menambah atau mengurangi model skeleton di bawah ini dan merekam masing-masing pose dari kamera.
+                      </p>
+
+                      {/* STEP SELECTOR TABS & ADD STEP BUTTON */}
+                      <div className="mb-3">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            Daftar Urutan Step Pose ({childPoseSteps.length} Model Skeleton)
+                          </span>
+                          <div className="flex items-center gap-1.5">
+                            {childPoseSteps.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={togglePlayStepPreview}
+                                className="text-[10px] h-6 px-2 text-purple-600 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/50"
+                                title="Putar simulasi pergantian urutan pose skeleton"
+                              >
+                                <Play size={11} className={cn("mr-1", isPlayingStepPreview && "animate-spin text-purple-500")} />
+                                {isPlayingStepPreview ? 'Stop Simulasi' : 'Putar Urutan Step'}
+                              </Button>
+                            )}
+                            <Button
+                              type="button"
+                              variant="default"
+                              size="sm"
+                              onClick={handleAddPoseStep}
+                              className="text-[10px] h-6 px-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold"
+                              title="Tambahkan langkah/fase pose skeleton baru"
+                            >
+                              <Plus size={12} className="mr-0.5" /> Tambah Step Skeleton
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Step Pills */}
+                        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                          {childPoseSteps.map((step, idx) => {
+                            const isSelected = idx === activeStepIndex;
+                            const hasLms = Boolean(step.landmarks && step.landmarks.length >= 25);
+                            return (
+                              <button
+                                key={step.step_id || idx}
+                                type="button"
+                                onClick={() => {
+                                  if (isPlayingStepPreview) {
+                                    if (stepPreviewIntervalRef.current) clearInterval(stepPreviewIntervalRef.current);
+                                    setIsPlayingStepPreview(false);
+                                  }
+                                  setActiveStepIndex(idx);
+                                }}
+                                className={cn(
+                                  "px-2.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all border flex items-center gap-1.5 cursor-pointer",
+                                  isSelected
+                                    ? "bg-purple-600 text-white border-purple-600 shadow-xs ring-2 ring-purple-300 dark:ring-purple-700"
+                                    : hasLms
+                                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20"
+                                    : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                )}
+                              >
+                                <span className={cn(
+                                  "w-4 h-4 rounded-full flex items-center justify-center text-[10px]",
+                                  isSelected ? "bg-white text-purple-700 font-bold" : "bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                                )}>
+                                  {idx + 1}
+                                </span>
+                                <span className="truncate max-w-[130px]">{step.nama_step}</span>
+                                <span className={cn("text-[10px] font-mono", isSelected ? "opacity-90" : "opacity-60")}>
+                                  {step.durasi_tahan_detik}s
+                                </span>
+                                {hasLms && <CheckCircle2 size={12} className={isSelected ? "text-white" : "text-emerald-500"} />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* ACTIVE STEP EDITING FIELDS */}
+                      {childPoseSteps[activeStepIndex] && (
+                        <div className="p-3 mb-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
+                              <Pencil size={12} className="text-purple-500" />
+                              Pengaturan Step {activeStepIndex + 1} dari {childPoseSteps.length}
+                            </span>
+                            {childPoseSteps.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemovePoseStep(activeStepIndex)}
+                                className="text-[11px] text-rose-500 hover:text-rose-600 flex items-center gap-1 font-semibold cursor-pointer"
+                                title="Hapus step ini dari urutan gerakan"
+                              >
+                                <Trash2 size={12} /> Hapus Step Ini
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                            <div className="sm:col-span-6">
+                              <Label className="text-[10px] mb-0.5 block">Nama Step / Fase Gerakan *</Label>
+                              <Input
+                                type="text"
+                                value={childPoseSteps[activeStepIndex].nama_step}
+                                onChange={e => updateActiveStep('nama_step', e.target.value)}
+                                placeholder="Misal: Fase 1: Posisi Atas (Plank)"
+                                className="text-xs h-7"
+                              />
+                            </div>
+                            <div className="sm:col-span-3">
+                              <Label className="text-[10px] mb-0.5 block">Tahan (detik) *</Label>
+                              <Input
+                                type="number"
+                                min={1}
+                                max={60}
+                                value={childPoseSteps[activeStepIndex].durasi_tahan_detik}
+                                onChange={e => updateActiveStep('durasi_tahan_detik', Math.max(1, Number(e.target.value) || 1))}
+                                className="text-xs h-7 font-mono"
+                              />
+                            </div>
+                            <div className="sm:col-span-3">
+                              <Label className="text-[10px] mb-0.5 block">Status Skeleton</Label>
+                              <div className="h-7 px-2 rounded-md bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center gap-1 text-[10px] font-semibold text-slate-700 dark:text-slate-300 truncate">
+                                {childPoseSteps[activeStepIndex].landmarks && childPoseSteps[activeStepIndex].landmarks!.length >= 25 ? (
+                                  <>
+                                    <CheckCircle2 size={11} className="text-emerald-500 shrink-0" />
+                                    <span className="text-emerald-600 dark:text-emerald-400">Tersimpan</span>
+                                  </>
+                                ) : (
+                                  <span className="text-amber-500">Belum Direkam</span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="sm:col-span-12">
+                              <Label className="text-[10px] mb-0.5 block">Instruksi Posisi Tubuh Pelatih untuk Step Ini</Label>
+                              <Input
+                                type="text"
+                                value={childPoseSteps[activeStepIndex].instruksi || ''}
+                                onChange={e => updateActiveStep('instruksi', e.target.value)}
+                                placeholder="Misal: Tahan tubuh lurus horizontal, kedua tangan lurus di bawah bahu"
+                                className="text-xs h-7"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Pose metadata quick pills */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
@@ -919,36 +1272,61 @@ export const AdminExercises: React.FC = () => {
                       </div>
 
                       {/* Camera + skeleton viewport */}
-                      <div className="relative w-full h-52 rounded-xl bg-slate-950 border border-slate-800 overflow-hidden mb-3">
-                        <video ref={videoRef} autoPlay playsInline muted className={`w-full h-full object-cover ${camActive ? 'block' : 'hidden'}`} />
-                        <SkeletonOverlay
-                          landmarks={childSkeleton || previewLandmarks}
-                          width={480} height={208}
-                          orientasi={childOrientasi as any}
-                          showAngles={true}
-                          color={childSkeleton ? '#10b981' : '#8b5cf6'}
-                          className="absolute inset-0"
-                        />
-                        {!camActive && !childSkeleton && (
-                          <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center text-slate-400">
-                            <Camera size={24} className="text-slate-500 mb-1" />
-                            <p className="text-xs font-semibold text-slate-300">Nyalakan kamera & lakukan pose gerakan.</p>
-                            <p className="text-[11px] text-slate-500">Skeleton 33 titik MediaPipe akan terekam otomatis sebagai target pose.</p>
+                      {(() => {
+                        const activeStep = childPoseSteps[activeStepIndex];
+                        const activeLandmarks = activeStep?.landmarks || (activeStepIndex === 0 ? childSkeleton : null);
+                        const hasActiveSkeleton = Boolean(activeLandmarks && activeLandmarks.length >= 25);
+
+                        return (
+                          <div className="relative w-full h-60 rounded-xl bg-slate-950 border border-slate-800 overflow-hidden mb-3 flex items-center justify-center">
+                            <video ref={videoRef} autoPlay playsInline muted className={`w-full h-full object-cover ${camActive ? 'block' : 'hidden'}`} />
+                            <SkeletonOverlay
+                              landmarks={activeLandmarks || previewLandmarks}
+                              width={480} height={240}
+                              orientasi={childOrientasi as any}
+                              showAngles={true}
+                              color={hasActiveSkeleton ? '#10b981' : '#8b5cf6'}
+                              className="absolute inset-0"
+                            />
+                            {!camActive && !hasActiveSkeleton && (
+                              <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center text-slate-400">
+                                <Camera size={26} className="text-slate-500 mb-1" />
+                                <p className="text-xs font-semibold text-slate-300">Nyalakan kamera & lakukan pose Step {activeStepIndex + 1}.</p>
+                                <p className="text-[11px] text-slate-500 max-w-xs mt-0.5">
+                                  Lakukan pose "{activeStep?.nama_step || 'Target'}" di depan kamera pelatih untuk direkam.
+                                </p>
+                              </div>
+                            )}
+
+                            {/* Active Step Recording Header HUD */}
+                            <div className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-black/75 backdrop-blur-xs text-white text-[11px] font-semibold flex items-center gap-1.5 z-20 border border-white/10">
+                              <span className="w-2 h-2 rounded-full bg-purple-400" />
+                              <span>Merekam: <strong>Step {activeStepIndex + 1}</strong> ({activeStep?.nama_step || 'Pose'})</span>
+                            </div>
+
+                            {/* Simulation Playing Badge */}
+                            {isPlayingStepPreview && (
+                              <div className="absolute top-11 left-3 px-2.5 py-1 rounded-lg bg-blue-600/90 backdrop-blur-xs text-white text-[10px] font-bold flex items-center gap-1.5 z-20 animate-pulse">
+                                <Play size={10} className="fill-current" />
+                                <span>Simulasi Berjalan (Fase {activeStepIndex + 1}/{childPoseSteps.length})</span>
+                              </div>
+                            )}
+
+                            {/* Recording overlay */}
+                            {recording && (
+                              <div className="absolute top-3 right-3 flex items-center gap-2 px-3 py-1 rounded-xl bg-rose-600/90 text-white text-xs font-bold z-20 shadow-md animate-pulse">
+                                <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+                                Merekam Step {activeStepIndex + 1}: {recordingCountdown}s
+                              </div>
+                            )}
+                            {hasActiveSkeleton && !recording && (
+                              <div className="absolute top-3 right-3 px-2.5 py-1 rounded-xl bg-emerald-600/90 text-white text-[11px] font-bold z-20 flex items-center gap-1.5 shadow-md">
+                                <CheckCircle2 size={13} /> Skeleton Step {activeStepIndex + 1} Tersimpan ({activeLandmarks!.length} Titik)
+                              </div>
+                            )}
                           </div>
-                        )}
-                        {/* Recording overlay */}
-                        {recording && (
-                          <div className="absolute top-3 left-3 flex items-center gap-2 px-3 py-1 rounded-xl bg-rose-600/90 text-white text-xs font-bold z-20 shadow-md animate-pulse">
-                            <span className="w-2 h-2 rounded-full bg-white animate-ping" />
-                            Merekam: {recordingCountdown}s
-                          </div>
-                        )}
-                        {childSkeleton && !recording && (
-                          <div className="absolute top-3 right-3 px-2.5 py-1 rounded-xl bg-emerald-600/90 text-white text-[11px] font-bold z-20 flex items-center gap-1.5 shadow-md">
-                            <CheckCircle2 size={13} /> Skeleton Tersimpan ({childSkeleton.length} Titik)
-                          </div>
-                        )}
-                      </div>
+                        );
+                      })()}
 
                       {/* Camera controls & Duration presets */}
                       <div className="flex flex-wrap items-center gap-2">
@@ -981,31 +1359,44 @@ export const AdminExercises: React.FC = () => {
                               ))}
                             </div>
 
-                            <Button variant="outline" size="sm" className="flex-1 font-semibold" onClick={beginRecording}>
-                              <Timer size={14} /> Rekam Multi-Frame ({recordingDuration}s)
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1 font-semibold"
+                              onClick={beginRecording}
+                              title={`Rekam pose multi-frame untuk Step ${activeStepIndex + 1} selama ${recordingDuration} detik`}
+                            >
+                              <Timer size={14} /> Rekam Step {activeStepIndex + 1} ({recordingDuration}s)
                             </Button>
-                            <Button variant="success" size="sm" className="flex-1 font-semibold" onClick={captureSinglePose} disabled={!realLandmarks || realLandmarks.length < 25}>
-                              <Target size={14} /> Tangkap Snapshot Instan
+                            <Button
+                              variant="success"
+                              size="sm"
+                              className="flex-1 font-semibold"
+                              onClick={captureSinglePose}
+                              disabled={!realLandmarks || realLandmarks.length < 25}
+                              title={`Ambil pose kamera saat ini sebagai skeleton Step ${activeStepIndex + 1}`}
+                            >
+                              <Target size={14} /> Tangkap Step {activeStepIndex + 1}
                             </Button>
                           </>
                         )}
                         <Button variant="ghost" size="sm" onClick={stopCamIfActive} title="Matikan kamera">
                           <CameraOff size={14} />
                         </Button>
-                        {childSkeleton && (
-                          <Button variant="ghost" size="sm" onClick={clearSkeleton} title="Hapus skeleton" className="text-rose-500 hover:text-rose-600">
+                        {childPoseSteps[activeStepIndex]?.landmarks && (
+                          <Button variant="ghost" size="sm" onClick={clearSkeleton} title={`Hapus skeleton Step ${activeStepIndex + 1}`} className="text-rose-500 hover:text-rose-600">
                             <Trash2 size={14} />
                           </Button>
                         )}
                       </div>
 
-                      {childSkeleton && !recording && (
+                      {childPoseSteps[activeStepIndex]?.landmarks && !recording && (
                         <div className="mt-2.5 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[11px] flex items-center justify-between">
                           <span className="flex items-center gap-1.5">
-                            <CheckCircle2 size={13} className="text-emerald-500" />
-                            Skeleton target aktif ({childSkeleton.length} landmark). Sudut target terkalkulasi: Leher ~{childSudutLeher}°, Punggung ~{childSudutPunggung}°.
+                            <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
+                            Skeleton Step {activeStepIndex + 1} aktif ({childPoseSteps[activeStepIndex].landmarks!.length} landmark). Target: {childPoseSteps[activeStepIndex].nama_step}.
                           </span>
-                          <span className="text-[10px] font-bold bg-emerald-500/20 px-2 py-0.5 rounded">Toleransi: ±{childToleransi}°</span>
+                          <span className="text-[10px] font-bold bg-emerald-500/20 px-2 py-0.5 rounded">Tahan: {childPoseSteps[activeStepIndex].durasi_tahan_detik}s</span>
                         </div>
                       )}
                       {camError && (
@@ -1181,9 +1572,20 @@ export const AdminExercises: React.FC = () => {
                                   {st?.toleransi_derajat ? ` (±${st.toleransi_derajat}°)` : ''}
                                 </span>
                                 <Badge variant={child.tingkat === 'pemula' ? 'success' : 'info'} className="text-[9px] h-4 px-1">{child.tingkat}</Badge>
-                                {child.skeleton_data && child.skeleton_data.length >= 25 && (
-                                  <span className="text-emerald-500 font-medium">✓ Skeleton Ref</span>
-                                )}
+                                {(() => {
+                                  const steps = (child.sudut_target as any)?.pose_steps || child.pose_steps;
+                                  if (steps && steps.length > 1) {
+                                    return (
+                                      <Badge variant="info" className="text-[9px] h-4 px-1.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30 font-medium">
+                                        {steps.length} Step Skeleton
+                                      </Badge>
+                                    );
+                                  }
+                                  if (child.skeleton_data && child.skeleton_data.length >= 25) {
+                                    return <span className="text-emerald-500 font-medium">✓ Skeleton Ref</span>;
+                                  }
+                                  return null;
+                                })()}
                               </div>
                             </div>
                           </div>

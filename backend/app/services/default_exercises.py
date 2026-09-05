@@ -152,6 +152,30 @@ def generate_standard_skeleton(pose_name: str) -> List[Dict[str, float]]:
         lms[25] = {"x": 0.40, "y": 0.80, "z": 0.0, "visibility": 0.95}
         lms[26] = {"x": 0.60, "y": 0.80, "z": 0.0, "visibility": 0.95}
 
+    elif "push_up_top" in p:
+        lms[11] = {"x": 0.35, "y": 0.40, "z": 0.0, "visibility": 0.95}
+        lms[12] = {"x": 0.65, "y": 0.40, "z": 0.0, "visibility": 0.95}
+        lms[13] = {"x": 0.35, "y": 0.55, "z": 0.0, "visibility": 0.95}
+        lms[14] = {"x": 0.65, "y": 0.55, "z": 0.0, "visibility": 0.95}
+        lms[15] = {"x": 0.35, "y": 0.70, "z": 0.0, "visibility": 0.95}
+        lms[16] = {"x": 0.65, "y": 0.70, "z": 0.0, "visibility": 0.95}
+        lms[23] = {"x": 0.42, "y": 0.52, "z": 0.0, "visibility": 0.95}
+        lms[24] = {"x": 0.58, "y": 0.52, "z": 0.0, "visibility": 0.95}
+        lms[27] = {"x": 0.45, "y": 0.88, "z": 0.0, "visibility": 0.95}
+        lms[28] = {"x": 0.55, "y": 0.88, "z": 0.0, "visibility": 0.95}
+
+    elif "push_up_bottom" in p or "push_up" in p:
+        lms[11] = {"x": 0.35, "y": 0.55, "z": 0.0, "visibility": 0.95}
+        lms[12] = {"x": 0.65, "y": 0.55, "z": 0.0, "visibility": 0.95}
+        lms[13] = {"x": 0.25, "y": 0.60, "z": 0.0, "visibility": 0.95}
+        lms[14] = {"x": 0.75, "y": 0.60, "z": 0.0, "visibility": 0.95}
+        lms[15] = {"x": 0.32, "y": 0.70, "z": 0.0, "visibility": 0.95}
+        lms[16] = {"x": 0.68, "y": 0.70, "z": 0.0, "visibility": 0.95}
+        lms[23] = {"x": 0.42, "y": 0.58, "z": 0.0, "visibility": 0.95}
+        lms[24] = {"x": 0.58, "y": 0.58, "z": 0.0, "visibility": 0.95}
+        lms[27] = {"x": 0.45, "y": 0.88, "z": 0.0, "visibility": 0.95}
+        lms[28] = {"x": 0.55, "y": 0.88, "z": 0.0, "visibility": 0.95}
+
     elif "wrist" in p:
         lms[13] = {"x": 0.35, "y": 0.42, "z": 0.0, "visibility": 0.95}
         lms[14] = {"x": 0.65, "y": 0.42, "z": 0.0, "visibility": 0.95}
@@ -519,6 +543,63 @@ EXERCISE_PRESET_VARIATIONS: List[Dict[str, Any]] = [
         "petunjuk_koreksi": "Jalin jari kedua tangan lalu dorong telapak tangan ke atas langit-langit sambil menarik napas dalam.",
         "deskripsi": "Mendekompresi sendi bahu dan memanjangkan tulang belakang toraks secara simultan.",
         "pose_key": "overhead_reach",
+    },
+    {
+        "preset_id": "push_up_step",
+        "nama": "Push-Up Alignment (Multi-Step Rep)",
+        "variasi": "Siklus Posisi Atas, Turun, & Naik",
+        "kategori_rekomendasi": "Koreksi Bahu",
+        "kategori_key": "bahu",
+        "posisi_tubuh": "matras",
+        "orientasi_kamera": "sagital_kanan",
+        "peralatan": "Matras Olahraga",
+        "target_otot": "Pectoralis major, Triceps brachii, Anterior deltoid, Core stabilizer",
+        "tingkat": "menengah",
+        "durasi_detik": 4,
+        "reps": 10,
+        "is_battle": True,
+        "sudut_leher": 168.0,
+        "sudut_punggung": 175.0,
+        "toleransi_derajat": 15,
+        "ambang_akurasi": 75,
+        "petunjuk_koreksi": "Fase 1: Tahan posisi plank atas. Fase 2: Turunkan badan hingga siku 90°. Fase 3: Dorong naik kembali ke atas (+1 Repetisi).",
+        "deskripsi": "Latihan fungsional multi-step kinetik rantai tertutup untuk memperkuat otot dada, bahu, dan stabilitas inti tulang belakang.",
+        "pose_key": "push_up_top",
+        "pose_steps": [
+            {
+                "step_id": "pushup-step-1",
+                "urutan": 1,
+                "nama_step": "Fase 1: Posisi Atas (Plank Awal)",
+                "instruksi": "Kedua tangan lurus di bawah bahu, tahan posisi tubuh lurus horizontal",
+                "durasi_tahan_detik": 2,
+                "sudut_leher": 168.0,
+                "sudut_punggung": 175.0,
+                "toleransi_derajat": 15,
+                "pose_key": "push_up_top",
+            },
+            {
+                "step_id": "pushup-step-2",
+                "urutan": 2,
+                "nama_step": "Fase 2: Posisi Turun (Siku 90° / Dada Rendah)",
+                "instruksi": "Tekuk siku ke samping 90 derajat, turunkan dada mendekati matras secara stabil",
+                "durasi_tahan_detik": 2,
+                "sudut_leher": 165.0,
+                "sudut_punggung": 172.0,
+                "toleransi_derajat": 15,
+                "pose_key": "push_up_bottom",
+            },
+            {
+                "step_id": "pushup-step-3",
+                "urutan": 3,
+                "nama_step": "Fase 3: Dorong Naik Kembali ke Atas (+1 Rep)",
+                "instruksi": "Dorong kuat tubuh kembali ke posisi plank atas untuk menyelesaikan 1 repetisi penuh",
+                "durasi_tahan_detik": 1,
+                "sudut_leher": 168.0,
+                "sudut_punggung": 175.0,
+                "toleransi_derajat": 15,
+                "pose_key": "push_up_top",
+            },
+        ],
     },
 
     # ---------------- 3. KOREKSI PUNGGUNG & TULANG BELAKANG (8 VARIASI) ----------------
@@ -910,6 +991,33 @@ def get_all_exercise_presets() -> List[Dict[str, Any]]:
             "petunjuk_koreksi": p.get("petunjuk_koreksi", "Pertahankan postur tegak ergonomis."),
         }
 
+        # Multi-step skeleton handling (bisa menambah/mengurangi step pose pelatih)
+        raw_steps = p.get("pose_steps")
+        if raw_steps and isinstance(raw_steps, list):
+            steps_data = []
+            for s in raw_steps:
+                s_dict = dict(s)
+                s_key = s_dict.get("pose_key") or p["pose_key"]
+                s_dict["landmarks"] = generate_standard_skeleton(s_key)
+                steps_data.append(s_dict)
+            p["pose_steps"] = steps_data
+            p["sudut_target"]["pose_steps"] = steps_data
+        else:
+            # Default single step model skeleton
+            default_step = {
+                "step_id": f"{p['preset_id']}-step-1",
+                "urutan": 1,
+                "nama_step": f"Fase 1: {p['nama']}",
+                "instruksi": p.get("petunjuk_koreksi", "Pertahankan postur target"),
+                "durasi_tahan_detik": p.get("durasi_detik", 5),
+                "sudut_leher": p["sudut_leher"],
+                "sudut_punggung": p["sudut_punggung"],
+                "toleransi_derajat": p.get("toleransi_derajat", 15),
+                "landmarks": skeleton,
+            }
+            p["pose_steps"] = [default_step]
+            p["sudut_target"]["pose_steps"] = [default_step]
+
         presets_output.append(p)
 
     return presets_output
@@ -966,6 +1074,51 @@ DEFAULT_TYPES_DATA = [
                 "is_battle": True,
                 "pose_key": "wall_angel",
             },
+            {
+                "nama": "Push-Up Alignment (Multi-Step Rep)",
+                "deskripsi": "Latihan multi-fase posisi atas (plank), turun dada rendah, lalu dorong naik kembali untuk +1 repetisi.",
+                "target_otot": "Pectoralis major, Triceps, Deltoid, Core",
+                "durasi_detik": 5,
+                "reps": 10,
+                "tingkat": "menengah",
+                "is_battle": True,
+                "pose_key": "push_up_top",
+                "pose_steps": [
+                    {
+                        "step_id": "pushup-step-1",
+                        "urutan": 1,
+                        "nama_step": "Fase 1: Posisi Atas (Plank Awal)",
+                        "instruksi": "Kedua tangan lurus di bawah bahu, tahan posisi tubuh lurus horizontal",
+                        "durasi_tahan_detik": 2,
+                        "sudut_leher": 168.0,
+                        "sudut_punggung": 175.0,
+                        "toleransi_derajat": 15,
+                        "pose_key": "push_up_top",
+                    },
+                    {
+                        "step_id": "pushup-step-2",
+                        "urutan": 2,
+                        "nama_step": "Fase 2: Posisi Turun (Siku 90° / Dada Rendah)",
+                        "instruksi": "Tekuk siku ke samping 90 derajat, turunkan dada mendekati matras secara stabil",
+                        "durasi_tahan_detik": 2,
+                        "sudut_leher": 165.0,
+                        "sudut_punggung": 172.0,
+                        "toleransi_derajat": 15,
+                        "pose_key": "push_up_bottom",
+                    },
+                    {
+                        "step_id": "pushup-step-3",
+                        "urutan": 3,
+                        "nama_step": "Fase 3: Dorong Naik Kembali ke Atas (+1 Rep)",
+                        "instruksi": "Dorong kuat tubuh kembali ke posisi plank atas untuk menyelesaikan 1 repetisi penuh",
+                        "durasi_tahan_detik": 1,
+                        "sudut_leher": 168.0,
+                        "sudut_punggung": 175.0,
+                        "toleransi_derajat": 15,
+                        "pose_key": "push_up_top",
+                    },
+                ],
+            },
         ],
     },
     {
@@ -1013,6 +1166,17 @@ def seed_default_exercises(db: Session, force: bool = False) -> Dict[str, Any]:
             sudut_leher = analisis["sudut_leher"] if analisis.get("valid") else 168.0
             sudut_punggung = analisis["sudut_punggung"] if analisis.get("valid") else 174.0
 
+            sudut_target_dict: Dict[str, Any] = {"sudut_leher": sudut_leher, "sudut_punggung": sudut_punggung}
+            raw_steps = e_data.get("pose_steps")
+            if raw_steps:
+                steps_data = []
+                for s in raw_steps:
+                    s_dict = dict(s)
+                    s_key = s_dict.get("pose_key") or e_data["pose_key"]
+                    s_dict["landmarks"] = generate_standard_skeleton(s_key)
+                    steps_data.append(s_dict)
+                sudut_target_dict["pose_steps"] = steps_data
+
             if not existing:
                 # Cek barangkali nama serupa
                 existing_by_name = db.query(Exercise).filter_by(nama=e_data["nama"]).first()
@@ -1022,6 +1186,7 @@ def seed_default_exercises(db: Session, force: bool = False) -> Dict[str, Any]:
                         existing_by_name.skeleton_data = skeleton
                         existing_by_name.sudut_leher = sudut_leher
                         existing_by_name.sudut_punggung = sudut_punggung
+                        existing_by_name.sudut_target = sudut_target_dict
                         existing_by_name.is_battle = True
                         updated_exercises += 1
                     continue
@@ -1031,7 +1196,7 @@ def seed_default_exercises(db: Session, force: bool = False) -> Dict[str, Any]:
                     nama=e_data["nama"],
                     deskripsi=e_data["deskripsi"],
                     target_otot=e_data["target_otot"],
-                    sudut_target={"sudut_leher": sudut_leher, "sudut_punggung": sudut_punggung},
+                    sudut_target=sudut_target_dict,
                     skeleton_data=skeleton,
                     sudut_leher=sudut_leher,
                     sudut_punggung=sudut_punggung,
@@ -1047,6 +1212,7 @@ def seed_default_exercises(db: Session, force: bool = False) -> Dict[str, Any]:
                     existing.skeleton_data = skeleton
                     existing.sudut_leher = sudut_leher
                     existing.sudut_punggung = sudut_punggung
+                    existing.sudut_target = sudut_target_dict
                     existing.is_battle = True
                     updated_exercises += 1
 
