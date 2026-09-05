@@ -70,3 +70,60 @@ def test_set_admin_endpoint(client, admin_headers, user):
     assert db_user["role"] == "admin"
 
 
+def test_exercise_presets_endpoint(client, admin_headers):
+    r = client.get("/api/admin/exercise-presets", headers=admin_headers)
+    assert r.status_code == 200
+    presets = r.json()
+    assert len(presets) >= 30
+    assert any(p["preset_id"] == "chin_tuck_desk" for p in presets)
+    assert any(p["kategori_key"] == "leher" for p in presets)
+    assert any(p["kategori_key"] == "bahu" for p in presets)
+    assert any(p["kategori_key"] == "punggung" for p in presets)
+    assert any(p["kategori_key"] == "pinggul" for p in presets)
+    assert any(p["kategori_key"] == "kantor" for p in presets)
+
+    # Filter kategori
+    r_filtered = client.get("/api/admin/exercise-presets?kategori=leher", headers=admin_headers)
+    assert r_filtered.status_code == 200
+    leher_presets = r_filtered.json()
+    assert len(leher_presets) >= 8
+    assert all("leher" in p["kategori_key"].lower() or "leher" in p["kategori_rekomendasi"].lower() for p in leher_presets)
+
+
+def test_batch_exercises_and_extended_pose_items(client, admin_headers):
+    # Buat jenis latihan
+    t = client.post("/api/admin/exercise-types", json={"nama": "Koreksi Batch Test", "deskripsi": "Testing batch"}, headers=admin_headers)
+    assert t.status_code == 201
+    tid = t.json()["type_id"]
+
+    # Ambil 3 preset variasi gerakan
+    presets = client.get("/api/admin/exercise-presets", headers=admin_headers).json()[:3]
+    batch_payload = []
+    for p in presets:
+        batch_payload.append({
+            "nama": p["nama"],
+            "deskripsi": p["deskripsi"],
+            "target_otot": p["target_otot"],
+            "tingkat": p["tingkat"],
+            "durasi_detik": p["durasi_detik"],
+            "reps": p["reps"],
+            "is_battle": p["is_battle"],
+            "skeleton_data": p["skeleton_data"],
+            "sudut_target": p["sudut_target"],
+        })
+
+    res = client.post(f"/api/admin/exercise-types/{tid}/batch-exercises", json=batch_payload, headers=admin_headers)
+    assert res.status_code == 201, res.text
+    created = res.json()
+    assert len(created) == 3
+    for c in created:
+        assert c["type_id"] == tid
+        assert c["sudut_target"] is not None
+        assert "orientasi_kamera" in c["sudut_target"]
+        assert "posisi_tubuh" in c["sudut_target"]
+        assert "variasi_gerakan" in c["sudut_target"]
+        assert c["sudut_leher"] is not None
+        assert c["sudut_punggung"] is not None
+
+
+

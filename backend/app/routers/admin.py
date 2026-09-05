@@ -19,6 +19,7 @@ from app.models import (
 )
 from app.security import decode_access_token
 from app.services.pose_analysis import analisis_postur_dari_landmarks
+from app.services.default_exercises import get_all_exercise_presets
 
 router = APIRouter(prefix="/api/admin", tags=["Admin"])
 
@@ -144,6 +145,23 @@ def admin_delete_exercise_type(type_id: int, admin: User = Depends(require_admin
     db.commit()
 
 
+@router.get("/exercise-presets")
+def admin_get_exercise_presets(
+    kategori: Optional[str] = None,
+    admin: User = Depends(require_admin),
+):
+    """Daftar katalog variasi preset gerakan terapi postur (32 variasi kaya) lengkap dengan skeleton."""
+    presets = get_all_exercise_presets()
+    if kategori:
+        kat_clean = kategori.strip().lower()
+        presets = [
+            p for p in presets
+            if kat_clean in p.get("kategori_key", "").lower()
+            or kat_clean in p.get("kategori_rekomendasi", "").lower()
+        ]
+    return presets
+
+
 @router.post("/exercise-types/{type_id}/exercises", response_model=ExerciseOut, status_code=201)
 def admin_create_child_exercise(type_id: int, payload: ExerciseCreate, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
     """Tambah gerakan (child) ke dalam jenis latihan. skeleton_data direkam dari kamera admin."""
@@ -158,11 +176,52 @@ def admin_create_child_exercise(type_id: int, payload: ExerciseCreate, admin: Us
         if analisis.get("valid"):
             data["sudut_leher"] = analisis["sudut_leher"]
             data["sudut_punggung"] = analisis["sudut_punggung"]
+    if not data.get("sudut_leher") and isinstance(data.get("sudut_target"), dict):
+        data["sudut_leher"] = data["sudut_target"].get("sudut_leher")
+    if not data.get("sudut_punggung") and isinstance(data.get("sudut_target"), dict):
+        data["sudut_punggung"] = data["sudut_target"].get("sudut_punggung")
     ex = Exercise(**data)
     db.add(ex)
     db.commit()
     db.refresh(ex)
     return ex
+
+
+@router.post("/exercise-types/{type_id}/batch-exercises", response_model=List[ExerciseOut], status_code=201)
+def admin_create_batch_exercises(
+    type_id: int,
+    payload: List[ExerciseCreate],
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Tambah banyak variasi gerakan sekaligus ke dalam jenis latihan."""
+    ex_type = db.query(ExerciseType).filter_by(type_id=type_id).first()
+    if not ex_type:
+        raise HTTPException(404, "Jenis latihan tidak ditemukan.")
+
+    created_items: List[Exercise] = []
+    for item in payload:
+        data = item.model_dump()
+        data["type_id"] = type_id
+        skeleton = data.get("skeleton_data")
+        if skeleton and len(skeleton) >= 25:
+            analisis = analisis_postur_dari_landmarks(skeleton)
+            if analisis.get("valid"):
+                data.setdefault("sudut_leher", analisis["sudut_leher"])
+                data.setdefault("sudut_punggung", analisis["sudut_punggung"])
+        if not data.get("sudut_leher") and isinstance(data.get("sudut_target"), dict):
+            data["sudut_leher"] = data["sudut_target"].get("sudut_leher")
+        if not data.get("sudut_punggung") and isinstance(data.get("sudut_target"), dict):
+            data["sudut_punggung"] = data["sudut_target"].get("sudut_punggung")
+
+        ex = Exercise(**data)
+        db.add(ex)
+        created_items.append(ex)
+
+    db.commit()
+    for ex in created_items:
+        db.refresh(ex)
+    return created_items
 
 
 @router.post("/exercises", response_model=ExerciseOut, status_code=201)
@@ -179,6 +238,10 @@ def admin_create_exercise(payload: ExerciseCreate, admin: User = Depends(require
         if analisis.get("valid"):
             data["sudut_leher"] = analisis["sudut_leher"]
             data["sudut_punggung"] = analisis["sudut_punggung"]
+    if not data.get("sudut_leher") and isinstance(data.get("sudut_target"), dict):
+        data["sudut_leher"] = data["sudut_target"].get("sudut_leher")
+    if not data.get("sudut_punggung") and isinstance(data.get("sudut_target"), dict):
+        data["sudut_punggung"] = data["sudut_target"].get("sudut_punggung")
     ex = Exercise(**data)
     db.add(ex)
     db.commit()
@@ -198,6 +261,10 @@ def admin_record_pose(payload: ExerciseCreate, admin: User = Depends(require_adm
         raise HTTPException(400, "Landmark tidak valid untuk analisis postur.")
     data["sudut_leher"] = analisis["sudut_leher"]
     data["sudut_punggung"] = analisis["sudut_punggung"]
+    if not data.get("sudut_leher") and isinstance(data.get("sudut_target"), dict):
+        data["sudut_leher"] = data["sudut_target"].get("sudut_leher")
+    if not data.get("sudut_punggung") and isinstance(data.get("sudut_target"), dict):
+        data["sudut_punggung"] = data["sudut_target"].get("sudut_punggung")
     ex = Exercise(**data)
     db.add(ex)
     db.commit()

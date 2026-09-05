@@ -3,7 +3,7 @@ import {
   Play, Pause, RotateCcw, Award, HeartPulse, Camera, CameraOff, Target,
   AlertTriangle, Plus, Pencil, Trash2, ShieldCheck, Swords, CheckCircle2,
   X, Save, Timer, Square, Search, FolderPlus, RefreshCw, Users, Check,
-  Sparkles, Layers
+  Sparkles, Layers, Sliders, Compass, HelpCircle, CheckSquare, Info
 } from 'lucide-react';
 import {
   Button, Card, Badge, Progress, Pill, PillContent,
@@ -16,6 +16,42 @@ import { SkeletonOverlay, type Landmark } from '../components/SkeletonOverlay';
 import { usePoseDetector } from '../hooks/usePoseDetector';
 import type { PageTab } from '../components/Navbar';
 
+export interface SudutTargetMeta {
+  orientasi_kamera?: 'frontal' | 'sagital_kanan' | 'sagital_kiri' | 'oblique' | string;
+  posisi_tubuh?: 'berdiri' | 'duduk' | 'dinding' | 'matras' | 'tengkurap' | string;
+  variasi_gerakan?: string;
+  peralatan?: string;
+  toleransi_derajat?: number;
+  ambang_akurasi?: number;
+  petunjuk_koreksi?: string;
+  sudut_leher?: number;
+  sudut_punggung?: number;
+  [key: string]: unknown;
+}
+
+export interface ExercisePreset {
+  preset_id: string;
+  nama: string;
+  variasi: string;
+  kategori_rekomendasi: string;
+  target_otot: string;
+  deskripsi: string;
+  tingkat: string;
+  posisi_tubuh: string;
+  orientasi_kamera: string;
+  peralatan: string;
+  sudut_leher: number;
+  sudut_punggung: number;
+  toleransi_derajat: number;
+  ambang_akurasi: number;
+  petunjuk_koreksi: string;
+  durasi_detik: number;
+  reps: number;
+  is_battle: boolean;
+  skeleton_data?: Landmark[];
+  sudut_target?: SudutTargetMeta;
+}
+
 export interface ExerciseItem {
   exercise_id: number;
   type_id?: number;
@@ -23,7 +59,7 @@ export interface ExerciseItem {
   nama: string;
   deskripsi: string | null;
   target_otot: string | null;
-  sudut_target: Record<string, number> | null;
+  sudut_target: SudutTargetMeta | null;
   skeleton_data: Landmark[] | null;
   sudut_leher: number | null;
   sudut_punggung: number | null;
@@ -148,6 +184,28 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
   const [itemFormSkeleton, setItemFormSkeleton] = useState<Landmark[] | null>(null);
   const [savingItem, setSavingItem] = useState(false);
 
+  // Extended pose recording & movement variation items
+  const [itemFormVariasi, setItemFormVariasi] = useState('Standar');
+  const [itemFormPosisi, setItemFormPosisi] = useState('berdiri');
+  const [itemFormOrientasi, setItemFormOrientasi] = useState('frontal');
+  const [itemFormPeralatan, setItemFormPeralatan] = useState('Tanpa Alat');
+  const [itemFormSudutLeher, setItemFormSudutLeher] = useState('168');
+  const [itemFormSudutPunggung, setItemFormSudutPunggung] = useState('175');
+  const [itemFormToleransi, setItemFormToleransi] = useState('15');
+  const [itemFormAmbangAkurasi, setItemFormAmbangAkurasi] = useState('75');
+  const [itemFormPetunjukKoreksi, setItemFormPetunjukKoreksi] = useState('');
+
+  // Presets & multi-variation state
+  const [presets, setPresets] = useState<ExercisePreset[]>([]);
+  const [loadingPresets, setLoadingPresets] = useState(false);
+  const [showPresetsModal, setShowPresetsModal] = useState(false);
+  const [presetSearch, setPresetSearch] = useState('');
+  const [presetCatFilter, setPresetCatFilter] = useState('semua');
+  const [presetPosFilter, setPresetPosFilter] = useState('semua');
+  const [selectedPresetIds, setSelectedPresetIds] = useState<string[]>([]);
+  const [batchAdding, setBatchAdding] = useState(false);
+  const [batchModeActive, setBatchModeActive] = useState(false);
+
   // Admin Recorder Camera & Pose Capture
   const adminVideoRef = useRef<HTMLVideoElement | null>(null);
   const [adminCamActive, setAdminCamActive] = useState(false);
@@ -168,6 +226,28 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   }), [token]);
+
+  const fetchPresets = useCallback(async () => {
+    if (!token) return;
+    setLoadingPresets(true);
+    try {
+      const res = await fetch(`${apiUrl()}/api/admin/exercise-presets`, { headers: authHeaders() });
+      if (res.ok) {
+        const data = await res.json();
+        setPresets(data);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoadingPresets(false);
+    }
+  }, [token, authHeaders]);
+
+  useEffect(() => {
+    if (isAdmin && token) {
+      fetchPresets();
+    }
+  }, [isAdmin, token, fetchPresets]);
 
   // Load exercises from backend
   const loadExercises = useCallback(async (selectId?: number) => {
@@ -453,8 +533,17 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
 
     setEditingExerciseId(null);
     setItemFormNama('');
+    setItemFormVariasi('Standar');
     setItemFormDeskripsi('');
     setItemFormTargetOtot('');
+    setItemFormPosisi('berdiri');
+    setItemFormOrientasi('frontal');
+    setItemFormPeralatan('Tanpa Alat');
+    setItemFormSudutLeher('168');
+    setItemFormSudutPunggung('175');
+    setItemFormToleransi('15');
+    setItemFormAmbangAkurasi('75');
+    setItemFormPetunjukKoreksi('');
     setItemFormDurasi('5');
     setItemFormReps('10');
     setItemFormTingkat('pemula');
@@ -482,9 +571,151 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
     setItemFormIsBattle(Boolean(ex.is_battle));
     setItemFormSkeleton(ex.skeleton_data || null);
     setItemFormTypeId(ex.type_id || (types[0]?.type_id ?? 1));
-    setAdminCamError(null);
 
+    const st = ex.sudut_target || {};
+    setItemFormVariasi(st.variasi_gerakan || 'Standar');
+    setItemFormPosisi(st.posisi_tubuh || 'berdiri');
+    setItemFormOrientasi(st.orientasi_kamera || 'frontal');
+    setItemFormPeralatan(st.peralatan || 'Tanpa Alat');
+    setItemFormSudutLeher(String(st.sudut_leher ?? ex.sudut_leher ?? 168));
+    setItemFormSudutPunggung(String(st.sudut_punggung ?? ex.sudut_punggung ?? 175));
+    setItemFormToleransi(String(st.toleransi_derajat ?? 15));
+    setItemFormAmbangAkurasi(String(st.ambang_akurasi ?? 75));
+    setItemFormPetunjukKoreksi(st.petunjuk_koreksi || '');
+
+    setAdminCamError(null);
     setShowItemModal(true);
+  };
+
+  const applyPresetToItemForm = (preset: ExercisePreset) => {
+    setItemFormNama(preset.nama);
+    setItemFormVariasi(preset.variasi || 'Standar');
+    setItemFormDeskripsi(preset.deskripsi || '');
+    setItemFormTargetOtot(preset.target_otot || '');
+    setItemFormPosisi(preset.posisi_tubuh || 'berdiri');
+    setItemFormOrientasi(preset.orientasi_kamera || 'frontal');
+    setItemFormPeralatan(preset.peralatan || 'Tanpa Alat');
+    setItemFormSudutLeher(String(preset.sudut_leher ?? 168));
+    setItemFormSudutPunggung(String(preset.sudut_punggung ?? 175));
+    setItemFormToleransi(String(preset.toleransi_derajat ?? 15));
+    setItemFormAmbangAkurasi(String(preset.ambang_akurasi ?? 75));
+    setItemFormPetunjukKoreksi(preset.petunjuk_koreksi || '');
+    setItemFormReps(String(preset.reps || 10));
+    setItemFormTingkat(preset.tingkat || 'pemula');
+    setItemFormDurasi(String(preset.durasi_detik || 5));
+    setItemFormIsBattle(Boolean(preset.is_battle));
+    if (preset.skeleton_data && preset.skeleton_data.length >= 25) {
+      setItemFormSkeleton(preset.skeleton_data);
+    }
+    setShowPresetsModal(false);
+    setShowItemModal(true);
+  };
+
+  const handleQuickAddPreset = async (preset: ExercisePreset, targetTypeId?: number) => {
+    const typeId = targetTypeId || itemFormTypeId || (types[0]?.type_id ?? 1);
+    if (!typeId) {
+      setErrorMsg('Pilih kategori latihan terlebih dahulu.');
+      return;
+    }
+    try {
+      const payload = {
+        nama: `${preset.nama} (${preset.variasi})`,
+        deskripsi: preset.deskripsi,
+        target_otot: preset.target_otot,
+        durasi_detik: preset.durasi_detik,
+        reps: preset.reps,
+        tingkat: preset.tingkat,
+        is_battle: preset.is_battle,
+        sudut_leher: preset.sudut_leher,
+        sudut_punggung: preset.sudut_punggung,
+        skeleton_data: preset.skeleton_data || null,
+        sudut_target: {
+          variasi_gerakan: preset.variasi,
+          posisi_tubuh: preset.posisi_tubuh,
+          orientasi_kamera: preset.orientasi_kamera,
+          peralatan: preset.peralatan,
+          sudut_leher: preset.sudut_leher,
+          sudut_punggung: preset.sudut_punggung,
+          toleransi_derajat: preset.toleransi_derajat,
+          ambang_akurasi: preset.ambang_akurasi,
+          petunjuk_koreksi: preset.petunjuk_koreksi,
+        },
+      };
+      const res = await fetch(`${apiUrl()}/api/admin/exercise-types/${typeId}/exercises`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        const saved = await res.json();
+        setSuccessMsg(`✓ Variasi "${preset.nama} (${preset.variasi})" berhasil ditambahkan!`);
+        setTimeout(() => setSuccessMsg(null), 3500);
+        await loadExercises(saved.exercise_id);
+      }
+    } catch {
+      setErrorMsg('Gagal menambahkan variasi gerakan.');
+    }
+  };
+
+  const handleBatchAddPresets = async (targetTypeId?: number) => {
+    const typeId = targetTypeId || itemFormTypeId || (types[0]?.type_id ?? 1);
+    if (!typeId) {
+      setErrorMsg('Pilih kategori latihan terlebih dahulu.');
+      return;
+    }
+    if (selectedPresetIds.length === 0) {
+      alert('Pilih setidaknya satu variasi gerakan.');
+      return;
+    }
+    const toAdd = presets.filter(p => selectedPresetIds.includes(p.preset_id));
+    setBatchAdding(true);
+    try {
+      const items = toAdd.map(p => ({
+        nama: `${p.nama} (${p.variasi})`,
+        deskripsi: p.deskripsi,
+        target_otot: p.target_otot,
+        durasi_detik: p.durasi_detik,
+        reps: p.reps,
+        tingkat: p.tingkat,
+        is_battle: p.is_battle,
+        sudut_leher: p.sudut_leher,
+        sudut_punggung: p.sudut_punggung,
+        skeleton_data: p.skeleton_data || null,
+        sudut_target: {
+          variasi_gerakan: p.variasi,
+          posisi_tubuh: p.posisi_tubuh,
+          orientasi_kamera: p.orientasi_kamera,
+          peralatan: p.peralatan,
+          sudut_leher: p.sudut_leher,
+          sudut_punggung: p.sudut_punggung,
+          toleransi_derajat: p.toleransi_derajat,
+          ambang_akurasi: p.ambang_akurasi,
+          petunjuk_koreksi: p.petunjuk_koreksi,
+        },
+      }));
+
+      const res = await fetch(`${apiUrl()}/api/admin/exercise-types/${typeId}/batch-exercises`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ exercises: items }),
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        setSuccessMsg(`✓ Berhasil menambahkan ${result.added_count} variasi gerakan sekaligus!`);
+        setTimeout(() => setSuccessMsg(null), 4000);
+        setSelectedPresetIds([]);
+        setShowPresetsModal(false);
+        await loadExercises();
+      } else {
+        const d = await res.json().catch(() => ({}));
+        setErrorMsg(d?.detail || 'Gagal menambahkan variasi gerakan batch.');
+      }
+    } catch {
+      setErrorMsg('Koneksi ke server bermasalah saat batch add.');
+    } finally {
+      setBatchAdding(false);
+    }
   };
 
   const closeItemModal = () => {
@@ -614,6 +845,19 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
       reps: Math.max(1, Number(itemFormReps) || 10),
       tingkat: itemFormTingkat,
       is_battle: itemFormIsBattle,
+      sudut_leher: Number(itemFormSudutLeher) || 168,
+      sudut_punggung: Number(itemFormSudutPunggung) || 175,
+      sudut_target: {
+        orientasi_kamera: itemFormOrientasi,
+        posisi_tubuh: itemFormPosisi,
+        variasi_gerakan: itemFormVariasi.trim() || undefined,
+        peralatan: itemFormPeralatan.trim() || undefined,
+        sudut_leher: Number(itemFormSudutLeher) || 168,
+        sudut_punggung: Number(itemFormSudutPunggung) || 175,
+        toleransi_derajat: Number(itemFormToleransi) || 15,
+        ambang_akurasi: Number(itemFormAmbangAkurasi) || 75,
+        petunjuk_koreksi: itemFormPetunjukKoreksi.trim() || undefined,
+      },
     };
 
     if (itemFormSkeleton && itemFormSkeleton.length >= 25) {
@@ -742,6 +986,16 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
         {/* Admin Quick Action Buttons */}
         {isAdmin && (
           <div className="flex items-center gap-2 flex-wrap shrink-0">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowPresetsModal(true)}
+              className="text-xs font-semibold text-purple-600 dark:text-purple-400 border-purple-300 dark:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-950/40"
+            >
+              <Sparkles size={14} className="text-purple-500" />
+              <span>Bank Variasi Gerakan ({presets.length || 32})</span>
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -897,12 +1151,19 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                   >
                     <div className="flex items-start justify-between gap-2 mb-1.5">
                       <div className="min-w-0 flex-1">
-                        <span className={cn(
-                          "text-sm font-bold block truncate",
-                          isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'
-                        )}>
-                          {ex.nama}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                          <span className={cn(
+                            "text-sm font-bold truncate",
+                            isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'
+                          )}>
+                            {ex.nama}
+                          </span>
+                          {ex.sudut_target?.variasi_gerakan && (
+                            <span className="text-[10px] font-semibold px-1.5 py-0.2 bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 rounded border border-purple-200 dark:border-purple-800/60">
+                              {ex.sudut_target.variasi_gerakan}
+                            </span>
+                          )}
+                        </div>
                         {ex.target_otot && (
                           <span className="text-[11px] text-slate-500 dark:text-slate-400 block truncate">
                             Target: {ex.target_otot}
@@ -916,6 +1177,11 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                           <Badge variant="info" className="text-[9px] h-4 px-1.5 font-medium">
                             {ex.type}
                           </Badge>
+                        )}
+                        {ex.sudut_target?.posisi_tubuh && (
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded capitalize">
+                            {ex.sudut_target.posisi_tubuh}
+                          </span>
                         )}
                         {ex.is_battle && (
                           <Badge variant="warning" className="text-[9px] h-4 px-1.5 font-bold flex items-center gap-0.5">
@@ -1359,6 +1625,43 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
               </div>
             )}
 
+            {/* QUICK VARIATION SELECTOR BANNER */}
+            <div className="mb-4 p-3 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Sparkles size={16} className="text-purple-600 dark:text-purple-400 shrink-0" />
+                <div>
+                  <span className="font-bold text-slate-900 dark:text-white text-xs">Pilih Cepat dari Bank Variasi Gerakan ({presets.length || 32} Pilihan)</span>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Pilih templat gerakan untuk otomatis mengisi sudut, variasi biomekanika, dan skeleton referensi.</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <select
+                  className="text-xs bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-700 rounded-lg px-2.5 py-1.5 font-medium text-slate-800 dark:text-slate-200 max-w-xs truncate"
+                  defaultValue=""
+                  onChange={e => {
+                    const found = presets.find(p => p.preset_id === e.target.value);
+                    if (found) applyPresetToItemForm(found);
+                  }}
+                >
+                  <option value="" disabled>-- Pilih Templat Variasi --</option>
+                  {presets.map(p => (
+                    <option key={p.preset_id} value={p.preset_id}>
+                      [{p.kategori_rekomendasi}] {p.nama} ({p.variasi})
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setShowPresetsModal(true)}
+                  className="text-xs shrink-0 bg-purple-100 hover:bg-purple-200 text-purple-800 dark:bg-purple-900/60 dark:text-purple-200 font-semibold"
+                >
+                  Katalog Bank
+                </Button>
+              </div>
+            </div>
+
             <div className="space-y-4 text-xs">
               {/* SECTION: LIVE CAMERA & SKELETON CAPTURE */}
               <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60">
@@ -1369,7 +1672,7 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                   </div>
 
                   {/* Battle Multiplayer Checkbox */}
-                  <label className="flex items-center gap-1.5 cursor-pointer bg-purple-500/10 dark:bg-purple-500/20 px-2 py-1 rounded-lg border border-purple-500/30">
+                  <label className="flex items-center gap-1.5 cursor-pointer bg-purple-500/10 dark:bg-purple-500/20 px-2.5 py-1 rounded-lg border border-purple-500/30">
                     <input
                       type="checkbox"
                       checked={itemFormIsBattle}
@@ -1380,6 +1683,62 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                       <Swords size={11} /> Bisa Battle Multiplayer
                     </span>
                   </label>
+                </div>
+
+                {/* Camera & Body Posture Quick Selectors */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                  <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Orientasi Kamera Target</span>
+                    <div className="flex gap-1">
+                      {[
+                        { id: 'frontal', label: 'Tampak Depan' },
+                        { id: 'sagital_kanan', label: 'Samping Kanan' },
+                        { id: 'sagital_kiri', label: 'Samping Kiri' },
+                        { id: 'oblique', label: 'Serong 45°' },
+                      ].map(ori => (
+                        <button
+                          key={ori.id}
+                          type="button"
+                          onClick={() => setItemFormOrientasi(ori.id)}
+                          className={cn(
+                            'flex-1 text-[10px] py-1 px-1 rounded text-center transition-colors font-medium',
+                            itemFormOrientasi === ori.id
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                          )}
+                        >
+                          {ori.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Posisi / Sikap Tubuh</span>
+                    <div className="flex gap-1">
+                      {[
+                        { id: 'berdiri', label: 'Berdiri' },
+                        { id: 'duduk', label: 'Duduk' },
+                        { id: 'dinding', label: 'Dinding' },
+                        { id: 'matras', label: 'Matras' },
+                        { id: 'tengkurap', label: 'Tengkurap' },
+                      ].map(pos => (
+                        <button
+                          key={pos.id}
+                          type="button"
+                          onClick={() => setItemFormPosisi(pos.id)}
+                          className={cn(
+                            'flex-1 text-[10px] py-1 px-1 rounded text-center transition-colors font-medium',
+                            itemFormPosisi === pos.id
+                              ? 'bg-purple-600 text-white'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                          )}
+                        >
+                          {pos.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Video / Skeleton Viewport in Modal */}
@@ -1397,8 +1756,8 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                     landmarks={itemFormSkeleton || adminLandmarks || generateFallbackSkeleton()}
                     width={560}
                     height={360}
-                    orientasi="frontal"
-                    showAngles={false}
+                    orientasi={itemFormOrientasi as any}
+                    showAngles={true}
                     color={itemFormSkeleton ? '#10b981' : '#8b5cf6'}
                     className="absolute inset-0"
                   />
@@ -1430,7 +1789,7 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                   )}
                 </div>
 
-                {/* Recorder Control Buttons */}
+                {/* Recorder Control Buttons & Duration Presets */}
                 <div className="flex flex-wrap items-center gap-2">
                   {!adminCamActive ? (
                     <Button
@@ -1444,6 +1803,37 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                     </Button>
                   ) : (
                     <>
+                      <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-300 dark:border-slate-700">
+                        <span className="text-[10px] font-bold text-slate-500 px-1.5">Durasi:</span>
+                        {[3, 5, 10, 15].map(d => (
+                          <button
+                            key={d}
+                            type="button"
+                            onClick={() => setRecordingDurationSec(d)}
+                            className={cn(
+                              'px-2 py-0.5 rounded text-[10px] font-bold transition-colors',
+                              recordingDurationSec === d
+                                ? 'bg-purple-600 text-white'
+                                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                            )}
+                          >
+                            {d}s
+                          </button>
+                        ))}
+                      </div>
+
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => startTimedPoseCapture(recordingDurationSec)}
+                        disabled={isRecordingTimer}
+                        className="flex-1 text-xs font-semibold"
+                        title={`Rekam pose multi-frame selama ${recordingDurationSec} detik`}
+                      >
+                        <Timer size={14} /> Rekam {recordingDurationSec}s Multi-Frame
+                      </Button>
+
                       <Button
                         type="button"
                         variant="success"
@@ -1451,21 +1841,9 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                         onClick={captureInstantPose}
                         disabled={isRecordingTimer || !adminLandmarks || adminLandmarks.length < 25}
                         className="flex-1 text-xs font-semibold"
-                        title="Ambil pose saat ini sebagai target"
+                        title="Ambil pose saat ini sebagai target instan"
                       >
-                        <Target size={14} /> Tangkap Pose Sekarang
-                      </Button>
-
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => startTimedPoseCapture(5)}
-                        disabled={isRecordingTimer}
-                        className="flex-1 text-xs font-semibold"
-                        title="Countdown 3 detik lalu rekam pose selama 5 detik"
-                      >
-                        <Timer size={14} /> Rekam 5s (Stabil)
+                        <Target size={14} /> Tangkap Instan
                       </Button>
 
                       <Button
@@ -1494,20 +1872,21 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                   )}
                 </div>
 
-                {itemFormSkeleton && (
-                  <div className="mt-2.5 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[11px] flex items-center gap-2">
-                    <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
-                    <span>
-                      Pose skeleton berhasil disimpan ({itemFormSkeleton.length} titik sendi). Anggota akan mencocokkan pose ini saat latihan & multiplayer battle.
+                {itemFormSkeleton && !isRecordingTimer && (
+                  <div className="mt-2.5 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[11px] flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
+                      Skeleton target aktif ({itemFormSkeleton.length} titik). Target sudut: Leher ~{itemFormSudutLeher}°, Punggung ~{itemFormSudutPunggung}°.
                     </span>
+                    <span className="text-[10px] font-bold bg-emerald-500/20 px-2 py-0.5 rounded">Toleransi: ±{itemFormToleransi}°</span>
                   </div>
                 )}
               </div>
 
-              {/* FORM FIELDS */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* EXTENDED FORM FIELDS */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 <div>
-                  <Label className="mb-1.5 block">Kategori Terapi *</Label>
+                  <Label className="mb-1 block font-semibold">Kategori Terapi *</Label>
                   <Select
                     value={String(itemFormTypeId)}
                     onChange={e => setItemFormTypeId(Number(e.target.value))}
@@ -1521,7 +1900,7 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                 </div>
 
                 <div>
-                  <Label className="mb-1.5 block">Nama Gerakan Terapi *</Label>
+                  <Label className="mb-1 block font-semibold">Nama Gerakan Terapi *</Label>
                   <Input
                     type="text"
                     placeholder="Contoh: Chin Tuck Alignment"
@@ -1531,7 +1910,29 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                 </div>
 
                 <div>
-                  <Label className="mb-1.5 block">Target Otot</Label>
+                  <Label className="mb-1 block font-semibold">Variasi / Modifikasi Gerakan</Label>
+                  <Input
+                    type="text"
+                    placeholder="Contoh: Duduk di Kursi Kantor"
+                    value={itemFormVariasi}
+                    onChange={e => setItemFormVariasi(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <Label className="mb-1 block font-semibold">Peralatan yang Digunakan</Label>
+                  <Select value={itemFormPeralatan} onChange={e => setItemFormPeralatan(e.target.value)}>
+                    <option value="Tanpa Alat">Tanpa Alat (Bodyweight)</option>
+                    <option value="Kursi Kerja">Kursi Kerja</option>
+                    <option value="Dinding">Dinding Rata</option>
+                    <option value="Matras">Matras Olahraga</option>
+                    <option value="Meja Kerja">Meja Kerja</option>
+                    <option value="Handuk/Strap">Handuk / Strap</option>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="mb-1 block font-semibold">Target Otot Utama</Label>
                   <Input
                     type="text"
                     placeholder="Contoh: Deep cervical flexors, Rhomboid"
@@ -1541,7 +1942,52 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                 </div>
 
                 <div>
-                  <Label className="mb-1.5 block">Tingkat Kesulitan</Label>
+                  <Label className="mb-1 block font-semibold">Target Sudut Leher (°)</Label>
+                  <Input
+                    type="number"
+                    min={90}
+                    max={180}
+                    value={itemFormSudutLeher}
+                    onChange={e => setItemFormSudutLeher(e.target.value)}
+                    placeholder="168"
+                  />
+                </div>
+
+                <div>
+                  <Label className="mb-1 block font-semibold">Target Sudut Punggung (°)</Label>
+                  <Input
+                    type="number"
+                    min={90}
+                    max={180}
+                    value={itemFormSudutPunggung}
+                    onChange={e => setItemFormSudutPunggung(e.target.value)}
+                    placeholder="175"
+                  />
+                </div>
+
+                <div>
+                  <Label className="mb-1 block font-semibold">Toleransi Sudut Deviasi</Label>
+                  <Select value={itemFormToleransi} onChange={e => setItemFormToleransi(e.target.value)}>
+                    <option value="8">±8° (Sangat Ketat / Presisi Tinggi)</option>
+                    <option value="12">±12° (Ketat Ergonomis)</option>
+                    <option value="15">±15° (Standar Terapi Normal)</option>
+                    <option value="20">±20° (Fleksibel / Pemula)</option>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="mb-1 block font-semibold">Ambang Akurasi Minimum AI</Label>
+                  <Select value={itemFormAmbangAkurasi} onChange={e => setItemFormAmbangAkurasi(e.target.value)}>
+                    <option value="60">60% (Toleransi Luas)</option>
+                    <option value="70">70% (Menengah)</option>
+                    <option value="75">75% (Rekomendasi Terapi)</option>
+                    <option value="80">80% (Standar Presisi)</option>
+                    <option value="85">85% (Ketat / Ahli)</option>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="mb-1 block font-semibold">Tingkat Kesulitan</Label>
                   <Select
                     value={itemFormTingkat}
                     onChange={e => setItemFormTingkat(e.target.value)}
@@ -1553,7 +1999,7 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                 </div>
 
                 <div>
-                  <Label className="mb-1.5 block">Durasi Tahan per Rep (Detik)</Label>
+                  <Label className="mb-1 block font-semibold">Durasi Tahan per Rep (Detik)</Label>
                   <Input
                     type="number"
                     min={1}
@@ -1564,7 +2010,7 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                 </div>
 
                 <div>
-                  <Label className="mb-1.5 block">Target Jumlah Repetisi</Label>
+                  <Label className="mb-1 block font-semibold">Target Jumlah Repetisi</Label>
                   <Input
                     type="number"
                     min={1}
@@ -1574,8 +2020,18 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                   />
                 </div>
 
-                <div className="sm:col-span-2">
-                  <Label className="mb-1.5 block">Instruksi & Deskripsi Gerakan</Label>
+                <div className="sm:col-span-2 lg:col-span-3">
+                  <Label className="mb-1 block font-semibold">Petunjuk Koreksi Real-Time AI (Cues)</Label>
+                  <Input
+                    type="text"
+                    placeholder="Contoh: Tarik dagu ke belakang secara horizontal, sejajarkan telinga dengan bahu"
+                    value={itemFormPetunjukKoreksi}
+                    onChange={e => setItemFormPetunjukKoreksi(e.target.value)}
+                  />
+                </div>
+
+                <div className="sm:col-span-2 lg:col-span-3">
+                  <Label className="mb-1 block font-semibold">Instruksi & Deskripsi Gerakan</Label>
                   <Textarea
                     placeholder="Tuliskan petunjuk posisi tubuh, arah gerakan, dan teknik bernapas untuk peserta..."
                     value={itemFormDeskripsi}
@@ -1586,7 +2042,7 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
                 <Button
                   variant="default"
                   size="sm"
@@ -1606,6 +2062,201 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                 </Button>
               </div>
             </div>
+          </Card>
+        </div>
+      )}
+
+      {/* ----------------------------------------------------------------- */}
+      {/* MODAL: BANK VARIASI GERAKAN TERAPI (32 PILIHAN PRESET)            */}
+      {/* ----------------------------------------------------------------- */}
+      {showPresetsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 overflow-y-auto animate-fadeIn" onClick={() => setShowPresetsModal(false)}>
+          <Card className="w-full max-w-4xl my-8 p-6 bg-white dark:bg-slate-900 shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[92vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <Sparkles size={18} className="text-purple-500" />
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">Bank Variasi Gerakan Terapi ({presets.length} Pilihan)</h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Pilih dari katalog gerakan terapi ergonomis & biomekanik. Tambah satuan atau pilih banyak sekaligus.</p>
+                </div>
+              </div>
+              <button onClick={() => setShowPresetsModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer">
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Filter Bar & Batch Toggle */}
+            <div className="space-y-2 mb-4">
+              <div className="flex flex-col sm:flex-row items-center gap-2">
+                <div className="relative flex-1 w-full">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    type="text"
+                    placeholder="Cari gerakan, variasi, atau otot..."
+                    value={presetSearch}
+                    onChange={e => setPresetSearch(e.target.value)}
+                    className="pl-8 text-xs h-8"
+                  />
+                </div>
+                <Select value={presetCatFilter} onChange={e => setPresetCatFilter(e.target.value)} className="text-xs h-8 sm:w-48">
+                  <option value="semua">Semua Kategori</option>
+                  <option value="leher">Leher & Servikal</option>
+                  <option value="bahu">Bahu & Torakal</option>
+                  <option value="punggung">Punggung & Tulang Belakang</option>
+                  <option value="panggul">Panggul & Tungkai</option>
+                </Select>
+                <Select value={presetPosFilter} onChange={e => setPresetPosFilter(e.target.value)} className="text-xs h-8 sm:w-36">
+                  <option value="semua">Semua Posisi</option>
+                  <option value="berdiri">Berdiri</option>
+                  <option value="duduk">Duduk</option>
+                  <option value="dinding">Dinding</option>
+                  <option value="matras">Matras</option>
+                  <option value="tengkurap">Tengkurap</option>
+                </Select>
+              </div>
+
+              <div className="flex items-center justify-between text-xs pt-1">
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant={batchModeActive ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => {
+                      setBatchModeActive(!batchModeActive);
+                      if (batchModeActive) setSelectedPresetIds([]);
+                    }}
+                    className="text-xs h-7 gap-1"
+                  >
+                    <CheckSquare size={13} />
+                    <span>{batchModeActive ? 'Matikan Mode Centang' : 'Mode Centang (Tambah Banyak Sekaligus)'}</span>
+                  </Button>
+                  {batchModeActive && (
+                    <span className="text-[11px] text-purple-600 dark:text-purple-400 font-semibold">
+                      {selectedPresetIds.length} variasi terpilih
+                    </span>
+                  )}
+                </div>
+
+                {batchModeActive && selectedPresetIds.length > 0 && (
+                  <Button
+                    type="button"
+                    variant="success"
+                    size="sm"
+                    onClick={() => handleBatchAddPresets()}
+                    disabled={batchAdding}
+                    className="text-xs h-7 font-bold bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    <Plus size={13} />
+                    <span>{batchAdding ? 'Menambahkan...' : `Tambah ${selectedPresetIds.length} Variasi ke Kategori`}</span>
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Presets Grid */}
+            {loadingPresets ? (
+              <div className="py-12 text-center text-xs text-slate-400">Memuat katalog preset variasi gerakan...</div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[58vh] overflow-y-auto pr-1">
+                {presets
+                  .filter(p => {
+                    if (presetCatFilter !== 'semua' && !p.kategori_rekomendasi.toLowerCase().includes(presetCatFilter)) return false;
+                    if (presetPosFilter !== 'semua' && p.posisi_tubuh !== presetPosFilter) return false;
+                    if (presetSearch) {
+                      const q = presetSearch.toLowerCase();
+                      return (
+                        p.nama.toLowerCase().includes(q) ||
+                        p.variasi.toLowerCase().includes(q) ||
+                        p.target_otot.toLowerCase().includes(q) ||
+                        p.deskripsi.toLowerCase().includes(q)
+                      );
+                    }
+                    return true;
+                  })
+                  .map(preset => {
+                    const isSelected = selectedPresetIds.includes(preset.preset_id);
+                    return (
+                      <div
+                        key={preset.preset_id}
+                        className={cn(
+                          'p-3.5 rounded-xl border transition-all text-xs flex flex-col justify-between',
+                          isSelected
+                            ? 'border-purple-500 bg-purple-50/70 dark:bg-purple-950/40 ring-1 ring-purple-500'
+                            : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 hover:border-slate-300 dark:hover:border-slate-700'
+                        )}
+                      >
+                        <div>
+                          <div className="flex items-start justify-between gap-2 mb-1.5">
+                            <div className="flex items-center gap-2">
+                              {batchModeActive && (
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={e => {
+                                    if (e.target.checked) setSelectedPresetIds(prev => [...prev, preset.preset_id]);
+                                    else setSelectedPresetIds(prev => prev.filter(id => id !== preset.preset_id));
+                                  }}
+                                  className="accent-purple-600 rounded cursor-pointer"
+                                />
+                              )}
+                              <div>
+                                <h4 className="font-bold text-slate-900 dark:text-white leading-tight">{preset.nama}</h4>
+                                <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-400">{preset.variasi}</span>
+                              </div>
+                            </div>
+                            <Badge variant="secondary" className="text-[9px] uppercase tracking-wider shrink-0 bg-purple-100 text-purple-700 dark:bg-purple-900/60 dark:text-purple-300 border-purple-300 dark:border-purple-700">
+                              {preset.kategori_rekomendasi}
+                            </Badge>
+                          </div>
+
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mb-2 leading-relaxed">
+                            {preset.deskripsi}
+                          </p>
+
+                          {/* Quick biomechanic pills */}
+                          <div className="flex flex-wrap gap-1 mb-2.5">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 capitalize">
+                              {preset.posisi_tubuh}
+                            </span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 capitalize">
+                              {preset.orientasi_kamera.replace('_', ' ')}
+                            </span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300">
+                              Leher {preset.sudut_leher}° · Punggung {preset.sudut_punggung}°
+                            </span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
+                              ±{preset.toleransi_derajat}° tol
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-1.5 pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                          <Button
+                            type="button"
+                            variant="default"
+                            size="sm"
+                            onClick={() => applyPresetToItemForm(preset)}
+                            className="flex-1 text-[11px] h-7 bg-purple-600 hover:bg-purple-700 text-white font-semibold"
+                          >
+                            <Sparkles size={12} /> Gunakan di Form
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleQuickAddPreset(preset)}
+                            className="text-[11px] h-7 px-2 border-emerald-500/40 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                            title="Tambah langsung ke kategori aktif"
+                          >
+                            <Plus size={12} /> Tambah Cepat
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
           </Card>
         </div>
       )}
