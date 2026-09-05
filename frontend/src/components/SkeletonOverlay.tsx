@@ -63,7 +63,17 @@ export const SkeletonOverlay: React.FC<SkeletonOverlayProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.clearRect(0, 0, width, height);
+    // Use the rendered size so the skeleton matches the container
+    // exactly (no letterboxing/misalignment).
+    const rect = canvas.getBoundingClientRect();
+    const drawW = rect.width || width;
+    const drawH = rect.height || height;
+
+    // Keep canvas backing store in sync for crisp rendering.
+    if (canvas.width !== drawW) canvas.width = drawW;
+    if (canvas.height !== drawH) canvas.height = drawH;
+
+    ctx.clearRect(0, 0, drawW, drawH);
 
     if (!landmarks || landmarks.length < 25) {
       return;
@@ -71,7 +81,7 @@ export const SkeletonOverlay: React.FC<SkeletonOverlayProps> = ({
 
     ctx.save();
     if (mirror) {
-      ctx.translate(width, 0);
+      ctx.translate(drawW, 0);
       ctx.scale(-1, 1);
     }
 
@@ -108,8 +118,8 @@ export const SkeletonOverlay: React.FC<SkeletonOverlayProps> = ({
       if (vis1 < 0.35 || vis2 < 0.35) return;
 
       ctx.beginPath();
-      ctx.moveTo(p1.x * width, p1.y * height);
-      ctx.lineTo(p2.x * width, p2.y * height);
+      ctx.moveTo(p1.x * drawW, p1.y * drawH);
+      ctx.lineTo(p2.x * drawW, p2.y * drawH);
       ctx.stroke();
     });
 
@@ -120,10 +130,10 @@ export const SkeletonOverlay: React.FC<SkeletonOverlayProps> = ({
     const rHip = landmarks[24];
 
     if (lSh && rSh && lHip && rHip) {
-      const midShoulderX = ((lSh.x + rSh.x) / 2) * width;
-      const midShoulderY = ((lSh.y + rSh.y) / 2) * height;
-      const midHipX = ((lHip.x + rHip.x) / 2) * width;
-      const midHipY = ((lHip.y + rHip.y) / 2) * height;
+      const midShoulderX = ((lSh.x + rSh.x) / 2) * drawW;
+      const midShoulderY = ((lSh.y + rSh.y) / 2) * drawH;
+      const midHipX = ((lHip.x + rHip.x) / 2) * drawW;
+      const midHipY = ((lHip.y + rHip.y) / 2) * drawH;
 
       ctx.setLineDash([4, 4]);
       ctx.lineWidth = 2.5;
@@ -140,8 +150,8 @@ export const SkeletonOverlay: React.FC<SkeletonOverlayProps> = ({
       const vis = pt.visibility ?? 1.0;
       if (vis < 0.35) return;
 
-      const px = pt.x * width;
-      const py = pt.y * height;
+      const px = pt.x * drawW;
+      const py = pt.y * drawH;
 
       // Key joints get special styling
       const isKeyJoint = [0, 7, 8, 11, 12, 13, 14, 23, 24].includes(idx);
@@ -166,8 +176,8 @@ export const SkeletonOverlay: React.FC<SkeletonOverlayProps> = ({
       const shoulder = landmarks[orientasi === 'lateral_kanan' ? 12 : 11];
 
       if (ear && shoulder && sudutLeher !== undefined) {
-        let labelX = (shoulder.x * width);
-        const labelY = (shoulder.y * height) - 20;
+        let labelX = (shoulder.x * drawW);
+        const labelY = (shoulder.y * drawH) - 20;
         if (mirror) labelX = width - labelX;
 
         // Badge pill background
@@ -194,8 +204,8 @@ export const SkeletonOverlay: React.FC<SkeletonOverlayProps> = ({
 
       const hip = landmarks[orientasi === 'lateral_kanan' ? 24 : 23];
       if (hip && sudutPunggung !== undefined) {
-        const labelY = (hip.y * height) - 10;
-        let labelX = (hip.x * width);
+        const labelY = (hip.y * drawH) - 10;
+        let labelX = (hip.x * drawW);
         if (mirror) labelX = width - labelX;
 
         ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
@@ -226,7 +236,7 @@ export const SkeletonOverlay: React.FC<SkeletonOverlayProps> = ({
       ref={canvasRef}
       width={width}
       height={height}
-      className={`absolute inset-0 pointer-events-none z-10 w-full h-full object-contain ${className}`}
+      className={`absolute inset-0 pointer-events-none z-10 w-full h-full ${className}`}
     />
   );
 };

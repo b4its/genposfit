@@ -49,7 +49,7 @@ export function App() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col justify-between selection:bg-blue-500 selection:text-white transition-colors duration-200"
+    <div className="min-h-screen flex flex-col selection:bg-blue-500 selection:text-white transition-colors duration-200"
       style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-main)' }}>
       {/* Navigation Bar */}
       <Navbar
@@ -69,7 +69,7 @@ export function App() {
 
       {/* Minimal Developer Tools Footer */}
       <footer
-        className="border-t py-6 text-xs font-mono transition-colors"
+        className="mt-auto border-t py-6 text-xs font-mono transition-colors"
         style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-surface)' }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">

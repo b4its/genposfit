@@ -113,7 +113,7 @@ asyncio.run(stream_posture())`,
   };
 
   return (
-    <div className="w-full bg-dev-grid min-h-screen pb-20">
+    <div className="w-full bg-dev-grid pb-20">
       {/* Top Banner Notice */}
       <div className="border-b py-2 text-center text-xs font-mono"
         style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-subtle)' }}>
@@ -124,8 +124,8 @@ asyncio.run(stream_posture())`,
       </div>
 
       {/* Hero Section */}
-      <section className="app-container pt-12 sm:pt-20 pb-16">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+      <section className="app-container pt-12 sm:pt-20 pb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           {/* Left Column: Heading & CTAs */}
           <div className="lg:col-span-7 flex flex-col items-start text-left">
             {/* Tag / Category Badge */}
@@ -139,7 +139,7 @@ asyncio.run(stream_posture())`,
               <span>BIOMECHANICAL ERGONOMICS & HEALTHCARE ENGINE</span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.15] mb-6">
+            <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight leading-[1.15] mb-6 max-w-xl">
               Empower healthier spines with{' '}
               <span className="bg-gradient-to-r from-blue-500 via-emerald-400 to-teal-500 bg-clip-text text-transparent">
                 developer-grade
@@ -154,10 +154,10 @@ asyncio.run(stream_posture())`,
             </p>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <button
                 onClick={() => setActiveTab('monitor')}
-                className="btn-primary w-full sm:w-auto"
+                className="btn-primary whitespace-nowrap"
               >
                 <Play size={16} className="fill-current" />
                 <span>Launch Live Monitor</span>
@@ -166,7 +166,7 @@ asyncio.run(stream_posture())`,
 
               <button
                 onClick={() => setActiveTab('register')}
-                className="btn-outline w-full sm:w-auto"
+                className="btn-outline whitespace-nowrap"
               >
                 <Shield size={16} className="text-emerald-500" />
                 <span>Calibrate Personal Baseline</span>
@@ -174,7 +174,7 @@ asyncio.run(stream_posture())`,
 
               <button
                 onClick={() => setActiveTab('exercises')}
-                className="btn-outline w-full sm:w-auto text-emerald-500 border-emerald-500/30"
+                className="btn-outline whitespace-nowrap text-emerald-500 border-emerald-500/30"
               >
                 <HeartPulse size={16} />
                 <span>Therapy Stretches</span>
