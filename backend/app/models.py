@@ -263,3 +263,31 @@ class BattleResult(Base):
     __table_args__ = (
         UniqueConstraint("battle_id", "user_id", name="uq_battle_participant"),
     )
+
+
+class GpcRewardTx(Base):
+    """
+    Riwayat distribusi token GPC on-chain (Sepolia) per periode (musim).
+    UNIQUE (periode, user_id) = idempoten: tombol admin tidak bisa mengirim
+    reward dua kali utk user pada musim yang sama, kecuali percobaan
+    berstatus 'gagal' (retry memakai baris yang sama).
+    """
+    __tablename__ = "gpc_reward_tx"
+
+    id = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
+    periode = Column(String(7), nullable=False, index=True)      # 'YYYY-MM'
+    user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
+    rank = Column(Integer, nullable=False)
+    wallet_address = Column(String(42), nullable=False)
+    jumlah = Column(DECIMAL(18, 2), nullable=False)              # GPC utuh (bukan wei)
+    tx_hash = Column(String(80), nullable=True)
+    status = Column(String(16), nullable=False, default="pending")  # pending|sukses|gagal
+    error = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=utcnow)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
+
+    user = relationship("User")
+
+    __table_args__ = (
+        UniqueConstraint("periode", "user_id", name="uq_gpc_periode_user"),
+    )

@@ -399,3 +399,60 @@ def admin_leaderboard_monthly(musim: Optional[str] = None, limit: int = 50, admi
 
 # Resolve forward reference (ExerciseTypeOut → ExerciseOut) setelah ExerciseOut didefinisikan.
 ExerciseTypeOut.model_rebuild()
+
+
+# ---------------- DISTRIBUTION REWARD GPC (MANUAL, ADMIN ONLY) ----------------
+
+class DistribusiGpcRequest(BaseModel):
+    periode: Optional[str] = None  # 'YYYY-MM' default musim berjalan
+    kering: bool = True            # True = simulasi/preview; False = kirim nyata
+
+
+@router.get("/rewards/preview")
+def admin_preview_rewards(periode: Optional[str] = None, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
+    """Pratinjau penerima GPC bulan berjalan (tanpa mengirim on-chain apa pun)."""
+    from app.services.points import periode_bulanan
+    from app.services.rewards import pratinjau
+    return pratinjau(db, periode or periode_bulanan())
+
+
+@router.post("/rewards/distribute")
+def admin_distribusi_rewards(payload: DistribusiGpcRequest, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
+    """
+    Tombol 'Distribute Monthly Rewards'. dry_run/`kering` default True (aman).
+    Nyata: perlu GPC_REWARDS_ENABLED=1 + konfigurasi Sepolia di backend.
+    """
+    from app.services.points import periode_bulanan
+    from app.services.rewards import RewardError, distribusikan
+    try:
+        hasil = distribusikan(
+            db, admin.user_id, payload.periode or periode_bulanan(), kering=payload.kering
+        )
+    except RewardError as exc:
+        raise HTTPException(exc.status, exc.pesan)
+    return hasil
+
+
+@router.get("/rewards/history")
+def admin_history_rewards(limit: int = 100, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
+    from app.models import GpcRewardTx
+    rows = (
+        db.query(GpcRewardTx, User)
+        .join(User, User.user_id == GpcRewardTx.user_id)
+        .order_by(GpcRewardTx.created_at.desc())
+        .limit(min(max(limit, 1), 500))
+        .all()
+    )
+    return {
+        "count": len(rows),
+        "distribusi": [
+            {
+                "id": g.id, "periode": g.periode, "rank": g.rank,
+                "user_id": g.user_id, "username": u.username, "nama": u.nama,
+                "wallet_address": g.wallet_address, "jumlah": float(g.jumlah),
+                "tx_hash": g.tx_hash, "status": g.status,
+                "created_at": g.created_at.isoformat() if g.created_at else None,
+            }
+            for g, u in rows
+        ],
+    }
