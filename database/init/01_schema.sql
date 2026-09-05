@@ -15,9 +15,13 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(150) UNIQUE,
     pekerjaan VARCHAR(100),
     jam_kerja_hari TINYINT DEFAULT 8,
+    poin INT DEFAULT 0 COMMENT 'Skor kumulatif pengguna untuk peringkat',
+    saldo DECIMAL(18,2) DEFAULT 0.00 COMMENT 'Saldo wallet blockchain pengguna (tidak ada saldo tertahan)',
+    role ENUM('user','admin') DEFAULT 'user' COMMENT 'Peran pengguna (admin melihat dashboard sistem)',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_username (username)
+    INDEX idx_username (username),
+    INDEX idx_poin (poin)
 ) ENGINE=InnoDB;
 
 -- --------------------- POSE BASELINE ------------------------

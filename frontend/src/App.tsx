@@ -6,6 +6,7 @@ import { LandingPage } from './pages/LandingPage';
 import { RegisterPose } from './pages/RegisterPose';
 import { Monitor } from './pages/Monitor';
 import { Dashboard } from './pages/Dashboard';
+import { AdminPage } from './pages/AdminPage';
 import { Exercises } from './pages/Exercises';
 import { SkeletonPreview } from './pages/SkeletonPreview';
 import { Multiplayer } from './pages/Multiplayer';
@@ -61,6 +62,7 @@ function AppContent() {
       if (e.key === 'h' || e.key === 'H') setActiveTab('landing');
       if (e.key === 's' || e.key === 'S') setActiveTab('skeleton');
       if (e.key === 'p' || e.key === 'P') setActiveTab('multiplayer');
+      if ((e.key === 'a' || e.key === 'A') && user?.role === 'admin') setActiveTab('admin');
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -102,6 +104,7 @@ function AppContent() {
         {activeTab === 'exercises' && <Exercises />}
         {activeTab === 'skeleton' && <SkeletonPreview />}
         {activeTab === 'multiplayer' && <Multiplayer />}
+        {activeTab === 'admin' && <AdminPage />}
       </main>
 
       <footer className="mt-auto border-t border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 py-6 text-xs transition-colors backdrop-blur-xs">

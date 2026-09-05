@@ -29,6 +29,9 @@ class UserResponse(BaseModel):
     email: Optional[str] = None
     pekerjaan: Optional[str] = None
     jam_kerja_hari: Optional[int] = 8
+    poin: int = 0
+    saldo: float = 0.0
+    role: str = "user"
 
     class Config:
         from_attributes = True

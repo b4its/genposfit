@@ -41,6 +41,9 @@ def seed():
                     email="developer@genposfit.local",
                     pekerjaan="Software Engineer",
                     jam_kerja_hari=8,
+                    poin=1250,
+                    saldo=50.00,
+                    role="user",
                 )
                 db.add(user)
                 db.commit()

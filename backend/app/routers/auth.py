@@ -35,6 +35,9 @@ class AuthResponse(BaseModel):
     user_id: int
     username: str
     nama: str
+    poin: int = 0
+    saldo: float = 0.0
+    role: str = "user"
 
 
 class UserInfoResponse(BaseModel):
@@ -44,6 +47,9 @@ class UserInfoResponse(BaseModel):
     email: str | None = None
     pekerjaan: str | None = None
     jam_kerja_hari: int | None = 8
+    poin: int = 0
+    saldo: float = 0.0
+    role: str = "user"
 
 
 @router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
@@ -82,6 +88,9 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
         user_id=user.user_id,
         username=user.username,
         nama=user.nama,
+        poin=user.poin or 0,
+        saldo=float(user.saldo or 0.0),
+        role=user.role or "user",
     )
 
 
@@ -102,6 +111,9 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
         user_id=user.user_id,
         username=user.username,
         nama=user.nama,
+        poin=user.poin or 0,
+        saldo=float(user.saldo or 0.0),
+        role=user.role or "user",
     )
 
 
@@ -136,4 +148,7 @@ def get_current_user_info(request: Request, token: str = "", db: Session = Depen
         email=user.email,
         pekerjaan=user.pekerjaan,
         jam_kerja_hari=user.jam_kerja_hari,
+        poin=user.poin or 0,
+        saldo=float(user.saldo or 0.0),
+        role=user.role or "user",
     )

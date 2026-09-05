@@ -6,6 +6,9 @@ export interface AuthUser {
   nama: string;
   email?: string | null;
   pekerjaan?: string | null;
+  poin: number;
+  saldo: number;
+  role: string;
 }
 
 interface AuthContextValue {
@@ -73,6 +76,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user_id: data.user_id,
       username: data.username,
       nama: data.nama,
+      poin: data.poin ?? 0,
+      saldo: data.saldo ?? 0,
+      role: data.role ?? 'user',
     });
   };
 
@@ -97,6 +103,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user_id: data.user_id,
       username: data.username,
       nama: data.nama,
+      poin: data.poin ?? 0,
+      saldo: data.saldo ?? 0,
+      role: data.role ?? 'user',
     });
   };
 
