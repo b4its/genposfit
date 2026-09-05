@@ -50,7 +50,7 @@ Sebagian besar aplikasi monitoring postur hanya menggunakan *threshold statis ge
 1. **Profil Postur Personal (Posture Baseline Profile):** Pengguna melakukan kalibrasi pose awal (multi-orientasi: frontal, lateral kiri, lateral kanan; multi-kondisi: tegak ideal vs rileks alami). Deteksi postur buruk dihitung dari **tingkat deviasi terhadap postur normal pengguna itu sendiri**.
 2. **Multi-Step Pose Skeleton Sequencing (Latihan Multi-Fase):** Gerakan latihan fisioterapi dan kalisthenik (seperti *push-up*, *squat*, atau *chin tuck*) dianalisis per fase gerakan. Repetisi dihitung **+1** hanya bila rangkaian fase dipenuhi secara berurutan sesuai pose skeleton referensi pelatih.
 3. **Interaktivitas Sosial & Gamifikasi:** Sesi multiplayer battle 1v1 berbasis room code dengan verifikasi pose real-time, sistem quest harian/mingguan, serta papan peringkat musiman.
-4. **Reward On-Chain Web3 (GPC Token):** Integrasi dompet EVM (MetaMask) untuk mendistribusikan reward token ERC-1155 *GenPosFit Coin* di jaringan Ethereum Sepolia Testnet bagi pengguna berprestasi.
+4. **Reward On-Chain Web3 (GPC Token):** Distribusi reward token ERC-1155 *GenPosFit Coin* di jaringan Ethereum Sepolia Testnet bagi pengguna berprestasi. Dilengkapi fallback **Dompet Komunitas Bersama** (`0x6EdcA860c066FCdA6c434095d5901810DCE12b48`) tanpa mewajibkan ekstensi MetaMask, dengan kalkulasi pendapatan reward yang tetap terisolasi dan akurat per akun pengguna.
 
 ---
 
@@ -138,6 +138,8 @@ flowchart TD
 
 ### E. Multiplayer Battle Room (1v1 & Solo Room)
 - Sistem room 6 karakter (contoh: `GPF-9021`) berbasis WebSocket (`/api/multiplayer/ws/{room_code}`).
+- **Pemilihan Mascot & Persona Room:** Pemain dapat memilih avatar maskot ceria (Green, Blue, Red, Black) dengan seleksi independen antara formulir buat room dan gabung room serta pencegahan bentrok warna/maskot antar pemain dalam 1 room.
+- **Vision-Aware Skeleton Rigging:** Mengikuti pergerakan skeleton tubuh pemain secara langsung dan interaktif.
 - **Lobby & Ready Check:** Host dan Guest dapat memilih latihan terapi yang akan ditandingkan, mengubah status Ready, dan Host dapat menekan tombol **Mulai Latihan**.
 - **Dukungan Solo & Multiplayer:** Pemain dapat berlatih tanding berdua maupun latihan mandiri di dalam room.
 - **Skoring Kompetitif:** Evaluasi sinkron skor kecocokan pose, persentase repetisi selesai, penentuan pemenang (+25 poin) dan peserta (+8 poin) yang otomatis tercatat ke riwayat battle dan misi.
@@ -149,8 +151,10 @@ flowchart TD
 
 ### G. Reward Token Web3: GenPosFit Coin (GPC) di Sepolia
 - Smart contract **`GenPosFitCoin`** (ERC-1155) di-deploy pada jaringan **Ethereum Sepolia Testnet**.
-- **Koneksi MetaMask:** Verifikasi kepemilikan dompet pengguna via tanda tangan kriptografis EIP-191 (`personal_sign`).
-- **Distribusi Reward On-Chain:** Admin dapat melakukan preview dan mengeksekusi distribusi token GPC bulanan kepada peringkat teratas. Transaksi tercatat di tabel `gpc_reward_tx` dan dapat diverifikasi di Etherscan.
+- **Dompet Komunitas Default (Tanpa Syarat MetaMask):** Alamat fallback default `0x6EdcA860c066FCdA6c434095d5901810DCE12b48` disiapkan untuk seluruh pengguna agar siap menerima reward tanpa dipaksa memasang ekstensi browser MetaMask.
+- **Koneksi MetaMask Pribadi (Opsional):** Pengguna yang ingin menggunakan dompet pribadi tetap dapat menghubungkan MetaMask via tanda tangan kriptografis EIP-191 (`personal_sign`).
+- **Isolasi Pendapatan Per-Akun:** Meskipun banyak akun menggunakan dompet bersama, nominal reward (`total_gpc_diterima`) dan riwayat perolehan dihitung spesifik per `user_id` dari riwayat transaksi yang sukses.
+- **Shortcut Admin Distribusi Reward:** Panel admin menyediakan tombol pintas untuk mengeksekusi distribusi reward bulanan secara otomatis berdasarkan peran pengguna (semua user non-admin) secara instan. Transaksi tercatat di tabel `gpc_reward_tx` dan dapat diverifikasi langsung di Etherscan Sepolia.
 
 ---
 
@@ -192,7 +196,7 @@ Dokumentasi OpenAPI (Swagger) interaktif dapat diakses di `http://localhost:8042
 | `/api/multiplayer` | `multiplayer.py` | Manajemen room, lobby ready check, dan WebSocket sinkronisasi battle |
 | `/api/quests` | `quests.py` | Daftar misi aktif pengguna dan klaim reward poin |
 | `/api/leaderboard` | `leaderboard.py` | Papan peringkat musiman publik |
-| `/api/wallet` | `wallet.py` | Challenge nonce, verifikasi signature MetaMask EIP-191 |
+| `/api/wallet` | `wallet.py` | Status wallet per-akun, bind dompet komunitas fallback (tanpa MetaMask), challenge nonce & verifikasi signature EIP-191 |
 | `/api/admin` | `admin.py` | CRUD jenis/gerakan latihan, katalog variasi, manajemen misi, dan distribusi reward GPC |
 
 ---
@@ -206,11 +210,11 @@ Antarmuka dibangun dengan React 19, TypeScript, dan Tailwind CSS dengan 11 halam
 | **Overview** | `LandingPage.tsx` | Beranda informatif, demo simulator biomekanika, dan ringkasan platform |
 | **Live Monitor** | `Monitor.jsx` | Monitoring postur real-time dengan video kamera, gauge skor, telemetri, dan audio alert |
 | **Kalibrasi Pose** | `RegisterPose.jsx` | Wizard kalibrasi onboarding baseline multi-orientasi dan multi-kondisi |
-| **Dashboard** | `Dashboard.jsx` | Grafik analitik kepatuhan ergonomis, riwayat latihan, dan KPI statistik |
+| **Dashboard** | `Dashboard.jsx` | Grafik analitik kepatuhan ergonomis, riwayat latihan, status dompet bersama, dan KPI statistik |
 | **Latihan Terapi** | `Exercises.tsx` | Runner latihan terapi, stepper multi-step, ghost skeleton pelatih, dan kamera rekam pelatih |
 | **Kelola Latihan** | `AdminExercises.tsx` | Modul admin CRUD gerakan, Multi-Step Skeleton Manager, dan Bank 32 Variasi Gerakan |
-| **Multiplayer Room** | `Multiplayer.tsx` | Lobby room, ready check, tombol Mulai Latihan, dan layar battle sinkron 1v1 / solo |
-| **Misi & Peringkat** | `MisiPeringkat.tsx` | Papan misi harian/mingguan, klaim poin, leaderboard musiman, dan integrasi MetaMask |
+| **Multiplayer Room** | `Multiplayer.tsx` | Lobby room, ready check, pemilihan avatar maskot unik, tombol Mulai Latihan, dan layar battle sinkron 1v1 / solo |
+| **Misi & Peringkat** | `MisiPeringkat.tsx` | Papan misi harian/mingguan, klaim poin, leaderboard musiman, dompet komunitas bersama, dan reward token GPC |
 | **Admin Panel** | `AdminPage.tsx` | Dashboard distribusi reward token GPC on-chain dan audit ledger |
 | **Autentikasi** | `AuthPage.tsx` | Form login dan registrasi akun (dukungan role Admin & User) |
 | **Skeleton Inspector**| `SkeletonPreview.tsx` | Visualisasi 3D dan analisis titik landmark skeleton MediaPipe |
@@ -317,14 +321,15 @@ Dijalankan menggunakan framework `pytest`:
 ```bash
 docker compose exec backend pytest tests/ -v
 ```
-**Hasil:** **93 unit test PASSED (100%)** meliputi:
-- `test_admin.py` (Manajemen jenis & gerakan latihan)
+**Hasil:** **100 unit test PASSED (100%)** meliputi:
+- `test_admin.py` (Manajemen jenis & gerakan latihan, distribusi reward)
 - `test_auth_users.py` (Autentikasi JWT, proteksi role admin)
 - `test_battles.py` & `test_multiplayer.py` (Logika room, sinkronisasi WebSocket)
 - `test_exercises_registration.py` (Baseline postur, multi-step sequence)
 - `test_leaderboard.py` & `test_quests.py` (Kalkulasi poin, musim, klaim reward)
 - `test_monitoring.py` & `test_pose_analysis.py` (Analisis biomekanika sudut)
-- `test_rewards.py` & `test_wallet.py` (Verifikasi signature Web3 & reward GPC)
+- `test_rewards.py` (Kalkulasi reward musiman & eksekusi transaksi Web3 GPC)
+- `test_wallet.py` (Dompet default komunitas, isolasi pendapatan per-akun, verifikasi signature MetaMask)
 
 ### B. Pengujian Frontend Build (TypeScript & Vite)
 ```bash
@@ -367,10 +372,11 @@ genposfit/
 │   ├── package.json
 │   └── src/
 │       ├── App.tsx               # Routing navigasi & modal autentikasi
+│       ├── assets/               # Aset koin SVG & avatar maskot interaktif (webp)
 │       ├── components/           # UI components, Navbar, SkeletonOverlay
 │       ├── context/              # AuthContext & State global
 │       ├── hooks/                # useCamera, usePoseDetector
-│       ├── lib/                  # Helper API, formatting, & utilities
+│       ├── lib/                  # Helper API, wallet, formatting, & utilities
 │       └── pages/                # 11 Halaman aplikasi (Monitor, Exercises, Multiplayer, dll.)
 │
 ├── database/                     # Skrip inisialisasi & migrasi MySQL
