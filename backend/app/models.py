@@ -5,7 +5,7 @@ Definisi tabel database sesuai skema MySQL GenPosFit.
 from datetime import datetime
 from sqlalchemy import (
     Column, Integer, BigInteger, SmallInteger, String, Text,
-    DECIMAL, DateTime, ForeignKey, UniqueConstraint, Index, JSON, Enum
+    DECIMAL, DateTime, ForeignKey, UniqueConstraint, Index, JSON
 )
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -23,7 +23,7 @@ class User(Base):
     jam_kerja_hari = Column(SmallInteger, default=8)
     poin = Column(Integer, default=0)
     saldo = Column(DECIMAL(18, 2), default=0.00)
-    role = Column(Enum("user", "admin", name="user_role"), nullable=False, server_default="user")
+    role = Column(String(20), default="user")
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

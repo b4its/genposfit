@@ -61,6 +61,9 @@ def submit_registrasi(payload: PoseBaselineIn, db: Session = Depends(get_db)):
             nama=payload.nama,
             email=payload.email,
             pekerjaan=payload.pekerjaan,
+            poin=0,
+            saldo=0.00,
+            role="user",
         )
         db.add(user)
         db.commit()
