@@ -2,14 +2,17 @@
 
 # 🧘 GenPosFit — Genryphem Posture and Fit
 
-**Sistem monitoring & latihan postur berbasis AI dengan Pose Enrollment untuk personalisasi**
+**Sistem Monitoring & Terapi Postur AI Berbasis Personalisasi Baseline, Multi-Step Pose Sequencing, Battle Multiplayer, Gamifikasi, dan Reward Web3 (GPC Token)**
 
 ![React](https://img.shields.io/badge/Frontend-React%2019-61DAFB?logo=react&logoColor=white)
 ![Vite](https://img.shields.io/badge/Dev%20Server-Vite-646CFF?logo=vite&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?logo=fastapi&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
 ![MediaPipe](https://img.shields.io/badge/MediaPipe-Pose%20Estimation-orange?logo=google)
 ![MySQL](https://img.shields.io/badge/Database-MySQL%208.0-4479A1?logo=mysql&logoColor=white)
 ![Docker](https://img.shields.io/badge/Deploy-Docker%20Compose-2496ED?logo=docker&logoColor=white)
+![Solidity](https://img.shields.io/badge/Smart%20Contract-ERC--1155%20(Sepolia)-363636?logo=solidity&logoColor=white)
 
 </div>
 
@@ -17,459 +20,377 @@
 
 ## 📑 Daftar Isi
 
-1. [Konsep Besar: Onboarding Pose Sebagai Fondasi](#1-konsep-besar-onboarding-pose-sebagai-fondasi)
+1. [Konsep Besar & Nilai Tambah](#1-konsep-besar--nilai-tambah)
 2. [Arsitektur Sistem](#2-arsitektur-sistem)
 3. [Tech Stack](#3-tech-stack)
-4. [Sesi Registrasi Pose: Alur Detail](#4-sesi-registrasi-pose-alur-detail)
-5. [Data Baseline yang Diekstraksi & Disimpan](#5-data-baseline-yang-diekstraksi--disimpan)
-6. [Struktur Database (MySQL)](#6-struktur-database-mysql)
-7. [Backend — API FastAPI](#7-backend--api-fastapi)
-8. [Frontend — React](#8-frontend--react)
-9. [Baseline Dipakai Saat Live Monitoring](#9-baseline-dipakai-saat-live-monitoring)
-10. [Alur Aplikasi](#10-alur-aplikasi)
-11. [Validasi & Edge Case](#11-validasi--edge-case)
-12. [Instalasi & Menjalankan (Docker Compose)](#12-instalasi--menjalankan-docker-compose)
-13. [Struktur Proyek](#13-struktur-proyek)
-14. [Roadmap](#14-roadmap)
+4. [Fitur Utama Sistem](#4-fitur-utama-sistem)
+   - [A. Onboarding & Profil Baseline Postur Personal](#a-onboarding--profil-baseline-postur-personal)
+   - [B. Live Monitoring Real-Time & Evaluasi Biomekanika](#b-live-monitoring-real-time--evaluasi-biomekanika)
+   - [C. Latihan Terapi & Multi-Step Pose Skeleton Sequencing](#c-latihan-terapi--multi-step-pose-skeleton-sequencing)
+   - [D. Kelola Latihan Admin & Bank Variasi Gerakan (32 Templat)](#d-kelola-latihan-admin--bank-variasi-gerakan-32-templat)
+   - [E. Multiplayer Battle Room (1v1 & Solo Room)](#e-multiplayer-battle-room-1v1--solo-room)
+   - [F. Sistem Gamifikasi: Misi & Leaderboard Musiman](#f-sistem-gamifikasi-misi--leaderboard-musiman)
+   - [G. Reward Token Web3: GenPosFit Coin (GPC) di Sepolia](#g-reward-token-web3-genposfit-coin-gpc-di-sepolia)
+5. [Struktur Database MySQL (13 Tabel)](#5-struktur-database-mysql-13-tabel)
+6. [Backend API & WebSocket (FastAPI)](#6-backend-api--websocket-fastapi)
+7. [Frontend SPA (React 19 + TypeScript)](#7-frontend-spa-react-19--typescript)
+8. [Instalasi & Menjalankan (Docker Compose)](#8-instalasi--menjalankan-docker-compose)
+9. [Deploy Publik via Ngrok Tunnel](#9-deploy-publik-via-ngrok-tunnel)
+10. [Operasional Smart Contract GPC (Sepolia)](#10-operasional-smart-contract-gpc-sepolia)
+11. [Testing & Penjaminan Mutu (QA)](#11-testing--penjaminan-mutu-qa)
+12. [Struktur Repositori](#12-struktur-repositori)
 
 ---
 
-## 1. Konsep Besar: Onboarding Pose Sebagai Fondasi
+## 1. Konsep Besar & Nilai Tambah
 
-Setiap pengguna baru **wajib melewati proses registrasi pose** sebelum bisa menggunakan fitur monitoring/latihan. Proses ini membangun **Profil Postur Personal (Posture Baseline Profile)** — acuan unik milik pengguna itu sendiri, bukan standar generik.
+Sebagian besar aplikasi monitoring postur hanya menggunakan *threshold statis generik* (contoh: *"sudut leher harus selalu 165°"*). Pendekatan tersebut sering menghasilkan alarm palsu (*false alarm*) karena anatomi manusia bervariasi: tinggi badan, bentuk bahu, kelengkungan tulang belakang, serta posisi meja kerja berbeda-beda.
 
-**Alur pertama kali:**
-
-1. Pengguna **mengisi profil** → diarahkan ke **registrasi pose**.
-2. Pengguna mengikuti pose referensi, direkam dari beberapa sisi:
-   - **Frontal** (menghadap kamera)
-   - **Lateral kiri** (samping kiri ke kamera)
-   - **Lateral kanan** (samping kanan ke kamera)
-3. Sistem merekam landmark, menghitung sudut, lalu menyimpannya sebagai **baseline personal**.
-4. Profil tersimpan ke MySQL → pengguna bisa mulai **live monitoring**, di mana postur real-time dibandingkan terhadap **baseline user sendiri** (bukan angka standar umum).
-
-**Mengapa penting?** Tubuh setiap orang berbeda — tinggi badan, proporsi bahu, kelengkungan alami tulang belakang, bahkan kebiasaan lama. Memakai threshold generik (*"sudut 160° = bagus"*) untuk semua orang tidak akurat. Dengan baseline personal, deteksi menjadi **deviasi dari postur normal pengguna itu sendiri** → jauh lebih akurat dan personal.
+**GenPosFit hadir dengan pendekatan inovatif:**
+1. **Profil Postur Personal (Posture Baseline Profile):** Pengguna melakukan kalibrasi pose awal (multi-orientasi: frontal, lateral kiri, lateral kanan; multi-kondisi: tegak ideal vs rileks alami). Deteksi postur buruk dihitung dari **tingkat deviasi terhadap postur normal pengguna itu sendiri**.
+2. **Multi-Step Pose Skeleton Sequencing (Latihan Multi-Fase):** Gerakan latihan fisioterapi dan kalisthenik (seperti *push-up*, *squat*, atau *chin tuck*) dianalisis per fase gerakan. Repetisi dihitung **+1** hanya bila rangkaian fase dipenuhi secara berurutan sesuai pose skeleton referensi pelatih.
+3. **Interaktivitas Sosial & Gamifikasi:** Sesi multiplayer battle 1v1 berbasis room code dengan verifikasi pose real-time, sistem quest harian/mingguan, serta papan peringkat musiman.
+4. **Reward On-Chain Web3 (GPC Token):** Integrasi dompet EVM (MetaMask) untuk mendistribusikan reward token ERC-1155 *GenPosFit Coin* di jaringan Ethereum Sepolia Testnet bagi pengguna berprestasi.
 
 ---
 
 ## 2. Arsitektur Sistem
 
-| Layer | Komponen | Tanggung Jawab |
-|---|---|---|
-| **Frontend (React)** | Kamera (`getUserMedia`), MediaPipe Pose JS, UI | Menangkap video kamera, mengekstraksi 33 landmark langsung di browser, menggambar skeleton, menampilkan UI onboarding/monitor/dashboard/latihan |
-| **Backend (FastAPI)** | REST API + WebSocket | Mengelola registrasi baseline, menghitung skor deviasi personal, menyimpan log, menyajikan laporan |
-| **Database (MySQL 8.0)** | 8 tabel: `users`, `pose_baseline`, `posture_logs`, `exercise_types`, `exercises`, `exercise_sessions`, `rooms`, `room_players` | Penyimpanan persisten (via Docker volume `genposfit-db-data`) |
+```mermaid
+flowchart TD
+    subgraph Client ["Frontend (React 19 + Vite + TypeScript)"]
+        Cam["Webcam / Kamera MediaDevices"] --> MP["MediaPipe Pose (33 Landmark)"]
+        MP --> Canvas["SkeletonOverlay Canvas"]
+        MP --> Hook["usePoseDetector & useCamera"]
+        Hook --> REST_C["HTTP REST Client (Axios/Fetch)"]
+        Hook --> WS_C["WebSocket Client"]
+    end
 
-> Proyek kini berjalan penuh di **Docker Compose** (5 container: `db`, `backend`, `frontend`, `phpmyadmin`, `ngrok`) sebagai pengganti stand-alone SQLite.
+    subgraph Server ["Backend (FastAPI + Python 3.11)"]
+        REST_S["REST API Routers (11 Modul)"]
+        WS_S["WebSocket Endpoints (/monitoring, /multiplayer)"]
+        Bio["Engine Analisis Biomekanika & Sudut"]
+        DevScore["Engine Kalkulasi Skor Deviasi Baseline"]
+        SeqRunner["Multi-Step Sequence & Reps Counter"]
+        Web3Svc["Layanan Web3 (Web3.py & Sepolia RPC)"]
+    end
 
-**Alur komunikasi:**
+    subgraph Storage ["Database (MySQL 8.0)"]
+        Tables[("13 Tabel InnoDB Persisten")]
+    end
 
-- React mengekstraksi landmark di browser → mengirim landmark per frame ke FastAPI → backend menghitung sudut, skor deviasi, dan status.
-- Komunikasi data historis/agregat via **REST (JSON)**; data real-time per frame via **WebSocket**.
-- FastAPI melakukan scoring deviasi vs baseline → hasil dikirim balik ke React untuk ditampilkan.
+    subgraph Blockchain ["Ethereum Sepolia Testnet"]
+        GPCContract["GenPosFitCoin (ERC-1155)"]
+    end
 
-> **Keputusan desain:** landmark MediaPipe diproses oleh backend (FastAPI + OpenCV + MediaPipe). Fitur tetap ringan dan semua analisis terpusat.
+    REST_C <-->|HTTP / JSON| REST_S
+    WS_C <-->|JSON Stream Real-time| WS_S
+    REST_S --> Bio --> DevScore --> Tables
+    WS_S --> SeqRunner --> Tables
+    REST_S --> Web3Svc -->|Mint & Transfer GPC| GPCContract
+```
 
 ---
 
 ## 3. Tech Stack
 
-| Layer | Teknologi | Peran |
+| Layer | Teknologi | Versi / Keterangan |
 |---|---|---|
-| **Frontend** | React 19 + Vite + TypeScript | SPA: landing, monitoring, kalibrasi, dashboard, latihan |
-| | MediaPipe Pose (CDN) | Deteksi & overlay skeleton |
-| | Lucide React | Ikon UI |
-| **Backend** | FastAPI + Uvicorn | REST API + WebSocket untuk scoring real-time |
-| | SQLAlchemy 2.0 + PyMySQL | ORM + driver koneksi MySQL |
-| | MediaPipe + OpenCV + NumPy | Analisis sudut biomekanika landmark |
-| | Pydantic | Validasi skema data baseline & log |
-| **Database** | MySQL 8.0 | Penyimpanan persisten, InnoDB, FK + index |
-| **Infra** | Docker Compose | Orchestrasi 5 container (db, backend, frontend, phpmyadmin, ngrok) |
-| | Ngrok (Docker) | Public HTTPS reverse tunnel untuk deploy remote & testing kamera mobile |
-| | GitHub Actions (CI) | Backend unit test (`unittest`) + frontend build (`tsc` + Vite) |
+| **Frontend** | React 19, Vite, TypeScript | SPA modern dengan performa tinggi & type safety penuh |
+| **Styling & UI** | Tailwind CSS, Lucide React, Recharts | Desain adaptif dengan dukungan Dark/Light mode otomatis |
+| **Vision AI** | Google MediaPipe Pose (33 Landmarks) | Ekstraksi skeleton tubuh real-time langsung di browser client |
+| **Backend** | FastAPI, Uvicorn, Python 3.11 | REST API asinkron berkinerja tinggi + WebSockets |
+| **ORM & DB Driver** | SQLAlchemy 2.0, PyMySQL, Cryptography | Pemetaan relasional persisten & keamanan kredensial |
+| **Database** | MySQL 8.0 (InnoDB) | 13 tabel dengan foreign key, indexing, dan integritas data |
+| **Web3 & Smart Contract**| Solidity 0.8.24, OpenZeppelin v5, Hardhat, Web3.py | ERC-1155 Multi-Token di Ethereum Sepolia Testnet |
+| **Infra & Container** | Docker Compose (5 Services Utama + GPC) | `db`, `backend`, `frontend`, `phpmyadmin`, `ngrok`, `gpc` |
+| **Tunneling Publik** | Ngrok Official Docker (`ngrok/ngrok:latest`) | HTTPS public endpoint untuk remote testing & kamera mobile |
 
 ---
 
-## 4. Sesi Registrasi Pose: Alur Detail
+## 4. Fitur Utama Sistem
 
-### Fase 1 — Setup & Pemeriksaan Kamera
+### A. Onboarding & Profil Baseline Postur Personal
+- **Multi-Orientasi:** Frontal (tampak depan), Lateral Kiri (samping kiri), Lateral Kanan (samping kanan).
+- **Multi-Kondisi:** Duduk Tegak (kapasitas terbaik), Duduk Rileks (kebiasaan kerja alami), Berdiri Tegak, Berdiri Rileks.
+- **Ekstraksi Landmark:** Merekam 90 frame berturut-turut (~3 detik), menghitung rata-rata sudut leher (telinga-bahu-pinggul), sudut punggung (bahu-pinggul-lutut), dan kemiringan bahu serta standar deviasi sebagai toleransi personal.
+- **Simulator Biomekanika:** Dukungan fallback sintetis jika pengguna tidak mengizinkan akses kamera pada sesi demo.
 
-1. Pengguna diminta menyiapkan ruangan dengan pencahayaan cukup.
-2. Kamera dinyalakan → cek kualitas frame.
-3. Instruksi: *"Posisikan diri agar seluruh tubuh atas terlihat di layar."*
-4. Jika kamera tidak tersedia/ditolak, sistem beralih ke **Simulator Biomekanika** (landmark sintetis) sehingga alur tetap bisa dilalui untuk demo/presentasi.
+### B. Live Monitoring Real-Time & Evaluasi Biomekanika
+- Komunikasi streaming data landmark per frame via WebSocket (`/api/monitoring/ws/{user_id}`).
+- Gauges skor deviasi real-time (0–100) dengan tiga kategori:
+  - **Bagus (≥ 85):** Postur ergonomis ideal.
+  - **Ringan (60–84):** Deviasi ringan (dagu sedikit maju atau bahu agak miring).
+  - **Buruk (< 60):** Postur buruk terdeteksi, memicu alert suara buzzer dan banner rekomendasi terapi.
 
-### Fase 2 — Panduan Rotasi Sisi (Angle Capture)
+### C. Latihan Terapi & Multi-Step Pose Skeleton Sequencing
+- **Siklus Gerakan Multi-Step:** Gerakan latihan tidak lagi dibatasi hanya 1 pose statis. Latihan kompleks dapat dipecah menjadi beberapa fase pose berurutan.
+  - *Contoh Push-Up:* **Step 1 (Posisi Atas / Plank)** $\rightarrow$ **Step 2 (Turun Dada Rendah / Siku 90°)** $\rightarrow$ **Step 3 (Dorong Naik Kembali)**.
+  - Repetisi hanya dihitung **+1** setelah seluruh rangkaian step diselesaikan secara berurutan.
+- **Ghost Skeleton Panduan:** Canvas menampilkan kerangka referensi ungu milik pelatih untuk step aktif yang sedang dikerjakan.
+- **Perekam Pose Kamera Pelatih:** Admin/Pelatih dapat menambah atau menghapus step gerakan, lalu merekam pose target langsung dari kamera pelatih (snapshot instan maupun multi-frame averaging).
+- **Simulasi Transisi Step:** Tombol *Putar Urutan Step* untuk melihat animasi simulasi transisi fase gerakan skeleton.
 
-Pengguna memilih orientasi kamera (frontal / lateral kiri / lateral kanan) dan tipe pose target (duduk tegak, duduk rileks, berdiri tegak, berdiri rileks).
+### D. Kelola Latihan Admin & Bank Variasi Gerakan (32 Templat)
+- Modul administrasi di halaman **Kelola Latihan** (`/admin/exercises`) dan **Latihan Terapi** (`/exercises`).
+- **Bank Variasi Gerakan:** Menyediakan 32 templat variasi biomekanika siap pakai (kategori Leher & Bahu, Punggung & Pinggang, Ekstremitas Bawah, hingga Multi-Step Reps).
+- Fitur *Tambah Banyak Sekaligus (Batch Add)* untuk mengimpor kumpulan variasi gerakan ke jenis latihan yang dipilih.
 
-| Orientasi | Tujuan Data |
-|---|---|
-| **Frontal (menghadap kamera)** | Kesimetrian bahu, level kemiringan bahu |
-| **Lateral kiri (samping kiri ke kamera)** | Kurva leher & punggung dari samping — paling akurat untuk deteksi tech neck & slouching |
-| **Lateral kanan** | Validasi silang, deteksi asimetri kiri-kanan |
+### E. Multiplayer Battle Room (1v1 & Solo Room)
+- Sistem room 6 karakter (contoh: `GPF-9021`) berbasis WebSocket (`/api/multiplayer/ws/{room_code}`).
+- **Lobby & Ready Check:** Host dan Guest dapat memilih latihan terapi yang akan ditandingkan, mengubah status Ready, dan Host dapat menekan tombol **Mulai Latihan**.
+- **Dukungan Solo & Multiplayer:** Pemain dapat berlatih tanding berdua maupun latihan mandiri di dalam room.
+- **Skoring Kompetitif:** Evaluasi sinkron skor kecocokan pose, persentase repetisi selesai, penentuan pemenang (+25 poin) dan peserta (+8 poin) yang otomatis tercatat ke riwayat battle dan misi.
 
-### Fase 3 — Instruksi Pose Referensi per Orientasi
+### F. Sistem Gamifikasi: Misi & Leaderboard Musiman
+- **Misi Harian & Mingguan:** Mengukur aktivitas nyata pengguna (menit monitoring postur, repetisi latihan terapi, kalibrasi baseline, kemenangan battle).
+- **Buku Besar Poin (`point_ledger`):** Setiap klaim hadiah poin dicatat secara transparan dan idempoten.
+- **Papan Peringkat Musiman (Leaderboard):** Menampilkan peringkat Top-N pengguna dengan akumulasi poin tertinggi dalam satu musim aktif.
 
-| Tipe Pose | Fungsi Baseline |
-|---|---|
-| **Duduk tegak (ideal ergonomis)** | Menangkap kapasitas ideal user |
-| **Duduk rileks (posisi kerja alami)** | Menangkap kebiasaan alami user |
-| **Berdiri tegak (standing desk)** | Referensi align kepala-bahu-pinggul |
-| **Berdiri rileks** | Menangkap postur berdiri alami |
-
-> **Kunci desain:** sistem menyimpan **dua kondisi** — *relaxed* (kebiasaan) dan *tegak* (ideal). Dari selisih keduanya, sistem tahu *"seberapa jauh postur kerja user menyimpang dari kapasitas terbaiknya"* → dasar skoring personal.
-
-### Fase 4 — Perekaman & Ekstraksi
-
-Per pose:
-
-1. Countdown 3 detik (stabilisasi).
-2. Rekam 90 frame berturut-turut (~3 detik).
-3. Ekstrak landmark MediaPipe per frame.
-4. Hitung nilai rata-rata (mean) + standar deviasi per sudut kunci (leher & punggung) serta level bahu.
-5. Kirim hasil agregasi ke FastAPI → simpan ke MySQL sebagai baseline.
-
-### Fase 5 — Ringkasan Profil
-
-Pengguna diperlihatkan tabel hasil registrasi: orientasi, tipe pose, sudut rata-rata, dan standar deviasi, lalu **tombol simpan profil ke MySQL**. Setelah sukses, pengguna diarahkan ke **Live Monitor**.
+### G. Reward Token Web3: GenPosFit Coin (GPC) di Sepolia
+- Smart contract **`GenPosFitCoin`** (ERC-1155) di-deploy pada jaringan **Ethereum Sepolia Testnet**.
+- **Koneksi MetaMask:** Verifikasi kepemilikan dompet pengguna via tanda tangan kriptografis EIP-191 (`personal_sign`).
+- **Distribusi Reward On-Chain:** Admin dapat melakukan preview dan mengeksekusi distribusi token GPC bulanan kepada peringkat teratas. Transaksi tercatat di tabel `gpc_reward_tx` dan dapat diverifikasi di Etherscan.
 
 ---
 
-## 5. Data Baseline yang Diekstraksi & Disimpan
+## 5. Struktur Database MySQL (13 Tabel)
 
-Dari setiap kombinasi (orientasi × pose), sistem menghitung:
+Database persisten `genposfit` menggunakan engine InnoDB dengan relasi foreign key dan index performa:
 
-| Parameter | Cara Hitung | Kegunaan Nanti |
+| No | Tabel | Deskripsi & Kolom Kunci |
+|:---:|---|---|
+| 1 | `users` | Akun pengguna & admin (`user_id`, `email`, `role`, `password_hash`, `wallet_address`) |
+| 2 | `pose_baseline` | Profil kalibrasi postur personal (`user_id`, `orientasi`, `tipe_pose`, sudut rata-rata, standar deviasi) |
+| 3 | `posture_logs` | Log time-series telemetri monitoring postur (`user_id`, `sudut_leher`, `sudut_punggung`, `skor_deviasi`, `status`) |
+| 4 | `exercise_types` | Kategori induk latihan terapi (`type_id`, `nama`, `deskripsi`) |
+| 5 | `exercises` | Daftar gerakan terapi (`exercise_id`, `nama`, `sudut_target` bertipe JSON dengan `pose_steps`, `skeleton_data`, `is_battle`) |
+| 6 | `exercise_sessions` | Riwayat sesi latihan selesai (`session_id`, `user_id`, `exercise_id`, `total_reps`, `avg_skor`) |
+| 7 | `rooms` | Room sesi latihan multiplayer / solo (`room_id`, `room_code`, `status`, `exercise_id`, `host_id`) |
+| 8 | `room_players` | Daftar pemain dalam room multiplayer (`room_id`, `user_id`, `is_ready`, `skor_akhir`) |
+| 9 | `point_ledger` | Buku besar transaksi poin gamifikasi (`ledger_id`, `user_id`, `jumlah_poin`, `sumber`, `referensi_id`) |
+| 10 | `quests` | Master data misi harian & mingguan (`quest_id`, `judul`, `tipe_target`, `target_value`, `reward_poin`) |
+| 11 | `user_quests` | Progres misi per pengguna (`user_quest_id`, `user_id`, `quest_id`, `current_value`, `is_claimed`) |
+| 12 | `battle_results` | Rekapitulasi hasil tanding multiplayer (`battle_id`, `room_code`, `winner_id`, `loser_id`, `skor_winner`, `skor_loser`) |
+| 13 | `gpc_reward_tx` | Catatan transaksi minting reward token GPC on-chain (`tx_id`, `periode`, `user_id`, `wallet_address`, `tx_hash`, `status`) |
+
+---
+
+## 6. Backend API & WebSocket (FastAPI)
+
+Dokumentasi OpenAPI (Swagger) interaktif dapat diakses di `http://localhost:8042/docs`.
+
+### Modul Router Utama
+
+| Prefix Path | Router | Fungsi Utama |
 |---|---|---|
-| **Sudut leher** | Telinga–Bahu–Pinggul (midpoint untuk frontal) | Deteksi tech neck personal |
-| **Sudut punggung** | Bahu–Pinggul–Lutut (midpoint untuk frontal) | Deteksi slouch personal |
-| **Level bahu** | Selisih y bahu kiri–kanan dibagi lebar bahu | Deteksi bahu miring |
-| **Standar deviasi tiap sudut** | Variasi antar frame | Menentukan **toleransi personal** (orang yang gemetar/sering gerak → toleransi lebih lebar) |
-| **Jumlah frame** | Panjang perekaman | Menjamin kualitas kalibrasi |
-
-**Normalisasi:** level bahu dinormalkan terhadap jarak antar-bahu sehingga konsisten terlepas dari jarak kamera.
+| `/api/auth` | `auth.py` | Registrasi, login JWT, validasi token pengguna dan admin |
+| `/api/users` | `users.py` | Profil pengguna, riwayat postur, pembaruan data fisik |
+| `/api/registration` | `registration.py` | Perekaman dan penyimpanan baseline pose personal |
+| `/api/monitoring` | `monitoring.py` | Evaluasi postur HTTP REST & WebSocket streaming real-time |
+| `/api/exercises` | `exercises.py` | Katalog latihan terapi, batch preset, dan pencatatan sesi |
+| `/api/multiplayer` | `multiplayer.py` | Manajemen room, lobby ready check, dan WebSocket sinkronisasi battle |
+| `/api/quests` | `quests.py` | Daftar misi aktif pengguna dan klaim reward poin |
+| `/api/leaderboard` | `leaderboard.py` | Papan peringkat musiman publik |
+| `/api/wallet` | `wallet.py` | Challenge nonce, verifikasi signature MetaMask EIP-191 |
+| `/api/admin` | `admin.py` | CRUD jenis/gerakan latihan, katalog variasi, manajemen misi, dan distribusi reward GPC |
 
 ---
 
-## 6. Struktur Database (MySQL)
+## 7. Frontend SPA (React 19 + TypeScript)
 
-Database `genposfit` dengan 5 tabel (skema InnoDB, asing-key, index):
+Antarmuka dibangun dengan React 19, TypeScript, dan Tailwind CSS dengan 11 halaman utama:
 
-| Tabel | Kolom Utama | Fungsi |
+| Halaman | File Sumber | Deskripsi & Fitur |
 |---|---|---|
-| `users` | user_id, nama, email (unique), pekerjaan, jam_kerja_hari | Profil pengguna |
-| `pose_baseline` | user_id (FK), orientasi, tipe_pose, sudut_leher, sudut_punggung, level_bahu, std_leher, std_punggung, n_frame | Kalibrasi postur personal (unique user+orientasi+tipe) |
-| `posture_logs` | user_id (FK), sesi_id, timestamp, sudut_leher, sudut_punggung, level_bahu, skor_deviasi, status | Log evaluasi postur time-series |
-| `exercises` | exercise_id, nama, deskripsi, target_otot, sudut_target (JSON), durasi_detik, reps, tingkat | Perpustakaan latihan terapi |
-| `exercise_sessions` | session_id, user_id (FK), exercise_id (FK), total_reps, avg_skor, selesai_at | Riwayat sesi latihan selesai |
-
-Skema auto-dijalankan saat container `db` pertama kali dibuat dari `database/init/01_schema.sql`. Data contoh dapat di-seed dengan `make seed` (`database/seed/seed.sql` + `seed_user.py`).
-
----
-
-## 7. Backend — API FastAPI
-
-Prefix utama: `/api` — dokumentasi otomatis Swagger di `http://localhost:8042/docs`.
-
-### Router & Endpoint
-
-| Router | Endpoint | Fungsi |
-|---|---|---|
-| **Users** | `GET/POST /api/users`, `GET /api/users/{id}` | CRUD profil pengguna |
-| **Registrasi Pose** | `POST /api/registration/submit` | Upsert profil + baseline pose |
-| | `GET /api/registration/baselines/{user_id}` | Ambil baseline user |
-| **Monitoring Postur** | `POST /api/monitoring/evaluate` | Evaluasi landmark via HTTP |
-| | `POST /api/monitoring/log` | Simpan log postur manual |
-| | `GET /api/monitoring/summary/{user_id}` | Statistik riwayat postur |
-| | **WS** `/api/monitoring/ws/{user_id}` | Live monitoring streaming real-time |
-| **Latihan Postur** | `GET /api/exercises`, `GET /api/exercises/{id}` | Daftar + detail latihan |
-| | `POST /api/exercises/sessions` | Catat sesi latihan selesai |
-| | `GET /api/exercises/sessions/user/{user_id}` | Riwayat latihan user |
-
-### Skor & Status Deviasi
-
-Skor komposit = **55% skor leher + 35% skor punggung − penalti bahu miring** (klamp 0–100).
-
-| Skor | Status | Keterangan |
-|---|---|---|
-| ≥ 85 | **bagus** | Postur ergonomis ideal |
-| 60 – 84 | **ringan** | Dagu agak maju / punggung sedikit membungkuk |
-| < 60 | **buruk** | Postur buruk terdeteksi |
+| **Overview** | `LandingPage.tsx` | Beranda informatif, demo simulator biomekanika, dan ringkasan platform |
+| **Live Monitor** | `Monitor.jsx` | Monitoring postur real-time dengan video kamera, gauge skor, telemetri, dan audio alert |
+| **Kalibrasi Pose** | `RegisterPose.jsx` | Wizard kalibrasi onboarding baseline multi-orientasi dan multi-kondisi |
+| **Dashboard** | `Dashboard.jsx` | Grafik analitik kepatuhan ergonomis, riwayat latihan, dan KPI statistik |
+| **Latihan Terapi** | `Exercises.tsx` | Runner latihan terapi, stepper multi-step, ghost skeleton pelatih, dan kamera rekam pelatih |
+| **Kelola Latihan** | `AdminExercises.tsx` | Modul admin CRUD gerakan, Multi-Step Skeleton Manager, dan Bank 32 Variasi Gerakan |
+| **Multiplayer Room** | `Multiplayer.tsx` | Lobby room, ready check, tombol Mulai Latihan, dan layar battle sinkron 1v1 / solo |
+| **Misi & Peringkat** | `MisiPeringkat.tsx` | Papan misi harian/mingguan, klaim poin, leaderboard musiman, dan integrasi MetaMask |
+| **Admin Panel** | `AdminPage.tsx` | Dashboard distribusi reward token GPC on-chain dan audit ledger |
+| **Autentikasi** | `AuthPage.tsx` | Form login dan registrasi akun (dukungan role Admin & User) |
+| **Skeleton Inspector**| `SkeletonPreview.tsx` | Visualisasi 3D dan analisis titik landmark skeleton MediaPipe |
 
 ---
 
-## 8. Frontend — React
-
-### Halaman / Tab
-
-| Tab | Komponen | Fungsi |
-|---|---|---|
-| **Overview** (`h`) | `LandingPage` | Landing + simulator postur interaktif + kode contoh (WebSocket/cURL/Python) |
-| **Live Monitor** (`m`) | `Monitor` | Monitoring postur real-time via WebSocket, gauge skor, telemetri sudut, alert suara |
-| **Calibration** (`c`) | `RegisterPose` | Wizard registrasi & kalibrasi baseline pose |
-| **Dashboard** (`d`) | `Dashboard` | KPI, grafik time-series skor, riwayat latihan, inspector telemetri |
-| **Therapy Fit** (`e`) | `Exercises` | Latihan terapi Mode B dengan rep counter & hold timer |
-
-### Komponen Pendukung
-
-| Komponen | Fungsi |
-|---|---|
-| `Navbar` | Navigasi tab + indikator status API + toggle tema |
-| `ThemeToggle` | Toggle dark/light mode (persistensi localStorage) |
-| `SkeletonOverlay` | Overlay canvas 33 landmark MediaPipe + label sudut berwarna sesuai status |
-
-Navigasi juga mendukung pintasan keyboard: `H`, `M`, `C`, `D`, `E`.
-
----
-
-## 9. Baseline Dipakai Saat Live Monitoring
-
-Inti personalisasi: **skor deviasi** — seberapa jauh postur saat ini menyimpang dari baseline user sendiri. Dihitung di FastAPI, hasil dikirim ke React via WebSocket.
-
-### Logika keputusan yang dipersonalisasi
-
-| Kondisi Terdeteksi | Respons Sistem |
-|---|---|
-| Sudut leher/punggung live menyimpang dari baseline sesuai `tipe_pose` | Skor turun sesuai toleransi personal (`std` × faktor) |
-| Skor < 60 (status `buruk`) | 🔔 Buzzer audio + banner peringatan + rekomendasi terapi |
-| Postur mendekati baseline versi ideal | *"Postur ergonomis ideal. Pertahankan posisi ini!"* |
-
-> Baseline dimuat per `tipe_pose` yang dikirim client (`duduk_rileks`, `duduk_tegak`, dst.), sehingga evaluasi selalu membandingkan terhadap kalibrasi postur yang relevan.
-
-### Keuntungan vs threshold generik
-
-| Aspek | Threshold Generik | Dengan Baseline Personal |
-|---|---|---|
-| Orang dengan kyphosis ringan bawaan | Salah alert terus (dianggap buruk padahal normal baginya) | Tahu itu baseline-nya; hanya alert jika memburuk |
-| Orang postur-nya sudah sangat baik | Alert jarang = kurang terdorong | Target bisa digeser ke baseline `duduk_tegak` (lebih menantang) |
-| Ukuran tubuh berbeda-beda | Sudut sama belum tentu artinya sama | Ternormalisasi → konsisten |
-| Progres pemulihan | Sulit diukur | Deviasi rata-rata turun terhadap baseline → terukur |
-
----
-
-## 10. Alur Aplikasi
-
-**1. Onboarding (pengguna baru):**
-- Isi profil → pilih orientasi & tipe pose → hitung baseline (90 frame).
-- React mengirim baseline ke FastAPI → tersimpan di MySQL sebagai **Posture Baseline Profile**.
-
-**2. Penggunaan harian:**
-- **Mode A — Live Monitor:** kirim landmark per frame → WebSocket ke FastAPI → skor deviasi → alert personal di UI (gauge + audio + banner).
-- **Mode B — Therapy Exercises:** daftar 6 latihan terapi → rep counter + hold timer → menyimpan sesi selesai ke backend.
-
-**3. Dashboard analitik:**
-- Endpoint `/api/monitoring/summary/{user_id}` → KPI rata-rata skor, persentase kepatuhan, distribusi status, dan timeline 60 titik.
-- Riwayat sesi latihan dari `exercise_sessions`.
-
----
-
-## 11. Validasi & Edge Case
-
-| Situasi | Penanganan |
-|---|---|
-| Landmark tidak mencukupi (< 25 titik) | Endpoint mengembalikan `valid: false` dengan pesan error |
-| Kamera ditolak / tidak tersedia | Simulator Biomekanika aktif; webcam bisa dinyalakan belakangan |
-| WebSocket terputus / backend offline | Monitor memakai perhitungan skor lokal di sisi client (fallback) |
-| Frame landmark tidak stabil | Frame dengan visibility rendah diabaikan saat ekstraksi sudut |
-| Standard deviasi tinggi saat kalibrasi | Dijaga minimum 1.0 untuk mencegah toleransi terlalu sempit |
-| Orientasi tidak deteksi | Fallback default `frontal` pada analisis landmark |
-
----
-
-## 12. Instalasi & Menjalankan (Docker Compose)
+## 8. Instalasi & Menjalankan (Docker Compose)
 
 ### Prasyarat
+- **Docker Engine** (v24+) & **Docker Compose** (v2+).
+- **Make** (opsional namun sangat disarankan untuk menjalankan shortcut otomatis).
 
-- **Docker** + **Docker Compose** terinstal.
-- Salin `.env.example` → `.env` lalu sesuaikan bila perlu.
-
-### Quick Start
+### Langkah Menjalankan
 
 ```bash
-# 1. Siapkan environment
+# 1. Clone repositori & salin file konfigurasi environment
 cp .env.example .env
 
-# 2. Build & jalankan semua container (db, backend, frontend, phpmyadmin)
-make up-detached    # background (atau make up untuk foreground)
+# 2. Jalankan seluruh container stack utama (background / detached)
+make up-detached
 
-# 3. Seeder data contoh (opsional)
+# 3. Jalankan inisialisasi skema & database seeder
 make seed
 
-# 4. Lihat log
-make logs
+# 4. Periksa status seluruh container
+make ps
 ```
 
-### Akses Aplikasi
+### Port & Akses Layanan
 
-| Service | URL |
-|---|---|
-| Frontend | `http://localhost:3042` (default) atau `https://<ip-host>:3042` saat `VITE_HTTPS=1` |
-| Ngrok Public Tunnel | `https://unseen-liable-agreeable.ngrok-free.dev` (cek status: `make ngrok-url`) |
-| Ngrok Web Inspector | `http://localhost:4040` |
-| Backend (Swagger API) | http://localhost:8042/docs |
-| Health check | http://localhost:8042/api/health — proxy frontend: `<front-url>/api/health` |
-| PhpMyAdmin | http://localhost:8122 |
-
-### 🌐 Deploy & Hosting Publik via Ngrok (Docker)
-
-GenPosFit dilengkapi container **ngrok** resmi (`ngrok/ngrok:latest`) untuk mengekspos aplikasi ke publik/internet secara aman:
-
-```bash
-make public        # nyalakan tunnel ngrok di Docker container
-make ngrok-url     # tampilkan URL publik aktif & status koneksi
-make logs-ngrok    # pantau log container ngrok secara live
-make ngrok-down    # hentikan container ngrok
-```
-
-- **Kamera Mobile & Remote Testing Langsung Aktif:** Ngrok menyediakan koneksi **HTTPS resmi** (trusted CA) sehingga API browser `navigator.mediaDevices.getUserMedia` (kamera & MediaPipe) otomatis aktif di semua smartphone atau laptop tanpa konfigurasi sertifikat manual.
-- **Traffic Inspection:** Akses dashboard inspeksi ngrok di `http://localhost:4040` untuk memantau request REST dan frame WebSocket.
-- **Authtoken & URL:** Dikonfigurasi di file `.env` melalui `NGROK_AUTHTOKEN`, `NGROK_URL`, dan `NGROK_PORT`.
-
-> **Kamera (getUserMedia) — baca ini jika kamera diblokir / `ERR_EMPTY_RESPONSE`:**
-> Browser hanya mengizinkan kamera pada *secure context*: `https://…` atau
-> `http://localhost`. Di dalam project ini diatur lewat flag `.env` **VITE_HTTPS**:
->
-> | `VITE_HTTPS` | URL yang jalan | Kamera |
-> |---|---|---|
-> | `0` / kosong (default) | `http://localhost:3042` | ✅ hanya di `localhost` (IP host via http: diblokir browser) |
-> | `1` | `https://localhost:3042` dan `https://<IP_HOST>:3042` | ✅ di semua perangkat LAN (accept warning self-signed sekali) |
-> | **Via Ngrok** | `https://unseen-liable-agreeable.ngrok-free.dev` | ✅ **Aktif di mana saja (HTTPS terpercaya)** |
->
-> ⚠️ Saat `VITE_HTTPS=1`, container hanya bicara TLS — membuka `http://…:3042`
-> menghasilkan **ERR_EMPTY_RESPONSE** ("didn't send any data"). Itu **bukan** container
-> mati: gunakan `https://`, atau set `VITE_HTTPS=0` bila memang mau HTTP.
->
-> Nyalakan HTTPS: isi di `.env` → `VITE_HTTPS=1` + `CERT_HOSTS="10.160.116.16"`
-> (IP yang diketik user), lalu `make up-detached` ulang (cert dibuat otomatis oleh
-> `frontend/scripts/gen-certs.sh`, di-*reuse* selama SAN & expiry cocok).
-> Regenerasi paksa: `make certs` (add `CERT_HOSTS` via arg). Dev tanpa Docker:
-> `cd frontend && npm run dev:https -- --host 0.0.0.0`.
-
-### Command Makefile Berguna
-
-```bash
-make up           # jalankan semua container (foreground)
-make up-detached  # jalankan di background (detached)
-make public       # 🌐 jalankan hosting publik ngrok di Docker
-make ngrok-url    # 🔗 lihat status & link publik ngrok
-make logs-ngrok   # 📋 lihat log container ngrok
-make down         # stop container
-make restart      # restart container
-make ps           # status container
-make doctor       # 🔍 diagnostik: port, container, image, env, health API
-make repair       # 🔧 perbaiki otomatis: cleanup orphan, rebuild, restart, verifikasi
-make db           # masuk CLI MySQL db container
-make logs-backend # log backend
-make migrate      # jalankan inisialisasi skema
-make seed         # seed data latihan + dummy user
-make lint-frontend / lint-backend  # cek kualitas kode
-make clean        # bersihkan container (tanpa volume)
-make nuke         # bersihkan termasuk volume db
-```
-
-> Semua command tersedia lengkap dengan menjalankan `make help`.
+| Layanan | URL Lokal | Keterangan |
+|---|---|---|
+| **Frontend Web** | `http://localhost:3042` | Aplikasi utama GenPosFit |
+| **Backend Swagger** | `http://localhost:8042/docs` | Dokumentasi API interaktif |
+| **PhpMyAdmin** | `http://localhost:8122` | GUI Database MySQL |
+| **MySQL Direct** | `localhost:3348` | Port host MySQL container |
+| **Ngrok Web UI** | `http://localhost:4040` | Web inspector tunnel publik |
 
 ---
 
-## 13. Struktur Proyek
+## 9. Deploy Publik via Ngrok Tunnel
+
+GenPosFit menyertakan service Ngrok resmi (`genposfit-ngrok`) di dalam `docker-compose.yml` untuk memfasilitasi pengujian mobile dan akses publik:
+
+```bash
+# Nyalakan container tunnel ngrok
+make public
+
+# Tampilkan URL publik HTTPS yang sedang aktif
+make ngrok-url
+
+# Pantau log traffic ngrok
+make logs-ngrok
+
+# Hentikan tunnel ngrok
+make ngrok-down
+```
+
+> [!TIP]
+> Mengakses aplikasi via domain HTTPS resmi Ngrok memastikan API kamera (`navigator.mediaDevices.getUserMedia`) langsung aktif di perangkat smartphone tanpa perlu menginstal sertifikat SSL buatan manual.
+
+---
+
+## 10. Operasional Smart Contract GPC (Sepolia)
+
+Smart contract **GenPosFitCoin (GPC)** (ERC-1155) dikelola melalui Hardhat dalam container terisolasi:
+
+```bash
+# 1. Kompilasi smart contract
+make gpc-compile
+
+# 2. Jalankan unit test smart contract (Hardhat Network)
+make gpc-test
+
+# 3. Deploy kontrak ke Ethereum Sepolia Testnet
+make gpc-publish
+
+# 4. Periksa informasi kontrak on-chain (Nama, Symbol, Owner, Total Supply)
+make gpc-info
+
+# 5. Cek saldo akun deployer / treasury
+make gpc-balance
+
+# 6. Kirim token GPC ke alamat tertentu
+make gpc-send TARGET=0xRecipientAddress AMOUNT=100
+```
+
+### Informasi Kontrak Sepolia Aktif
+- **Nama Token:** GenPosFit Coin
+- **Simbol:** GPC
+- **Standar:** ERC-1155 (Fungible Token ID: `0`)
+- **Maksimal Suplai:** 1.000.000.000 GPC (1 Milyar GPC)
+- **Chain ID:** `11155111` (Sepolia Testnet)
+- **Alamat Kontrak Aktif:** `0x1118fb265a74A4d27C5d3ca1B17a77E750a03222` (Tercatat di `gpc-contract/deployment.json`)
+
+---
+
+## 11. Testing & Penjaminan Mutu (QA)
+
+Sistem telah diuji secara komprehensif pada setiap lapisan:
+
+### A. Pengujian Backend (FastAPI & Database)
+Dijalankan menggunakan framework `pytest`:
+```bash
+docker compose exec backend pytest tests/ -v
+```
+**Hasil:** **93 unit test PASSED (100%)** meliputi:
+- `test_admin.py` (Manajemen jenis & gerakan latihan)
+- `test_auth_users.py` (Autentikasi JWT, proteksi role admin)
+- `test_battles.py` & `test_multiplayer.py` (Logika room, sinkronisasi WebSocket)
+- `test_exercises_registration.py` (Baseline postur, multi-step sequence)
+- `test_leaderboard.py` & `test_quests.py` (Kalkulasi poin, musim, klaim reward)
+- `test_monitoring.py` & `test_pose_analysis.py` (Analisis biomekanika sudut)
+- `test_rewards.py` & `test_wallet.py` (Verifikasi signature Web3 & reward GPC)
+
+### B. Pengujian Frontend Build (TypeScript & Vite)
+```bash
+cd frontend && npm run build
+```
+**Hasil:** Kompilasi type-checking (`tsc -b`) dan bundler Vite berhasil tanpa error (**0 error**).
+
+### C. Pengujian Smart Contract (Hardhat)
+```bash
+make gpc-test
+```
+**Hasil:** **8 unit test PASSED (100%)** mencakup validasi nama/simbol, kepemilikan, izin minting, transfer, burning, dan pembatasan maksimal suplai.
+
+---
+
+## 12. Struktur Repositori
 
 ```
 genposfit/
-├── .env.example                  # Template environment
-├── docker-compose.yml            # Orchestrasi: db, backend, frontend, phpmyadmin, ngrok
-├── Makefile                      # Command operasional (Docker, DB, seed, lint, GPC)
-├── .github/workflows/ci.yml      # CI: backend test + frontend build
+├── .env.example                  # Templat konfigurasi environment
+├── docker-compose.yml            # Konfigurasi container stack utama
+├── Makefile                      # Pusat perintah otomasi Docker, DB, dan Web3
 │
-├── backend/                      # Python 3.11 + FastAPI
-│   ├── requirements.txt
+├── backend/                      # Service FastAPI (Python 3.11)
 │   ├── Dockerfile
+│   ├── requirements.txt
 │   ├── app/
-│   │   ├── main.py               # Entrypoint FastAPI + CORS
-│   │   ├── config.py             # Konfigurasi env
-│   │   ├── database.py           # Engine SQLAlchemy + MySQL
-│   │   ├── models.py             # 5 ORM model
-│   │   ├── routers/              # users, registration, monitoring, exercises
-│   │   └── services/             # pose_analysis, deviation_score
-│   └── tests/
-│       └── test_pose_analysis.py # Unit test backend
+│   │   ├── main.py               # Inisialisasi FastAPI & Middleware
+│   │   ├── config.py             # Pengaturan env & fallback konfigurasi
+│   │   ├── database.py           # Koneksi SQLAlchemy & MySQL session
+│   │   ├── models.py             # 13 Model ORM database persisten
+│   │   ├── routers/              # 11 Modul REST API & WebSocket endpoints
+│   │   ├── services/             # Engine biomekanika, skoring, & Web3 service
+│   │   └── abis/                 # ABI Smart Contract GPC
+│   └── tests/                    # 11 File suite pengujian unit (pytest)
 │
-├── database/
-│   ├── init/01_schema.sql        # Skema MySQL (auto-run)
-│   └── seed/                     # seed.sql + seed_user.py
+├── frontend/                     # SPA React 19 + TypeScript + Vite
+│   ├── Dockerfile
+│   ├── vite.config.ts
+│   ├── package.json
+│   └── src/
+│       ├── App.tsx               # Routing navigasi & modal autentikasi
+│       ├── components/           # UI components, Navbar, SkeletonOverlay
+│       ├── context/              # AuthContext & State global
+│       ├── hooks/                # useCamera, usePoseDetector
+│       ├── lib/                  # Helper API, formatting, & utilities
+│       └── pages/                # 11 Halaman aplikasi (Monitor, Exercises, Multiplayer, dll.)
 │
-├── gpc-contract/                 # GenPosFit Coin (ERC-1155, Sepolia)
+├── database/                     # Skrip inisialisasi & migrasi MySQL
+│   ├── init/01_schema.sql        # Skema DDL lengkap 13 tabel
+│   └── seed/                     # Skrip seeder data awal latihan & akun
 │
-└── frontend/                     # React 19 + Vite + TypeScript
+└── gpc-contract/                 # Smart Contract ERC-1155 (Hardhat)
     ├── Dockerfile
-    ├── vite.config.ts
-    ├── tsconfig*.json
-    ├── eslint.config.js
-    └── src/
-        ├── App.tsx               # Tab routing
-        ├── components/           # Navbar, ThemeToggle, SkeletonOverlay
-        └── pages/                # LandingPage, RegisterPose, Monitor, Dashboard, Exercises
+    ├── docker-compose.yml        # Compose terisolasi untuk Hardhat
+    ├── hardhat.config.js         # Konfigurasi jaringan Sepolia & compiler
+    ├── contracts/GPC.sol         # Source code Solidity smart contract
+    ├── scripts/                  # deploy.js, info.js, balance.js, send.js
+    ├── test/GPC.test.js          # Unit test smart contract
+    └── deployment.json           # Alamat & metadata kontrak Sepolia ter-deploy
 ```
-
----
-
-## 14. Roadmap
-
-**Fase 1 — MVP (selesai):**
-
-1. Registrasi pose multi-orientasi → simpan baseline ke MySQL via FastAPI
-2. Monitoring live: landmark → WebSocket → skor deviasi di backend
-3. Notifikasi deviasi + dashboard rekapitulasi
-4. Mode B latihan terapi + pencatatan sesi
-5. Deployment penuh via Docker Compose (MySQL + PhpMyAdmin)
-
-**Fase 2 — ditambahkan:**
-
-- Re-registrasi + grafik perbandingan baseline lama vs baru (bukti perbaikan)
-- Multi-user (profil per anggota keluarga/karyawan)
-- Ekspor laporan PDF dari frontend
-- Autentikasi JWT (login/logout di React + OAuth2 di FastAPI)
 
 ---
 
 <div align="center">
 
-**GenPosFit** — *Postur personal, bukan standar generik.* 🧘
+**GenPosFit** — *Pionir Kesehatan Postur Berbasis AI, Biomekanika Personal, dan Web3.* 🧘✨
 
 </div>
-
-## 🎮 Sistem Gamifikasi & Reward (v1.1)
-
-- **Misi harian & mingguan** — progres dihitung otomatis dari telemetri nyata
-  (monitor postur, sesi latihan, kalibrasi, menang battle multiplayer) lewat
-  `/api/quests`; hadiah poin diklaim user dan tercatat di **ledger poin**
-  (`point_ledger`) — sumber kebenaran peringkat. Hanya data berkualitas
-  (visibility landmark, geometri anatomis) yang dihitung.
-- **Peringkat bulanan (musim)** — endpoint publik `/api/leaderboard/monthly`
-  dengan Top-N, posisi "saya", dan sisa waktu musim. Admin: `/api/admin/leaderboard`.
-- **Kualitas data adaptif** — skor deviasi postur melonggarkan toleransi jika
-  baseline sudah > 30 hari (kondisi terkini pengguna) dan menandai sampel
-  berkualitas rendah. UI Live Monitor menampilkan banner kualitas data.
-- **Battle multiplayer jadi dihitung** — hasil battle dilaporkan ke backend
-  (`/api/multiplayer/rooms/{code}/result` + WS `battle_finished`), pemenang
-  +25 poin, peserta +8; progres misi "Duel Pilar Postur".
-- **Reward token GPC on-chain** — smart contract `GenPosFitCoin` (ERC-1155) di
-  Ethereum **Sepolia Testnet**. User menghubungkan **MetaMask** lewat halaman
-  Misi (verifikasi signature personal_sign). Tombol admin **"Distribute Monthly
-  Rewards"** men-mint GPC per peringkat (idempoten per musim, riwayat tx di
-  `gpc_reward_tx`). Aktifkan via `GPC_REWARDS_ENABLED=1` + alamat kontrak,
-  dan konfigurasi RPC pada `.env` backend.
-
-### Endpoint baru (ringkas)
-
-| Method | Path | Akses |
-| ------ | ---- | ----- |
-| GET | `/api/quests` | user login |
-| POST | `/api/quests/{id}/claim` | user login |
-| GET | `/api/quests/ringkasan` | user login |
-| GET | `/api/leaderboard/monthly` | user login |
-| GET/POST/PUT/DELETE | `/api/admin/quests*` | admin |
-| GET | `/api/admin/leaderboard/monthly` | admin |
-| POST | `/api/multiplayer/rooms/{code}/result` | publik (verifikasi via DB) |
-| GET | `/api/wallet/challenge` · POST `/api/wallet/verify` · GET/DELETE `/api/wallet/me` | user login |
-| GET | `/api/admin/rewards/preview` · POST `/api/admin/rewards/distribute` · GET `/api/admin/rewards/history` | admin |
