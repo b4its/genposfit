@@ -10,6 +10,7 @@ import { Exercises } from './pages/Exercises';
 import { SkeletonPreview } from './pages/SkeletonPreview';
 import { Multiplayer } from './pages/Multiplayer';
 import { AdminPage } from './pages/AdminPage';
+import { AdminExercises } from './pages/AdminExercises';
 import { ShieldCheck } from 'lucide-react';
 
 function AppContent() {
@@ -63,6 +64,7 @@ function AppContent() {
       if (e.key === 's' || e.key === 'S') setActiveTab('skeleton');
       if (e.key === 'p' || e.key === 'P') setActiveTab('multiplayer');
       if (user?.role === 'admin' && (e.key === 'a' || e.key === 'A')) setActiveTab('admin');
+      if (user?.role === 'admin' && (e.key === 'x' || e.key === 'X')) setActiveTab('admin-exercises');
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -105,6 +107,7 @@ function AppContent() {
         {activeTab === 'skeleton' && <SkeletonPreview />}
         {activeTab === 'multiplayer' && <Multiplayer />}
         {activeTab === 'admin' && <AdminPage />}
+        {activeTab === 'admin-exercises' && <AdminExercises />}
       </main>
 
       <footer className="mt-auto border-t border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 py-6 text-xs transition-colors backdrop-blur-xs">

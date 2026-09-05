@@ -22,6 +22,8 @@ class User(Base):
     pekerjaan = Column(String(100), nullable=True)
     jam_kerja_hari = Column(SmallInteger, default=8)
     role = Column(String(20), default="user")  # 'user', 'admin'
+    poin = Column(Integer, default=0)
+    saldo = Column(DECIMAL(18, 2), default=0.00)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

@@ -322,14 +322,14 @@ reseed: ## [DB] RESET TOTAL: drop tabel → migrasi ulang → seed ulang
 	$(COMPOSE) exec -T $(SERVICE_DB) mysql -u$(DB_USER) -p$(DB_PASSWORD) $(DB_NAME) \
 		-e "SET FOREIGN_KEY_CHECKS=0; \
 		    DROP TABLE IF EXISTS exercise_sessions, posture_logs, \
-		    pose_baseline, exercises, users; \
+		    pose_baseline, exercises, users, room_players, rooms; \
 		    SET FOREIGN_KEY_CHECKS=1;"
 	$(MAKE) migrate
 	$(MAKE) seed
 	@echo "$(COLOR_GREEN)✔ Database berhasil di-reseed$(COLOR_RESET)"
 
 seed-dummy: ## [DB] Isi data dummy pengguna untuk development/testing
-	$(COMPOSE) exec $(SERVICE_BACKEND) python $(SEED_DIR)/seed_user.py
+	$(COMPOSE) exec -T $(SERVICE_BACKEND) python /database/seed/seed_user.py
 	@echo "$(COLOR_GREEN)✔ Data dummy user dibuat$(COLOR_RESET)"
 
 

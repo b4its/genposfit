@@ -7,11 +7,6 @@ dan mengevaluasi postur berdasarkan standar ergonomi & baseline.
 from typing import Dict, List, Optional, Tuple, Any
 import math
 
-try:
-    import numpy as np
-except ImportError:
-    np = None
-
 
 class PoseIndices:
     """Indeks landmark standar MediaPipe Pose (33 titik)"""
@@ -121,10 +116,10 @@ def analisis_postur_dari_landmarks(
     Menganalisis 33 landmarks MediaPipe untuk mengekstrak sudut leher,
     sudut punggung, level kemiringan bahu, dan status kelayakan postur.
     """
-    if not landmarks or len(landmarks) < 25:
+    if not landmarks or len(landmarks) < 27:
         return {
             "valid": False,
-            "error": "Landmark tidak mencukupi (minimal 25 titik)",
+            "error": "Landmark tidak mencukupi (minimal 27 titik)",
             "sudut_leher": 0.0,
             "sudut_punggung": 0.0,
             "level_bahu": 0.0,

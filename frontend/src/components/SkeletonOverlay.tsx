@@ -188,7 +188,7 @@ export const SkeletonOverlay: React.FC<SkeletonOverlayProps> = ({
       if (ear && shoulder && sudutLeher !== undefined) {
         let labelX = (shoulder.x * drawW);
         const labelY = (shoulder.y * drawH) - 20;
-        if (mirror) labelX = width - labelX;
+        if (mirror) labelX = drawW - labelX;
 
         // Badge pill background
         ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
@@ -216,7 +216,7 @@ export const SkeletonOverlay: React.FC<SkeletonOverlayProps> = ({
       if (hip && sudutPunggung !== undefined) {
         const labelY = (hip.y * drawH) - 10;
         let labelX = (hip.x * drawW);
-        if (mirror) labelX = width - labelX;
+        if (mirror) labelX = drawW - labelX;
 
         ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
         ctx.strokeStyle = '#38bdf8';
@@ -239,7 +239,7 @@ export const SkeletonOverlay: React.FC<SkeletonOverlayProps> = ({
 
       ctx.restore();
     }
-  }, [landmarks, width, height, status, sudutLeher, sudutPunggung, levelBahu, orientasi, showAngles, mirror, color]);
+  }, [landmarks, width, height, status, sudutLeher, sudutPunggung, orientasi, showAngles, mirror, color]);
 
   return (
     <canvas

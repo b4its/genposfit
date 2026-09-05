@@ -37,6 +37,8 @@ UPDATE users SET hashed_password = CONCAT('tmp_', MD5(CONCAT(user_id, UNIX_TIMES
 ALTER TABLE users MODIFY hashed_password VARCHAR(255) NOT NULL;
 
 CALL add_col('users', 'role', "VARCHAR(20) DEFAULT 'user' AFTER jam_kerja_hari");
+CALL add_col('users', 'poin', "INT DEFAULT 0 AFTER role");
+CALL add_col('users', 'saldo', "DECIMAL(18,2) DEFAULT 0.00 AFTER poin");
 
 -- ====================== EXERCISES ======================
 CALL add_col('exercises', 'skeleton_data', 'JSON NULL AFTER sudut_target');

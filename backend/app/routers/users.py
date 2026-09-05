@@ -2,7 +2,6 @@
 GenPosFit — Router Pengguna (Users API)
 Manajemen profil pengguna, pengaturan jam kerja, dan pencarian profil.
 """
-import hashlib
 import secrets
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -25,10 +24,14 @@ class UserCreate(BaseModel):
 
 class UserResponse(BaseModel):
     user_id: int
+    username: str
     nama: str
     email: Optional[str] = None
     pekerjaan: Optional[str] = None
     jam_kerja_hari: Optional[int] = 8
+    poin: int = 0
+    saldo: float = 0.0
+    role: str = "user"
 
     class Config:
         from_attributes = True
@@ -46,7 +49,17 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db)):
     if payload.email:
         existing = db.query(User).filter_by(email=payload.email).first()
         if existing:
-            return existing
+            return UserResponse(
+                user_id=existing.user_id,
+                username=existing.username,
+                nama=existing.nama,
+                email=existing.email,
+                pekerjaan=existing.pekerjaan,
+                jam_kerja_hari=existing.jam_kerja_hari,
+                poin=existing.poin or 0,
+                saldo=float(existing.saldo or 0.0),
+                role=existing.role or "user",
+            )
 
     base_username = (payload.email or payload.nama or f"user_{secrets.token_hex(4)}").replace(" ", "_").lower()[:50]
     gen_username = base_username

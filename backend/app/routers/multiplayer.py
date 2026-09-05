@@ -79,7 +79,6 @@ def register_player(
 
 
 def room_dict(db: Session, room: Room) -> dict:
-    players = db.query(RoomPlayer).filter_by(room_id=room.room_id).all()
     return {
         "room_id": room.room_id,
         "room_code": room.room_code,
@@ -87,7 +86,7 @@ def room_dict(db: Session, room: Room) -> dict:
         "status": room.status,
         "max_score": room.max_score,
         "host_player_id": room.host_player_id,
-        "players": [{"player_id": p.player_id, "display_name": p.display_name, "warna": p.warna, "is_host": bool(p.is_host), "user_id": p.user_id} for p in players],
+        "players": [{"player_id": p.player_id, "display_name": p.display_name, "warna": p.warna, "is_host": bool(p.is_host), "user_id": p.user_id} for p in room.players],
     }
 
 
@@ -225,8 +224,10 @@ async def multiplayer_ws(websocket: WebSocket, room_code: str):
                     "tipe_pose": msg.get("tipe_pose", "duduk_rileks"),
                 }, exclude=client)
     except WebSocketDisconnect:
-        pass
+        hub.remove(client)
+        logger.info(f"Client {guest_key} disconnected from {code}")
     except Exception as e:
+        hub.remove(client)
         logger.error("WS error: %s", e)
     finally:
         if guest_key:
