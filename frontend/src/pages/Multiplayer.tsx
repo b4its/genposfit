@@ -72,6 +72,23 @@ function getOsInfo(): string {
   return 'OS';
 }
 
+// Identitas sesi unik & stabil per browser (disimpan di localStorage).
+// Ini menjamin setiap pemain memiliki key unik walau berbagi IP/User-Agent,
+// sehingga skeleton antar pemain tidak pernah bentrok/ter-double.
+function getClientId(): string {
+  const LS_KEY = 'genposfit_client_id';
+  let id = localStorage.getItem(LS_KEY) || '';
+  if (!id) {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      id = crypto.randomUUID();
+    } else {
+      id = 'c' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+    }
+    try { localStorage.setItem(LS_KEY, id); } catch { /* storage unavailable */ }
+  }
+  return id;
+}
+
 export const Multiplayer: React.FC = () => {
   const { user } = useAuth();
 
@@ -98,6 +115,7 @@ export const Multiplayer: React.FC = () => {
   const wsRef = useRef<WebSocket | null>(null);
   const colorPoolRef = useRef<string[]>([]);
   const roomRef = useRef<any>(null);
+  const clientIdRef = useRef<string>(getClientId());
   useEffect(() => { roomRef.current = room; }, [room]);
 
   // local camera + pose
@@ -277,7 +295,7 @@ const loadBattleMoves = async () => {
       const res = await fetch(`${API_URL()}/api/multiplayer/rooms/${roomRef.current.room_code}/challenges`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ challenge_exercise_ids: ids }),
+        body: JSON.stringify({ challenge_exercise_ids: ids, guest_key: guestKey }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -287,11 +305,12 @@ const loadBattleMoves = async () => {
   };
 
   const currentKey = () => (guestKey || (user ? `u:${user.user_id}` : ''));
+  const playerKey = (p: any) => (p?.guest_key || (p?.user_id ? `u:${p.user_id}` : '') || '');
   const isHost = () => {
     const myKey = currentKey();
     if (!room?.players) return false;
     return room.players.some((p: any) => {
-      const pKey = p.guest_key || (p.user_id ? `u:${p.user_id}` : '');
+      const pKey = playerKey(p);
       return pKey === myKey && p.is_host;
     });
   };
@@ -358,7 +377,6 @@ const loadBattleMoves = async () => {
             });
           }
         } else if (msg.type === 'challenge_update') {
-          const key = msg.guest_key || (msg.user_id ? `u:${msg.user_id}` : '');
           // Hanya host yang boleh mengirim; semua (termasuk host) terapkan
           applyChallengeIds(msg.challenge_exercise_ids);
           if (wsRef.current?.readyState === WebSocket.OPEN && msg.guest_key !== guestKey) {
@@ -369,6 +387,17 @@ const loadBattleMoves = async () => {
           if (msg.room) {
             setRoom(msg.room);
             applyChallengeIds(msg.room.challenge_exercise_ids);
+            // Rebuild daftar pemain otoritatif dari server agar tidak ada
+            // player "hantu" (yang sudah keluar) atau duplikasi key.
+            setPlayers((prev) => {
+              const next: Record<string, RemotePlayer> = {};
+              (msg.room.players || []).forEach((p: any) => {
+                const key = playerKey(p);
+                if (!key) return;
+                next[key] = { ...(prev[key] || {}), guest_key: p.guest_key, user_id: p.user_id, display_name: p.display_name, warna: p.warna, is_host: p.is_host, landmarks: prev[key]?.landmarks ?? null };
+              });
+              return next;
+            });
           }
         }
       } catch { /* ignore */ }
@@ -378,11 +407,27 @@ const loadBattleMoves = async () => {
   };
 
   const leaveRoom = () => {
+    // Bersihkan data sesi dari DB agar pemain tidak "hantu" di room
+    try {
+      const rc = roomRef.current;
+      if (rc?.room_code && guestKey) {
+        fetch(`${API_URL()}/api/multiplayer/leave`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ room_code: rc.room_code, guest_key: guestKey, client_id: clientIdRef.current }),
+        }).catch(() => {});
+      }
+    } catch {}
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) wsRef.current.close();
     wsRef.current = null;
     setRoom(null);
     setPlayers({});
     setMyPlayerKey('');
+    if (videoRef.current?.srcObject) {
+      const tracks = (videoRef.current.srcObject as MediaStream)?.getTracks();
+      tracks?.forEach(t => t.stop());
+      videoRef.current.srcObject = null;
+    }
     setCamStarted(false);
     setMode('lobby');
     setError(null);
@@ -405,7 +450,7 @@ const loadBattleMoves = async () => {
       const res = await fetch(`${API_URL()}/api/multiplayer/rooms`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nama: roomName, password, display_name: displayName, warna: selectedColor, user_id: user?.user_id || null, max_score: maxScore }),
+        body: JSON.stringify({ nama: roomName, password, display_name: displayName, warna: selectedColor, user_id: user?.user_id || null, max_score: maxScore, client_id: clientIdRef.current }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data?.detail || 'Gagal membuat room.'); return; }
@@ -428,7 +473,7 @@ const loadBattleMoves = async () => {
       const res = await fetch(`${API_URL()}/api/multiplayer/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ room_code: roomCode, password, display_name: displayName, warna: selectedColor, user_id: user?.user_id || null }),
+        body: JSON.stringify({ room_code: roomCode, password, display_name: displayName, warna: selectedColor, user_id: user?.user_id || null, client_id: clientIdRef.current }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data?.detail || 'Gagal masuk room.'); return; }
@@ -437,13 +482,14 @@ const loadBattleMoves = async () => {
       setRoom(data);
       setMode('room');
       connectWS(data.room_code);
-      // Seed existing players from room response
+      // Seed existing players from room response (key konsisten: guest_key dulu)
       const seed: Record<string, RemotePlayer> = {};
       data.players?.forEach((p: any) => {
-        const key = p.user_id ? `u:${p.user_id}` : (p.guest_key || '');
-        seed[key] = { ...p, landmarks: null };
+        const key = playerKey(p);
+        if (key) seed[key] = { ...p, landmarks: null };
       });
       setPlayers(seed);
+      loadBattleMoves();
     } catch { setError('Tidak dapat terhubung ke server.'); } finally { setLoading(false); }
   };
 
