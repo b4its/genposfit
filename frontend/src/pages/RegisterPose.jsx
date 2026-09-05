@@ -4,6 +4,8 @@ import {
   RefreshCw, Save, ShieldCheck, ArrowRight, UserCheck, ChevronRight
 } from 'lucide-react';
 import { SkeletonOverlay } from '../components/SkeletonOverlay';
+import { CameraPermission } from '../components/CameraPermission';
+import { useCamera } from '../hooks/useCamera';
 
 export const RegisterPose = ({ onFinishCalibration }) => {
   const [nama, setNama] = useState('Alex Chandra');
@@ -13,8 +15,8 @@ export const RegisterPose = ({ onFinishCalibration }) => {
   const [tipePose, setTipePose] = useState('duduk_tegak');
 
   // Camera state
+  const { permission: camPermission, error: camError, started: camStarted, stream: camStream, start: startCamera, stop: stopCamera } = useCamera();
   const [isCameraActive, setIsCameraActive] = useState(false);
-  const [cameraError, setCameraError] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
   const [countdown, setCountdown] = useState(null);
   const [recordedFrames, setRecordedFrames] = useState(0);
@@ -29,39 +31,30 @@ export const RegisterPose = ({ onFinishCalibration }) => {
   const [liveShoulder, setLiveShoulder] = useState(0.015);
 
   const videoRef = useRef(null);
-  const streamRef = useRef(null);
   const frameBufferRef = useRef([]);
   const animFrameIdRef = useRef(null);
 
-  // Start Camera
-  const startCamera = async () => {
-    setCameraError(null);
-    try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('Browser tidak mendukung akses kamera getUserMedia()');
-      }
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480, facingMode: 'user' }
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-      }
-      setIsCameraActive(true);
-    } catch (err) {
-      console.warn('Gagal akses webcam, beralih ke Simulated Calibration Mode:', err);
-      setCameraError(err.message || 'Kamera tidak terdeteksi.');
-      setIsCameraActive(false);
+  // Sync camera started state
+  useEffect(() => {
+    setIsCameraActive(camStarted);
+  }, [camStarted]);
+
+  // Attach stream to <video>
+  useEffect(() => {
+    if (videoRef.current && camStream) {
+      videoRef.current.srcObject = camStream;
+      videoRef.current.play();
     }
+  }, [camStream]);
+
+  // Start Camera
+  const handleStartCamera = async () => {
+    await startCamera();
   };
 
   // Stop Camera
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
+  const handleStopCamera = () => {
+    stopCamera();
     if (animFrameIdRef.current) {
       cancelAnimationFrame(animFrameIdRef.current);
     }
@@ -350,14 +343,14 @@ export const RegisterPose = ({ onFinishCalibration }) => {
               <div className="flex items-center gap-2">
                 {!isCameraActive ? (
                   <button
-                    onClick={startCamera}
+                    onClick={handleStartCamera}
                     className="text-xs font-mono text-emerald-400 hover:text-emerald-300 flex items-center gap-1 cursor-pointer"
                   >
                     <Camera size={13} /> Aktifkan Kamera
                   </button>
                 ) : (
                   <button
-                    onClick={stopCamera}
+                    onClick={handleStopCamera}
                     className="text-xs font-mono text-red-400 hover:text-red-300 flex items-center gap-1 cursor-pointer"
                   >
                     <CameraOff size={13} /> Matikan Kamera
@@ -389,6 +382,15 @@ export const RegisterPose = ({ onFinishCalibration }) => {
                 orientasi={orientasi}
                 showAngles={true}
               />
+
+              {/* Camera Permission Overlay */}
+              {!isCameraActive && (
+                <CameraPermission
+                  permission={camPermission}
+                  error={camError}
+                  onRequestCamera={handleStartCamera}
+                />
+              )}
 
               {/* Countdown Overlay */}
               {countdown !== null && (

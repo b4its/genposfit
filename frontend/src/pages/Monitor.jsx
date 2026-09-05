@@ -4,6 +4,8 @@ import {
   AlertTriangle, RefreshCw, Sliders, Play, Pause, Activity, Dumbbell, Shield
 } from 'lucide-react';
 import { SkeletonOverlay } from '../components/SkeletonOverlay';
+import { CameraPermission } from '../components/CameraPermission';
+import { useCamera } from '../hooks/useCamera';
 
 // Sound synthesizer using Web Audio API for posture warning
 function playAlertTone() {
@@ -33,9 +35,25 @@ function playAlertTone() {
 
 export const Monitor = ({ onNavigateToExercises }) => {
   const [isLive, setIsLive] = useState(true);
-  const [useCamera, setUseCamera] = useState(false);
   const [audioAlerts, setAudioAlerts] = useState(true);
+
+  const {
+    permission: camPermission,
+    error: camError,
+    started: camStarted,
+    stream: camStream,
+    start: startCamera,
+    stop: stopCamera,
+  } = useCamera();
+
+  const [camActive, setCamActive] = useState(false);
   const [simMode, setSimMode] = useState(true); // Simulator active when camera is off
+
+  // Sync camStarted to local state & toggle simMode
+  useEffect(() => {
+    setCamActive(camStarted);
+    setSimMode(!camStarted);
+  }, [camStarted]);
 
   // Telemetry metrics
   const [status, setStatus] = useState('bagus'); // 'bagus', 'ringan', 'buruk'
@@ -54,9 +72,16 @@ export const Monitor = ({ onNavigateToExercises }) => {
   // Landmarks & Canvas
   const [landmarks, setLandmarks] = useState(null);
   const videoRef = useRef(null);
-  const streamRef = useRef(null);
   const wsRef = useRef(null);
   const badPostureTimerRef = useRef(0);
+
+  // Attach camera stream to <video> when it changes
+  useEffect(() => {
+    if (videoRef.current && camStream) {
+      videoRef.current.srcObject = camStream;
+      videoRef.current.play();
+    }
+  }, [camStream]);
 
   // Session clock
   useEffect(() => {
@@ -123,31 +148,10 @@ export const Monitor = ({ onNavigateToExercises }) => {
 
   // Start / Stop Webcam
   const toggleCamera = async () => {
-    if (useCamera) {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(t => t.stop());
-        streamRef.current = null;
-      }
-      setUseCamera(false);
-      setSimMode(true);
+    if (camActive) {
+      stopCamera();
     } else {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 640, height: 480 }
-        });
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play();
-        }
-        setUseCamera(true);
-        setSimMode(false);
-      } catch (err) {
-        console.warn('Webcam permission denied or not found:', err);
-        alert('Webcam tidak dapat diakses. Tetap di mode simulator biomekanika.');
-        setUseCamera(false);
-        setSimMode(true);
-      }
+      await startCamera();
     }
   };
 
@@ -270,13 +274,13 @@ export const Monitor = ({ onNavigateToExercises }) => {
           <button
             onClick={toggleCamera}
             className={`px-3 py-2 rounded-lg border text-xs font-mono cursor-pointer flex items-center gap-2 ${
-              useCamera
+camActive
                 ? 'bg-emerald-600/20 border-emerald-500 text-emerald-400'
                 : 'bg-slate-900 border-slate-700 text-slate-300'
             }`}
           >
-            {useCamera ? <Camera size={16} /> : <CameraOff size={16} />}
-            <span>{useCamera ? 'Webcam Aktif' : 'Simulasi Biomekanika'}</span>
+            {camActive ? <Camera size={16} /> : <CameraOff size={16} />}
+            <span>{camActive ? 'Webcam Aktif' : 'Simulasi Biomekanika'}</span>
           </button>
 
           <button
@@ -306,7 +310,7 @@ export const Monitor = ({ onNavigateToExercises }) => {
                 autoPlay
                 playsInline
                 muted
-                className={`w-full h-full object-cover ${useCamera ? 'block' : 'hidden'}`}
+                className={`w-full h-full object-cover ${camActive ? 'block' : 'hidden'}`}
               />
 
               {/* Skeleton Overlay */}
@@ -321,6 +325,15 @@ export const Monitor = ({ onNavigateToExercises }) => {
                 orientasi="lateral_kiri"
                 showAngles={true}
               />
+
+              {/* Camera Permission Overlay */}
+              {!camActive && (
+                <CameraPermission
+                  permission={camPermission}
+                  error={camError}
+                  onRequestCamera={startCamera}
+                />
+              )}
 
               {/* Bad posture alert banner over canvas */}
               {status === 'buruk' && (
@@ -344,7 +357,7 @@ export const Monitor = ({ onNavigateToExercises }) => {
               <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between px-3 py-1.5 rounded-lg bg-slate-900/85 backdrop-blur-sm border border-slate-800 text-xs font-mono z-20">
                 <div className="flex items-center gap-4">
                   <span className="text-slate-400">
-                    Mode: <strong className="text-white">{useCamera ? 'Webcam' : 'Simulasi'}</strong>
+                    Mode: <strong className="text-white">{camActive ? 'Webcam' : 'Simulasi'}</strong>
                   </span>
                   <span className="text-slate-400">
                     Orientasi: <strong className="text-blue-400">Lateral Kiri</strong>
