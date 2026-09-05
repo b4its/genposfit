@@ -4,6 +4,7 @@ export interface AuthUser {
   user_id: number;
   username: string;
   nama: string;
+  role: string;
   email?: string | null;
   pekerjaan?: string | null;
 }
@@ -73,6 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user_id: data.user_id,
       username: data.username,
       nama: data.nama,
+      role: data.role || 'user',
     });
   };
 
@@ -97,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user_id: data.user_id,
       username: data.username,
       nama: data.nama,
+      role: data.role || 'user',
     });
   };
 

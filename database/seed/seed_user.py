@@ -49,6 +49,30 @@ def seed():
             else:
                 print(f"ℹ User sudah ada: ID {user.user_id} - {user.nama}")
 
+            # Create or promote admin user
+            admin = db.query(User).filter_by(username="admin").first()
+            if not admin:
+                admin = User(
+                    username="admin",
+                    hashed_password=hash_password("admin1234"),
+                    nama="Administrator GenPosFit",
+                    email="admin@genposfit.local",
+                    pekerjaan="System Administrator",
+                    jam_kerja_hari=8,
+                    role="admin",
+                )
+                db.add(admin)
+                db.commit()
+                db.refresh(admin)
+                print(f"✔ Admin dibuat: {admin.nama} (username: admin, password: admin1234)")
+            else:
+                if admin.role != "admin":
+                    admin.role = "admin"
+                    db.commit()
+                    print(f"✔ User {admin.username} ditingkatkan menjadi admin.")
+                else:
+                    print(f"ℹ Admin sudah ada: ID {admin.user_id} - {admin.nama}")
+
             # Baseline calibrations
             baselines = [
                 {

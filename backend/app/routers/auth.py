@@ -35,12 +35,14 @@ class AuthResponse(BaseModel):
     user_id: int
     username: str
     nama: str
+    role: str = "user"
 
 
 class UserInfoResponse(BaseModel):
     user_id: int
     username: str
     nama: str
+    role: str = "user"
     email: str | None = None
     pekerjaan: str | None = None
     jam_kerja_hari: int | None = 8
@@ -70,18 +72,20 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
         nama=payload.nama,
         email=payload.email,
         pekerjaan=payload.pekerjaan,
+        role="user",
     )
     db.add(user)
     db.commit()
     db.refresh(user)
 
-    access_token = create_access_token(data={"sub": user.username, "user_id": user.user_id})
+    access_token = create_access_token(data={"sub": user.username, "user_id": user.user_id, "role": user.role})
 
     return AuthResponse(
         access_token=access_token,
         user_id=user.user_id,
         username=user.username,
         nama=user.nama,
+        role=user.role,
     )
 
 
@@ -95,13 +99,14 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
             detail="Username atau password salah.",
         )
 
-    access_token = create_access_token(data={"sub": user.username, "user_id": user.user_id})
+    access_token = create_access_token(data={"sub": user.username, "user_id": user.user_id, "role": user.role})
 
     return AuthResponse(
         access_token=access_token,
         user_id=user.user_id,
         username=user.username,
         nama=user.nama,
+        role=user.role,
     )
 
 
@@ -133,6 +138,7 @@ def get_current_user_info(request: Request, token: str = "", db: Session = Depen
         user_id=user.user_id,
         username=user.username,
         nama=user.nama,
+        role=user.role or "user",
         email=user.email,
         pekerjaan=user.pekerjaan,
         jam_kerja_hari=user.jam_kerja_hari,

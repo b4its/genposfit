@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(150) UNIQUE,
     pekerjaan VARCHAR(100),
     jam_kerja_hari TINYINT DEFAULT 8,
+    role VARCHAR(20) DEFAULT 'user',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_username (username)

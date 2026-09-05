@@ -21,6 +21,7 @@ class User(Base):
     email = Column(String(150), unique=True, nullable=True)
     pekerjaan = Column(String(100), nullable=True)
     jam_kerja_hari = Column(SmallInteger, default=8)
+    role = Column(String(20), default="user")  # 'user', 'admin'
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

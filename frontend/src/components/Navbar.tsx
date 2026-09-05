@@ -6,7 +6,7 @@ import { ThemeToggle } from './ThemeToggle';
 import { Pill, PillIndicator, PillContent, Badge } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 
-export type PageTab = 'landing' | 'monitor' | 'register' | 'dashboard' | 'exercises' | 'skeleton' | 'multiplayer';
+export type PageTab = 'landing' | 'monitor' | 'register' | 'dashboard' | 'exercises' | 'skeleton' | 'multiplayer' | 'admin';
 
 interface NavbarProps {
   activeTab: PageTab;
@@ -22,6 +22,7 @@ const NAV_ITEMS = [
   { id: 'exercises', label: 'Latihan Terapi', icon: Dumbbell },
   { id: 'skeleton', label: 'Skeleton', icon: Eye, badge: 'Preview' },
   { id: 'multiplayer', label: 'Multiplayer', icon: Users, badge: 'Room' },
+  { id: 'admin', label: 'Admin', icon: ShieldCheck, adminOnly: true, badge: 'Admin' },
 ];
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -30,12 +31,15 @@ export const Navbar: React.FC<NavbarProps> = ({
   apiOnline = true,
 }) => {
   const { user, logout } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navigate = (tab: PageTab) => {
     setActiveTab(tab);
     setMobileOpen(false);
   };
+
+  const visibleItems = NAV_ITEMS.filter(item => !item.adminOnly || isAdmin);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md transition-colors duration-200">
@@ -65,7 +69,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Desktop Navigation Tabs */}
         <nav className="hidden md:flex items-center gap-1 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-xs shrink-0 overflow-x-auto max-w-[56rem]">
-          {NAV_ITEMS.map((item) => {
+          {visibleItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
             return (
@@ -154,7 +158,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           <ul className="grid grid-cols-1 gap-1">
-            {NAV_ITEMS.map((item) => {
+            {visibleItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
               return (
