@@ -4,10 +4,12 @@
 
 **Sistem monitoring & latihan postur berbasis AI dengan Pose Enrollment untuk personalisasi**
 
-![React](https://img.shields.io/badge/Frontend-React%2018-61DAFB?logo=react&logoColor=white)
+![React](https://img.shields.io/badge/Frontend-React%2019-61DAFB?logo=react&logoColor=white)
+![Vite](https://img.shields.io/badge/Dev%20Server-Vite-646CFF?logo=vite&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?logo=fastapi&logoColor=white)
 ![MediaPipe](https://img.shields.io/badge/MediaPipe-Pose%20Estimation-orange?logo=google)
-![SQLite](https://img.shields.io/badge/Database-SQLite-lightgrey?logo=sqlite)
+![MySQL](https://img.shields.io/badge/Database-MySQL%208.0-4479A1?logo=mysql&logoColor=white)
+![Docker](https://img.shields.io/badge/Deploy-Docker%20Compose-2496ED?logo=docker&logoColor=white)
 
 </div>
 
@@ -20,13 +22,13 @@
 3. [Tech Stack](#3-tech-stack)
 4. [Sesi Registrasi Pose: Alur Detail](#4-sesi-registrasi-pose-alur-detail)
 5. [Data Baseline yang Diekstraksi & Disimpan](#5-data-baseline-yang-diekstraksi--disimpan)
-6. [Struktur Database (SQLite)](#6-struktur-database-sqlite)
+6. [Struktur Database (MySQL)](#6-struktur-database-mysql)
 7. [Backend — API FastAPI](#7-backend--api-fastapi)
 8. [Frontend — React](#8-frontend--react)
 9. [Baseline Dipakai Saat Live Monitoring](#9-baseline-dipakai-saat-live-monitoring)
 10. [Alur Aplikasi](#10-alur-aplikasi)
 11. [Validasi & Edge Case](#11-validasi--edge-case)
-12. [Instalasi & Menjalankan](#12-instalasi--menjalankan)
+12. [Instalasi & Menjalankan (Docker Compose)](#12-instalasi--menjalankan-docker-compose)
 13. [Struktur Proyek](#13-struktur-proyek)
 14. [Roadmap](#14-roadmap)
 
@@ -38,13 +40,13 @@ Setiap pengguna baru **wajib melewati proses registrasi pose** sebelum bisa meng
 
 **Alur pertama kali:**
 
-1. Pengguna **daftar akun** → diarahkan ke **registrasi pose**.
-2. Pengguna mengikuti pose referensi yang tampil di layar, direkam dari beberapa sisi:
+1. Pengguna **mengisi profil** → diarahkan ke **registrasi pose**.
+2. Pengguna mengikuti pose referensi, direkam dari beberapa sisi:
    - **Frontal** (menghadap kamera)
    - **Lateral kiri** (samping kiri ke kamera)
    - **Lateral kanan** (samping kanan ke kamera)
 3. Sistem merekam landmark, menghitung sudut, lalu menyimpannya sebagai **baseline personal**.
-4. Profil tersimpan → pengguna bisa mulai **live monitoring**, di mana postur real-time dibandingkan terhadap **baseline user sendiri** (bukan angka standar umum).
+4. Profil tersimpan ke MySQL → pengguna bisa mulai **live monitoring**, di mana postur real-time dibandingkan terhadap **baseline user sendiri** (bukan angka standar umum).
 
 **Mengapa penting?** Tubuh setiap orang berbeda — tinggi badan, proporsi bahu, kelengkungan alami tulang belakang, bahkan kebiasaan lama. Memakai threshold generik (*"sudut 160° = bagus"*) untuk semua orang tidak akurat. Dengan baseline personal, deteksi menjadi **deviasi dari postur normal pengguna itu sendiri** → jauh lebih akurat dan personal.
 
@@ -54,17 +56,19 @@ Setiap pengguna baru **wajib melewati proses registrasi pose** sebelum bisa meng
 
 | Layer | Komponen | Tanggung Jawab |
 |---|---|---|
-| **Frontend (React)** | Kamera (`getUserMedia`), MediaPipe Pose JS, UI | Menangkap video kamera, mengekstraksi 33 landmark langsung di browser, menggambar skeleton, menampilkan UI onboarding/dashboard/laporan |
+| **Frontend (React)** | Kamera (`getUserMedia`), MediaPipe Pose JS, UI | Menangkap video kamera, mengekstraksi 33 landmark langsung di browser, menggambar skeleton, menampilkan UI onboarding/monitor/dashboard/latihan |
 | **Backend (FastAPI)** | REST API + WebSocket | Mengelola registrasi baseline, menghitung skor deviasi personal, menyimpan log, menyajikan laporan |
-| **Database (SQLite)** | Tabel `users`, `pose_baseline`, `posture_logs` | Penyimpanan lokal ringan |
+| **Database (MySQL 8.0)** | 5 tabel: `users`, `pose_baseline`, `posture_logs`, `exercises`, `exercise_sessions` | Penyimpanan persisten (via Docker volume) |
+
+> Proyek kini berjalan penuh di **Docker Compose** (4 container: `db`, `backend`, `frontend`, `phpmyadmin`) sebagai pengganti stand-alone SQLite.
 
 **Alur komunikasi:**
 
-- React mengekstraksi landmark di browser → menghitung fitur (sudut, rasio) → mengirim fitur ke FastAPI.
+- React mengekstraksi landmark di browser → mengirim landmark per frame ke FastAPI → backend menghitung sudut, skor deviasi, dan status.
 - Komunikasi data historis/agregat via **REST (JSON)**; data real-time per frame via **WebSocket**.
 - FastAPI melakukan scoring deviasi vs baseline → hasil dikirim balik ke React untuk ditampilkan.
 
-> **Keputusan desain:** MediaPipe berjalan di browser (JS), bukan di server. Hanya fitur hasil ekstraksi (angka sudut) yang dikirim ke backend — lebih hemat bandwidth dan latensi rendah.
+> **Keputusan desain:** landmark MediaPipe diproses oleh backend (FastAPI + OpenCV + MediaPipe). Fitur tetap ringan dan semua analisis terpusat.
 
 ---
 
@@ -72,15 +76,16 @@ Setiap pengguna baru **wajib melewati proses registrasi pose** sebelum bisa meng
 
 | Layer | Teknologi | Peran |
 |---|---|---|
-| **Frontend** | React 18 + Vite | SPA: onboarding, dashboard, visualisasi skeleton |
-| | MediaPipe Tasks Vision (JS) | Deteksi 33 landmark pose langsung di browser |
-| | Recharts | Grafik progres deviasi & laporan |
-| **Backend** | FastAPI | REST API + WebSocket untuk scoring real-time |
+| **Frontend** | React 19 + Vite + TypeScript | SPA: landing, monitoring, kalibrasi, dashboard, latihan |
+| | MediaPipe Pose (CDN) | Deteksi & overlay skeleton |
+| | Lucide React | Ikon UI |
+| **Backend** | FastAPI + Uvicorn | REST API + WebSocket untuk scoring real-time |
+| | SQLAlchemy 2.0 + PyMySQL | ORM + driver koneksi MySQL |
+| | MediaPipe + OpenCV + NumPy | Analisis sudut biomekanika landmark |
 | | Pydantic | Validasi skema data baseline & log |
-| | SQLite + SQLAlchemy | Database lokal ringan |
-| | NumPy | Agregasi mean/std baseline |
-| **Infra** | Uvicorn | ASGI server |
-| | CORS Middleware | Komunikasi React ↔ FastAPI |
+| **Database** | MySQL 8.0 | Penyimpanan persisten, InnoDB, FK + index |
+| **Infra** | Docker Compose | Orchestrasi 4 container (db, backend, frontend, phpmyadmin) |
+| | GitHub Actions (CI) | Backend unit test (`unittest`) + frontend build (`tsc` + Vite) |
 
 ---
 
@@ -89,62 +94,44 @@ Setiap pengguna baru **wajib melewati proses registrasi pose** sebelum bisa meng
 ### Fase 1 — Setup & Pemeriksaan Kamera
 
 1. Pengguna diminta menyiapkan ruangan dengan pencahayaan cukup.
-2. Kamera dinyalakan → cek kualitas frame (terang? user terlihat penuh?).
+2. Kamera dinyalakan → cek kualitas frame.
 3. Instruksi: *"Posisikan diri agar seluruh tubuh atas terlihat di layar."*
-4. Validasi: sistem cek landmark MediaPipe terdeteksi stabil ≥ 10 frame.
-   - Jika tidak → beri panduan (mundur/maju/perbaiki pencahayaan), lalu ulangi pengecekan.
+4. Jika kamera tidak tersedia/ditolak, sistem beralih ke **Simulator Biomekanika** (landmark sintetis) sehingga alur tetap bisa dilalui untuk demo/presentasi.
 
 ### Fase 2 — Panduan Rotasi Sisi (Angle Capture)
 
-Pengguna **diarahkan oleh sistem** (dengan visual + countdown) untuk memutar tubuh ke beberapa orientasi. Skeleton di layar berubah warna saat orientasi sudah benar.
+Pengguna memilih orientasi kamera (frontal / lateral kiri / lateral kanan) dan tipe pose target (duduk tegak, duduk rileks, berdiri tegak, berdiri rileks).
 
-| Tahap | Orientasi yang Diminta | Tujuan Data |
-|---|---|---|
-| 1 | **Frontal (menghadap kamera)** | Kesimetrian bahu, kemiringan kepala, deteksi asimetri pinggul |
-| 2 | **Lateral kiri (samping kiri ke kamera)** | Kurva leher & punggung dari samping — paling akurat untuk deteksi tech neck & slouching |
-| 3 | **Lateral kanan** | Validasi silang, deteksi asimetri kiri-kanan |
-| 4 | *(opsional)* **Posterior (belakang)** | Screening asimetri tulang belakang, bahu |
-
-**Deteksi otomatis orientasi:** sistem sendiri yang mengenali user sudah menghadap ke arah yang benar (dari rasio lebar bahu terhadap kedalaman landmark — jika bahu "menyempit" berarti user sedang menyamping). Baru setelah itu perekaman dimulai.
-
-**Urutan proses per orientasi:**
-
-1. Sistem menampilkan ilustrasi + instruksi orientasi yang diminta.
-2. Sistem mendeteksi orientasi user secara otomatis.
-   - Belum sesuai → tampilkan instruksi perbaikan, kembali ke langkah 2.
-   - Sudah sesuai → skeleton berubah warna sebagai tanda.
-3. Countdown *"bertahan di posisi... 3.. 2.. 1.."*
-4. Perekaman pose dimulai otomatis.
+| Orientasi | Tujuan Data |
+|---|---|
+| **Frontal (menghadap kamera)** | Kesimetrian bahu, level kemiringan bahu |
+| **Lateral kiri (samping kiri ke kamera)** | Kurva leher & punggung dari samping — paling akurat untuk deteksi tech neck & slouching |
+| **Lateral kanan** | Validasi silang, deteksi asimetri kiri-kanan |
 
 ### Fase 3 — Instruksi Pose Referensi per Orientasi
 
-Di setiap orientasi, pengguna diarahkan mengikuti **2–3 pose** yang ditampilkan sebagai ilustrasi/skeleton contoh di layar:
+| Tipe Pose | Fungsi Baseline |
+|---|---|
+| **Duduk tegak (ideal ergonomis)** | Menangkap kapasitas ideal user |
+| **Duduk rileks (posisi kerja alami)** | Menangkap kebiasaan alami user |
+| **Berdiri tegak (standing desk)** | Referensi align kepala-bahu-pinggul |
+| **Berdiri rileks** | Menangkap postur berdiri alami |
 
-| Orientasi | Pose yang Diminta | Fungsi Baseline |
-|---|---|---|
-| Frontal | a) Berdiri rileks natural | Menangkap kebiasaan alami user |
-| Frontal | b) Berdiri tegak maksimal ("dada dibusukkan") | Menangkap kapasitas ideal user |
-| Frontal | c) Duduk normal seperti saat bekerja | Baseline postur kerja frontal |
-| Samping kiri/kanan | a) Duduk rileks | Menangkap kecenderungan slouch user |
-| Samping kiri/kanan | b) Duduk tegak | Baseline postur ideal duduk |
-| Samping kiri/kanan | c) Berdiri tegak | Referensi align kepala-bahu-pinggul |
-
-> **Kunci desain:** sistem menyimpan **dua kondisi** — *relaxed* (kebiasaan) dan *upright* (ideal). Dari selisih keduanya, sistem tahu *"seberapa jauh postur kerja user menyimpang dari kapasitas terbaiknya"* → dasar skoring personal.
+> **Kunci desain:** sistem menyimpan **dua kondisi** — *relaxed* (kebiasaan) dan *tegak* (ideal). Dari selisih keduanya, sistem tahu *"seberapa jauh postur kerja user menyimpang dari kapasitas terbaiknya"* → dasar skoring personal.
 
 ### Fase 4 — Perekaman & Ekstraksi
 
 Per pose:
 
 1. Countdown 3 detik (stabilisasi).
-2. Rekam 30–45 frame berturut-turut (~1,5 detik).
-3. Ekstrak 33 landmark MediaPipe per frame.
-4. Buang frame dengan visibility landmark rendah (< 0.5).
-5. Hitung nilai rata-rata (mean) + standar deviasi per sudut kunci.
-6. Kirim hasil agregasi ke FastAPI → simpan ke SQLite sebagai baseline.
+2. Rekam 90 frame berturut-turut (~3 detik).
+3. Ekstrak landmark MediaPipe per frame.
+4. Hitung nilai rata-rata (mean) + standar deviasi per sudut kunci (leher & punggung) serta level bahu.
+5. Kirim hasil agregasi ke FastAPI → simpan ke MySQL sebagai baseline.
 
 ### Fase 5 — Ringkasan Profil
 
-Pengguna diperlihatkan hasil registrasi: skeleton posturnya, sudut-sudut kunci, dan skor awal. Data tersimpan sebagai **Posture Profile** melalui API backend.
+Pengguna diperlihatkan tabel hasil registrasi: orientasi, tipe pose, sudut rata-rata, dan standar deviasi, lalu **tombol simpan profil ke MySQL**. Setelah sukses, pengguna diarahkan ke **Live Monitor**.
 
 ---
 
@@ -154,31 +141,84 @@ Dari setiap kombinasi (orientasi × pose), sistem menghitung:
 
 | Parameter | Cara Hitung | Kegunaan Nanti |
 |---|---|---|
-| **Sudut leher** | Telinga–Bahu vs vertikal | Deteksi tech neck personal |
-| **Sudut punggung** | Bahu–Pinggul vs vertikal | Deteksi slouch personal |
-| **Level bahu** | Selisih y bahu kiri–kanan (frontal) | Deteksi bahu miring |
-| **Selisih maju bahu** | Posisi x bahu vs telinga (samping) | Deteksi rounded shoulders |
-| **Jarak kepala–bahu (lebar bahu sebagai unit)** | Normalisasi skala | Konsisten untuk semua ukuran tubuh |
-| **Align bahu–pinggul** | Offset horizontal | Deteksi postur condong |
+| **Sudut leher** | Telinga–Bahu–Pinggul (midpoint untuk frontal) | Deteksi tech neck personal |
+| **Sudut punggung** | Bahu–Pinggul–Lutut (midpoint untuk frontal) | Deteksi slouch personal |
+| **Level bahu** | Selisih y bahu kiri–kanan dibagi lebar bahu | Deteksi bahu miring |
 | **Standar deviasi tiap sudut** | Variasi antar frame | Menentukan **toleransi personal** (orang yang gemetar/sering gerak → toleransi lebih lebar) |
+| **Jumlah frame** | Panjang perekaman | Menjamin kualitas kalibrasi |
 
-**Normalisasi skala:** semua jarak dibagi lebar bahu user (`scale = jarak_bahu_kiri_ke_kanan`), sehingga profil tetap valid dihitung dari jarak kamera berapa pun.
+**Normalisasi:** level bahu dinormalkan terhadap jarak antar-bahu sehingga konsisten terlepas dari jarak kamera.
 
 ---
+
+## 6. Struktur Database (MySQL)
+
+Database `genposfit` dengan 5 tabel (skema InnoDB, asing-key, index):
+
+| Tabel | Kolom Utama | Fungsi |
+|---|---|---|
+| `users` | user_id, nama, email (unique), pekerjaan, jam_kerja_hari | Profil pengguna |
+| `pose_baseline` | user_id (FK), orientasi, tipe_pose, sudut_leher, sudut_punggung, level_bahu, std_leher, std_punggung, n_frame | Kalibrasi postur personal (unique user+orientasi+tipe) |
+| `posture_logs` | user_id (FK), sesi_id, timestamp, sudut_leher, sudut_punggung, level_bahu, skor_deviasi, status | Log evaluasi postur time-series |
+| `exercises` | exercise_id, nama, deskripsi, target_otot, sudut_target (JSON), durasi_detik, reps, tingkat | Perpustakaan latihan terapi |
+| `exercise_sessions` | session_id, user_id (FK), exercise_id (FK), total_reps, avg_skor, selesai_at | Riwayat sesi latihan selesai |
+
+Skema auto-dijalankan saat container `db` pertama kali dibuat dari `database/init/01_schema.sql`. Data contoh dapat di-seed dengan `make seed` (`database/seed/seed.sql` + `seed_user.py`).
+
+---
+
+## 7. Backend — API FastAPI
+
+Prefix utama: `/api` — dokumentasi otomatis Swagger di `http://localhost:8000/docs`.
+
+### Router & Endpoint
+
+| Router | Endpoint | Fungsi |
+|---|---|---|
+| **Users** | `GET/POST /api/users`, `GET /api/users/{id}` | CRUD profil pengguna |
+| **Registrasi Pose** | `POST /api/registration/submit` | Upsert profil + baseline pose |
+| | `GET /api/registration/baselines/{user_id}` | Ambil baseline user |
+| **Monitoring Postur** | `POST /api/monitoring/evaluate` | Evaluasi landmark via HTTP |
+| | `POST /api/monitoring/log` | Simpan log postur manual |
+| | `GET /api/monitoring/summary/{user_id}` | Statistik riwayat postur |
+| | **WS** `/api/monitoring/ws/{user_id}` | Live monitoring streaming real-time |
+| **Latihan Postur** | `GET /api/exercises`, `GET /api/exercises/{id}` | Daftar + detail latihan |
+| | `POST /api/exercises/sessions` | Catat sesi latihan selesai |
+| | `GET /api/exercises/sessions/user/{user_id}` | Riwayat latihan user |
+
+### Skor & Status Deviasi
+
+Skor komposit = **55% skor leher + 35% skor punggung − penalti bahu miring** (klamp 0–100).
+
+| Skor | Status | Keterangan |
+|---|---|---|
+| ≥ 85 | **bagus** | Postur ergonomis ideal |
+| 60 – 84 | **ringan** | Dagu agak maju / punggung sedikit membungkuk |
+| < 60 | **buruk** | Postur buruk terdeteksi |
 
 ---
 
 ## 8. Frontend — React
 
-### Komponen Utama
+### Halaman / Tab
+
+| Tab | Komponen | Fungsi |
+|---|---|---|
+| **Overview** (`h`) | `LandingPage` | Landing + simulator postur interaktif + kode contoh (WebSocket/cURL/Python) |
+| **Live Monitor** (`m`) | `Monitor` | Monitoring postur real-time via WebSocket, gauge skor, telemetri sudut, alert suara |
+| **Calibration** (`c`) | `RegisterPose` | Wizard registrasi & kalibrasi baseline pose |
+| **Dashboard** (`d`) | `Dashboard` | KPI, grafik time-series skor, riwayat latihan, inspector telemetri |
+| **Therapy Fit** (`e`) | `Exercises` | Latihan terapi Mode B dengan rep counter & hold timer |
+
+### Komponen Pendukung
 
 | Komponen | Fungsi |
 |---|---|
-| `<OnboardingFlow />` | Wizard registrasi pose 5 fase (setup kamera → rotasi sisi → pose → rekam → ringkasan) |
-| `<CameraCanvas />` | Akses `getUserMedia` + render video + overlay skeleton dari MediaPipe JS |
-| `<PoseGuide />` | Ilustrasi pose referensi + deteksi orientasi otomatis + countdown |
-| `<MonitorDashboard />` | Live monitoring: skor deviasi real-time via WebSocket |
-| `<ProgressReport />` | Grafik deviasi mingguan (Recharts) |
+| `Navbar` | Navigasi tab + indikator status API + toggle tema |
+| `ThemeToggle` | Toggle dark/light mode (persistensi localStorage) |
+| `SkeletonOverlay` | Overlay canvas 33 landmark MediaPipe + label sudut berwarna sesuai status |
+
+Navigasi juga mendukung pintasan keyboard: `H`, `M`, `C`, `D`, `E`.
 
 ---
 
@@ -190,10 +230,11 @@ Inti personalisasi: **skor deviasi** — seberapa jauh postur saat ini menyimpan
 
 | Kondisi Terdeteksi | Respons Sistem |
 |---|---|
-| `sudut_leher_live` jauh lebih besar dari baseline `duduk_relaxed` | *"Kepalamu lebih maju dari biasanya — tarik kepala ke belakang"* |
-| `sudut_punggung_live` jauh lebih besar dari baseline | *"Kamu lebih membungkuk dari postur normalmu"* |
-| Skor deviasi < 60 selama > 10 detik | 🔔 Notifikasi muncul |
-| Postur mendekati baseline versi `duduk_tegak` | *"Mantap! Posturmu mendekati posisi idealmu"* |
+| Sudut leher/punggung live menyimpang dari baseline sesuai `tipe_pose` | Skor turun sesuai toleransi personal (`std` × faktor) |
+| Skor < 60 (status `buruk`) | 🔔 Buzzer audio + banner peringatan + rekomendasi terapi |
+| Postur mendekati baseline versi ideal | *"Postur ergonomis ideal. Pertahankan posisi ini!"* |
+
+> Baseline dimuat per `tipe_pose` yang dikirim client (`duduk_rileks`, `duduk_tegak`, dst.), sehingga evaluasi selalu membandingkan terhadap kalibrasi postur yang relevan.
 
 ### Keuntungan vs threshold generik
 
@@ -201,26 +242,24 @@ Inti personalisasi: **skor deviasi** — seberapa jauh postur saat ini menyimpan
 |---|---|---|
 | Orang dengan kyphosis ringan bawaan | Salah alert terus (dianggap buruk padahal normal baginya) | Tahu itu baseline-nya; hanya alert jika memburuk |
 | Orang postur-nya sudah sangat baik | Alert jarang = kurang terdorong | Target bisa digeser ke baseline `duduk_tegak` (lebih menantang) |
-| Ukuran tubuh berbeda-beda | Sudut sama belum tentu artinya sama | Ternormalisasi lebar bahu → konsisten |
-| Progres pemulihan | Sulit diukur | "Minggu ini deviasi rata-rata turun 15% dari baseline" → terukur |
+| Ukuran tubuh berbeda-beda | Sudut sama belum tentu artinya sama | Ternormalisasi → konsisten |
+| Progres pemulihan | Sulit diukur | Deviasi rata-rata turun terhadap baseline → terukur |
 
 ---
 
 ## 10. Alur Aplikasi
 
-**1. Onboarding (pengguna baru, ±5–7 menit):**
-- Registrasi pose: 3 orientasi × 2–3 pose, dengan countdown + rekam otomatis.
-- React mengirim baseline ke FastAPI → tersimpan di SQLite sebagai **Posture Baseline Profile**.
+**1. Onboarding (pengguna baru):**
+- Isi profil → pilih orientasi & tipe pose → hitung baseline (90 frame).
+- React mengirim baseline ke FastAPI → tersimpan di MySQL sebagai **Posture Baseline Profile**.
 
 **2. Penggunaan harian:**
-- **Mode A — Posture Monitor:** MediaPipe JS ekstraksi landmark → WebSocket ke FastAPI → skor deviasi → alert personal di UI.
-- **Mode B — Latihan Terpandu:** target mengikuti baseline versi *"tegak"* milik user (bukan skeleton generik).
-- **Laporan:** endpoint `/api/users/{id}/laporan` → grafik progres deviasi (Recharts).
+- **Mode A — Live Monitor:** kirim landmark per frame → WebSocket ke FastAPI → skor deviasi → alert personal di UI (gauge + audio + banner).
+- **Mode B — Therapy Exercises:** daftar 6 latihan terapi → rep counter + hold timer → menyimpan sesi selesai ke backend.
 
-**3. Re-registrasi (opsional, tiap 1–3 bulan):**
-- Baseline diperbarui → memantau perbaikan postur dari waktu ke waktu.
-
-**Fitur penting — Re-registrasi berkala:** karena tujuan aplikasi adalah *perbaikan* postur, baseline idealnya di-refresh tiap 1–3 bulan. Kalau baseline user membaik (sudut tegak-nya berubah), itu **bukti terukur bahwa terapi bekerja** → fitur laporan progres yang kuat, sekaligus motivator.
+**3. Dashboard analitik:**
+- Endpoint `/api/monitoring/summary/{user_id}` → KPI rata-rata skor, persentase kepatuhan, distribusi status, dan timeline 60 titik.
+- Riwayat sesi latihan dari `exercise_sessions`.
 
 ---
 
@@ -228,290 +267,117 @@ Inti personalisasi: **skor deviasi** — seberapa jauh postur saat ini menyimpan
 
 | Situasi | Penanganan |
 |---|---|
-| Orientasi tidak terdeteksi terus-menerus | Timeout 30 detik → tampilkan ilustrasi + tips ("putar badan 90° ke kiri") |
-| Frame buram / landmark patah-patah | Frame dengan visibility < 0.5 dibuang; jika >50% frame dibuang → ulangi perekaman |
-| User bergerak saat perekaman | Standar deviasi tinggi → sistem minta ulang pose tersebut |
-| User pakai jas besar/rambut menutupi telinga | Deteksi landmark telinga lemah → fallback ke hidung + midpoint bahu |
-| Registrasi di posisi kamera berbeda dari nanti | Instruksi: "gunakan posisi kamera yang sama seperti saat bekerja"; normalisasi lebar bahu mengurangi efek ini |
-| Baseline "relaxed" dan "tegak" hampir identik | User sudah punya postur sangat baik → program fokus pencegahan & endurans |
-| WebSocket terputus di tengah sesi | React auto-reconnect + buffer data → kirim ulang ke FastAPI |
-| Kamera ditolak oleh browser | Tampilkan panduan izin kamera per-browser (Chrome/Edge/Firefox) |
+| Landmark tidak mencukupi (< 25 titik) | Endpoint mengembalikan `valid: false` dengan pesan error |
+| Kamera ditolak / tidak tersedia | Simulator Biomekanika aktif; webcam bisa dinyalakan belakangan |
+| WebSocket terputus / backend offline | Monitor memakai perhitungan skor lokal di sisi client (fallback) |
+| Frame landmark tidak stabil | Frame dengan visibility rendah diabaikan saat ekstraksi sudut |
+| Standard deviasi tinggi saat kalibrasi | Dijaga minimum 1.0 untuk mencegah toleransi terlalu sempit |
+| Orientasi tidak deteksi | Fallback default `frontal` pada analisis landmark |
 
 ---
 
+## 12. Instalasi & Menjalankan (Docker Compose)
+
+### Prasyarat
+
+- **Docker** + **Docker Compose** terinstal.
+- Salin `.env.example` → `.env` lalu sesuaikan bila perlu.
+
+### Quick Start
+
+```bash
+# 1. Siapkan environment
+cp .env.example .env
+
+# 2. Build & jalankan semua container (db, backend, frontend, phpmyadmin)
+make up            # (alias: docker compose up -d --build)
+
+# 3. Seeder data contoh (opsional)
+make seed
+
+# 4. Lihat log
+make logs
+```
+
+### Akses Aplikasi
+
+| Service | URL |
+|---|---|
+| Frontend | http://localhost:3000 |
+| Backend (Swagger API) | http://localhost:8000/docs |
+| Health check | http://localhost:8000/api/health |
+| PhpMyAdmin | http://localhost:8080 |
+
+### Command Makefile Berguna
+
+```bash
+make up           # jalankan semua container (foreground)
+make up-detached  # jalankan di background (detached)
+make down         # stop container
+make restart      # restart container
+make ps           # status container
+make db           # masuk CLI MySQL db container
+make logs-backend # log backend
+make migrate      # jalankan inisialisasi skema
+make seed         # seed data latihan + dummy user
+make lint-frontend / lint-backend  # cek kualitas kode
+make clean        # bersihkan container (tanpa volume)
+make nuke         # bersihkan termasuk volume db
+```
+
+> Semua command tersedia lengkap dengan menjalankan `make help`.
+
+---
+
+## 13. Struktur Proyek
+
+```
+genposfit/
+├── .env.example                  # Template environment
+├── docker-compose.yml            # Orchestrasi: db, backend, frontend, phpmyadmin
+├── Makefile                      # Command operasional (Docker, DB, seed, lint)
+├── PRD.md                        # Spesifikasi & arsitektur
+├── .github/workflows/ci.yml      # CI: backend test + frontend build
+│
+├── backend/                      # Python 3.11 + FastAPI
+│   ├── requirements.txt
+│   ├── Dockerfile
+│   ├── app/
+│   │   ├── main.py               # Entrypoint FastAPI + CORS
+│   │   ├── config.py             # Konfigurasi env
+│   │   ├── database.py           # Engine SQLAlchemy + MySQL
+│   │   ├── models.py             # 5 ORM model
+│   │   ├── routers/              # users, registration, monitoring, exercises
+│   │   └── services/             # pose_analysis, deviation_score
+│   └── tests/
+│       └── test_pose_analysis.py # Unit test backend
+│
+├── database/
+│   ├── init/01_schema.sql        # Skema MySQL (auto-run)
+│   └── seed/                     # seed.sql + seed_user.py
+│
+└── frontend/                     # React 19 + Vite + TypeScript
+    ├── Dockerfile
+    ├── vite.config.ts
+    ├── tsconfig*.json
+    ├── eslint.config.js
+    └── src/
+        ├── App.tsx               # Tab routing
+        ├── components/           # Navbar, ThemeToggle, SkeletonOverlay
+        └── pages/                # LandingPage, RegisterPose, Monitor, Dashboard, Exercises
+```
+
+---
 
 ## 14. Roadmap
 
-**Fase 1 — MVP:**
-
-1. Sistem registrasi pose 6 sesi (3 orientasi × 2 pose) → simpan baseline ke SQLite via FastAPI
-2. Monitoring live: MediaPipe JS → WebSocket → skor deviasi di backend
-3. Notifikasi deviasi + rekap sederhana di React
-
-**Fase 2 — ditambahkan:**
-
-- Re-registrasi + grafik perbandingan baseline lama vs baru (bukti perbaikan)
-- Multi-user (profil per anggota keluarga/karyawan)
-- Ekspor laporan PDF dari frontend
-- Autentikasi JWT (login/logout di React + OAuth2 di FastAPI)
-
----
-
-<div align="center">
-
-**GenPosFit** — *Postur personal, bukan standar generik.* 🧘
-
-</div>
-ubah database pakai mysql, dan tambahkan docker compose sebagai container
-<div align="center">
-
-# 🧘 GenPosFit — Genryphem Posture and Fit
-
-**Sistem monitoring & latihan postur berbasis AI dengan Pose Enrollment untuk personalisasi**
-
-![React](https://img.shields.io/badge/Frontend-React%2018-61DAFB?logo=react&logoColor=white)
-![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?logo=fastapi&logoColor=white)
-![MediaPipe](https://img.shields.io/badge/MediaPipe-Pose%20Estimation-orange?logo=google)
-![SQLite](https://img.shields.io/badge/Database-SQLite-lightgrey?logo=sqlite)
-
-</div>
-
----
-
-## 📑 Daftar Isi
-
-1. [Konsep Besar: Onboarding Pose Sebagai Fondasi](#1-konsep-besar-onboarding-pose-sebagai-fondasi)
-2. [Arsitektur Sistem](#2-arsitektur-sistem)
-3. [Tech Stack](#3-tech-stack)
-4. [Sesi Registrasi Pose: Alur Detail](#4-sesi-registrasi-pose-alur-detail)
-5. [Data Baseline yang Diekstraksi & Disimpan](#5-data-baseline-yang-diekstraksi--disimpan)
-6. [Struktur Database (SQLite)](#6-struktur-database-sqlite)
-7. [Backend — API FastAPI](#7-backend--api-fastapi)
-8. [Frontend — React](#8-frontend--react)
-9. [Baseline Dipakai Saat Live Monitoring](#9-baseline-dipakai-saat-live-monitoring)
-10. [Alur Aplikasi](#10-alur-aplikasi)
-11. [Validasi & Edge Case](#11-validasi--edge-case)
-12. [Instalasi & Menjalankan](#12-instalasi--menjalankan)
-13. [Struktur Proyek](#13-struktur-proyek)
-14. [Roadmap](#14-roadmap)
-
----
-
-## 1. Konsep Besar: Onboarding Pose Sebagai Fondasi
-
-Setiap pengguna baru **wajib melewati proses registrasi pose** sebelum bisa menggunakan fitur monitoring/latihan. Proses ini membangun **Profil Postur Personal (Posture Baseline Profile)** — acuan unik milik pengguna itu sendiri, bukan standar generik.
-
-**Alur pertama kali:**
-
-1. Pengguna **daftar akun** → diarahkan ke **registrasi pose**.
-2. Pengguna mengikuti pose referensi yang tampil di layar, direkam dari beberapa sisi:
-   - **Frontal** (menghadap kamera)
-   - **Lateral kiri** (samping kiri ke kamera)
-   - **Lateral kanan** (samping kanan ke kamera)
-3. Sistem merekam landmark, menghitung sudut, lalu menyimpannya sebagai **baseline personal**.
-4. Profil tersimpan → pengguna bisa mulai **live monitoring**, di mana postur real-time dibandingkan terhadap **baseline user sendiri** (bukan angka standar umum).
-
-**Mengapa penting?** Tubuh setiap orang berbeda — tinggi badan, proporsi bahu, kelengkungan alami tulang belakang, bahkan kebiasaan lama. Memakai threshold generik (*"sudut 160° = bagus"*) untuk semua orang tidak akurat. Dengan baseline personal, deteksi menjadi **deviasi dari postur normal pengguna itu sendiri** → jauh lebih akurat dan personal.
-
----
-
-## 2. Arsitektur Sistem
-
-| Layer | Komponen | Tanggung Jawab |
-|---|---|---|
-| **Frontend (React)** | Kamera (`getUserMedia`), MediaPipe Pose JS, UI | Menangkap video kamera, mengekstraksi 33 landmark langsung di browser, menggambar skeleton, menampilkan UI onboarding/dashboard/laporan |
-| **Backend (FastAPI)** | REST API + WebSocket | Mengelola registrasi baseline, menghitung skor deviasi personal, menyimpan log, menyajikan laporan |
-| **Database (SQLite)** | Tabel `users`, `pose_baseline`, `posture_logs` | Penyimpanan lokal ringan |
-
-**Alur komunikasi:**
-
-- React mengekstraksi landmark di browser → menghitung fitur (sudut, rasio) → mengirim fitur ke FastAPI.
-- Komunikasi data historis/agregat via **REST (JSON)**; data real-time per frame via **WebSocket**.
-- FastAPI melakukan scoring deviasi vs baseline → hasil dikirim balik ke React untuk ditampilkan.
-
-> **Keputusan desain:** MediaPipe berjalan di browser (JS), bukan di server. Hanya fitur hasil ekstraksi (angka sudut) yang dikirim ke backend — lebih hemat bandwidth dan latensi rendah.
-
----
-
-## 3. Tech Stack
-
-| Layer | Teknologi | Peran |
-|---|---|---|
-| **Frontend** | React 18 + Vite | SPA: onboarding, dashboard, visualisasi skeleton |
-| | MediaPipe Tasks Vision (JS) | Deteksi 33 landmark pose langsung di browser |
-| | Recharts | Grafik progres deviasi & laporan |
-| **Backend** | FastAPI | REST API + WebSocket untuk scoring real-time |
-| | Pydantic | Validasi skema data baseline & log |
-| | SQLite + SQLAlchemy | Database lokal ringan |
-| | NumPy | Agregasi mean/std baseline |
-| **Infra** | Uvicorn | ASGI server |
-| | CORS Middleware | Komunikasi React ↔ FastAPI |
-
----
-
-## 4. Sesi Registrasi Pose: Alur Detail
-
-### Fase 1 — Setup & Pemeriksaan Kamera
-
-1. Pengguna diminta menyiapkan ruangan dengan pencahayaan cukup.
-2. Kamera dinyalakan → cek kualitas frame (terang? user terlihat penuh?).
-3. Instruksi: *"Posisikan diri agar seluruh tubuh atas terlihat di layar."*
-4. Validasi: sistem cek landmark MediaPipe terdeteksi stabil ≥ 10 frame.
-   - Jika tidak → beri panduan (mundur/maju/perbaiki pencahayaan), lalu ulangi pengecekan.
-
-### Fase 2 — Panduan Rotasi Sisi (Angle Capture)
-
-Pengguna **diarahkan oleh sistem** (dengan visual + countdown) untuk memutar tubuh ke beberapa orientasi. Skeleton di layar berubah warna saat orientasi sudah benar.
-
-| Tahap | Orientasi yang Diminta | Tujuan Data |
-|---|---|---|
-| 1 | **Frontal (menghadap kamera)** | Kesimetrian bahu, kemiringan kepala, deteksi asimetri pinggul |
-| 2 | **Lateral kiri (samping kiri ke kamera)** | Kurva leher & punggung dari samping — paling akurat untuk deteksi tech neck & slouching |
-| 3 | **Lateral kanan** | Validasi silang, deteksi asimetri kiri-kanan |
-| 4 | *(opsional)* **Posterior (belakang)** | Screening asimetri tulang belakang, bahu |
-
-**Deteksi otomatis orientasi:** sistem sendiri yang mengenali user sudah menghadap ke arah yang benar (dari rasio lebar bahu terhadap kedalaman landmark — jika bahu "menyempit" berarti user sedang menyamping). Baru setelah itu perekaman dimulai.
-
-**Urutan proses per orientasi:**
-
-1. Sistem menampilkan ilustrasi + instruksi orientasi yang diminta.
-2. Sistem mendeteksi orientasi user secara otomatis.
-   - Belum sesuai → tampilkan instruksi perbaikan, kembali ke langkah 2.
-   - Sudah sesuai → skeleton berubah warna sebagai tanda.
-3. Countdown *"bertahan di posisi... 3.. 2.. 1.."*
-4. Perekaman pose dimulai otomatis.
-
-### Fase 3 — Instruksi Pose Referensi per Orientasi
-
-Di setiap orientasi, pengguna diarahkan mengikuti **2–3 pose** yang ditampilkan sebagai ilustrasi/skeleton contoh di layar:
-
-| Orientasi | Pose yang Diminta | Fungsi Baseline |
-|---|---|---|
-| Frontal | a) Berdiri rileks natural | Menangkap kebiasaan alami user |
-| Frontal | b) Berdiri tegak maksimal ("dada dibusukkan") | Menangkap kapasitas ideal user |
-| Frontal | c) Duduk normal seperti saat bekerja | Baseline postur kerja frontal |
-| Samping kiri/kanan | a) Duduk rileks | Menangkap kecenderungan slouch user |
-| Samping kiri/kanan | b) Duduk tegak | Baseline postur ideal duduk |
-| Samping kiri/kanan | c) Berdiri tegak | Referensi align kepala-bahu-pinggul |
-
-> **Kunci desain:** sistem menyimpan **dua kondisi** — *relaxed* (kebiasaan) dan *upright* (ideal). Dari selisih keduanya, sistem tahu *"seberapa jauh postur kerja user menyimpang dari kapasitas terbaiknya"* → dasar skoring personal.
-
-### Fase 4 — Perekaman & Ekstraksi
-
-Per pose:
-
-1. Countdown 3 detik (stabilisasi).
-2. Rekam 30–45 frame berturut-turut (~1,5 detik).
-3. Ekstrak 33 landmark MediaPipe per frame.
-4. Buang frame dengan visibility landmark rendah (< 0.5).
-5. Hitung nilai rata-rata (mean) + standar deviasi per sudut kunci.
-6. Kirim hasil agregasi ke FastAPI → simpan ke SQLite sebagai baseline.
-
-### Fase 5 — Ringkasan Profil
-
-Pengguna diperlihatkan hasil registrasi: skeleton posturnya, sudut-sudut kunci, dan skor awal. Data tersimpan sebagai **Posture Profile** melalui API backend.
-
----
-
-## 5. Data Baseline yang Diekstraksi & Disimpan
-
-Dari setiap kombinasi (orientasi × pose), sistem menghitung:
-
-| Parameter | Cara Hitung | Kegunaan Nanti |
-|---|---|---|
-| **Sudut leher** | Telinga–Bahu vs vertikal | Deteksi tech neck personal |
-| **Sudut punggung** | Bahu–Pinggul vs vertikal | Deteksi slouch personal |
-| **Level bahu** | Selisih y bahu kiri–kanan (frontal) | Deteksi bahu miring |
-| **Selisih maju bahu** | Posisi x bahu vs telinga (samping) | Deteksi rounded shoulders |
-| **Jarak kepala–bahu (lebar bahu sebagai unit)** | Normalisasi skala | Konsisten untuk semua ukuran tubuh |
-| **Align bahu–pinggul** | Offset horizontal | Deteksi postur condong |
-| **Standar deviasi tiap sudut** | Variasi antar frame | Menentukan **toleransi personal** (orang yang gemetar/sering gerak → toleransi lebih lebar) |
-
-**Normalisasi skala:** semua jarak dibagi lebar bahu user (`scale = jarak_bahu_kiri_ke_kanan`), sehingga profil tetap valid dihitung dari jarak kamera berapa pun.
-
----
-
----
-
-## 8. Frontend — React
-
-### Komponen Utama
-
-| Komponen | Fungsi |
-|---|---|
-| `<OnboardingFlow />` | Wizard registrasi pose 5 fase (setup kamera → rotasi sisi → pose → rekam → ringkasan) |
-| `<CameraCanvas />` | Akses `getUserMedia` + render video + overlay skeleton dari MediaPipe JS |
-| `<PoseGuide />` | Ilustrasi pose referensi + deteksi orientasi otomatis + countdown |
-| `<MonitorDashboard />` | Live monitoring: skor deviasi real-time via WebSocket |
-| `<ProgressReport />` | Grafik deviasi mingguan (Recharts) |
-
----
-
-## 9. Baseline Dipakai Saat Live Monitoring
-
-Inti personalisasi: **skor deviasi** — seberapa jauh postur saat ini menyimpang dari baseline user sendiri. Dihitung di FastAPI, hasil dikirim ke React via WebSocket.
-
-### Logika keputusan yang dipersonalisasi
-
-| Kondisi Terdeteksi | Respons Sistem |
-|---|---|
-| `sudut_leher_live` jauh lebih besar dari baseline `duduk_relaxed` | *"Kepalamu lebih maju dari biasanya — tarik kepala ke belakang"* |
-| `sudut_punggung_live` jauh lebih besar dari baseline | *"Kamu lebih membungkuk dari postur normalmu"* |
-| Skor deviasi < 60 selama > 10 detik | 🔔 Notifikasi muncul |
-| Postur mendekati baseline versi `duduk_tegak` | *"Mantap! Posturmu mendekati posisi idealmu"* |
-
-### Keuntungan vs threshold generik
-
-| Aspek | Threshold Generik | Dengan Baseline Personal |
-|---|---|---|
-| Orang dengan kyphosis ringan bawaan | Salah alert terus (dianggap buruk padahal normal baginya) | Tahu itu baseline-nya; hanya alert jika memburuk |
-| Orang postur-nya sudah sangat baik | Alert jarang = kurang terdorong | Target bisa digeser ke baseline `duduk_tegak` (lebih menantang) |
-| Ukuran tubuh berbeda-beda | Sudut sama belum tentu artinya sama | Ternormalisasi lebar bahu → konsisten |
-| Progres pemulihan | Sulit diukur | "Minggu ini deviasi rata-rata turun 15% dari baseline" → terukur |
-
----
-
-## 10. Alur Aplikasi
-
-**1. Onboarding (pengguna baru, ±5–7 menit):**
-- Registrasi pose: 3 orientasi × 2–3 pose, dengan countdown + rekam otomatis.
-- React mengirim baseline ke FastAPI → tersimpan di SQLite sebagai **Posture Baseline Profile**.
-
-**2. Penggunaan harian:**
-- **Mode A — Posture Monitor:** MediaPipe JS ekstraksi landmark → WebSocket ke FastAPI → skor deviasi → alert personal di UI.
-- **Mode B — Latihan Terpandu:** target mengikuti baseline versi *"tegak"* milik user (bukan skeleton generik).
-- **Laporan:** endpoint `/api/users/{id}/laporan` → grafik progres deviasi (Recharts).
-
-**3. Re-registrasi (opsional, tiap 1–3 bulan):**
-- Baseline diperbarui → memantau perbaikan postur dari waktu ke waktu.
-
-**Fitur penting — Re-registrasi berkala:** karena tujuan aplikasi adalah *perbaikan* postur, baseline idealnya di-refresh tiap 1–3 bulan. Kalau baseline user membaik (sudut tegak-nya berubah), itu **bukti terukur bahwa terapi bekerja** → fitur laporan progres yang kuat, sekaligus motivator.
-
----
-
-## 11. Validasi & Edge Case
-
-| Situasi | Penanganan |
-|---|---|
-| Orientasi tidak terdeteksi terus-menerus | Timeout 30 detik → tampilkan ilustrasi + tips ("putar badan 90° ke kiri") |
-| Frame buram / landmark patah-patah | Frame dengan visibility < 0.5 dibuang; jika >50% frame dibuang → ulangi perekaman |
-| User bergerak saat perekaman | Standar deviasi tinggi → sistem minta ulang pose tersebut |
-| User pakai jas besar/rambut menutupi telinga | Deteksi landmark telinga lemah → fallback ke hidung + midpoint bahu |
-| Registrasi di posisi kamera berbeda dari nanti | Instruksi: "gunakan posisi kamera yang sama seperti saat bekerja"; normalisasi lebar bahu mengurangi efek ini |
-| Baseline "relaxed" dan "tegak" hampir identik | User sudah punya postur sangat baik → program fokus pencegahan & endurans |
-| WebSocket terputus di tengah sesi | React auto-reconnect + buffer data → kirim ulang ke FastAPI |
-| Kamera ditolak oleh browser | Tampilkan panduan izin kamera per-browser (Chrome/Edge/Firefox) |
-
----
-
-
-## 14. Roadmap
-
-**Fase 1 — MVP:**
-
-1. Sistem registrasi pose 6 sesi (3 orientasi × 2 pose) → simpan baseline ke SQLite via FastAPI
-2. Monitoring live: MediaPipe JS → WebSocket → skor deviasi di backend
-3. Notifikasi deviasi + rekap sederhana di React
+**Fase 1 — MVP (selesai):**
+
+1. Registrasi pose multi-orientasi → simpan baseline ke MySQL via FastAPI
+2. Monitoring live: landmark → WebSocket → skor deviasi di backend
+3. Notifikasi deviasi + dashboard rekapitulasi
+4. Mode B latihan terapi + pencatatan sesi
+5. Deployment penuh via Docker Compose (MySQL + PhpMyAdmin)
 
 **Fase 2 — ditambahkan:**
 
