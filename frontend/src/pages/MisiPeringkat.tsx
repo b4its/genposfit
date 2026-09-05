@@ -6,8 +6,9 @@ import {
 import { Badge, Button, Card, Progress } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { alamatPendek, hasWallet, sambungkanAkun, tandaTanganPesan } from '../lib/wallet';
+import { getApiUrl } from '../lib/api';
 
-const apiUrl = () => import.meta.env?.VITE_API_URL || 'http://localhost:8042';
+const apiUrl = getApiUrl;
 
 interface Misi {
   quest_id: number;

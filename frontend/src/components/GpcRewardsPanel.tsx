@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Coins, FlaskConical, History, Loader2, Send, Wallet } from 'lucide-react';
 import { Badge, Button, Card } from '../components/ui';
+import { getApiUrl } from '../lib/api';
 
-const apiUrl = () => import.meta.env?.VITE_API_URL || 'http://localhost:8042';
+const apiUrl = getApiUrl;
 
 interface Penerima {
   rank: number;
