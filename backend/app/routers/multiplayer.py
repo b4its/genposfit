@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from sqlalchemy import asc
 from app.database import get_db, SessionLocal
-from app.models import Room, RoomPlayer
+from app.models import Room, RoomPlayer, Exercise
 from app.security import hash_password, verify_password
 
 router = APIRouter(prefix="/api/multiplayer", tags=["Multiplayer"])
@@ -80,14 +80,26 @@ def register_player(
 
 
 def room_dict(db: Session, room: Room) -> dict:
+    ex_ids = room.exercises_json or []
+    challenges = []
+    if ex_ids:
+        rows = db.query(Exercise).filter(Exercise.exercise_id.in_(ex_ids)).all()
+        by_id = {r.exercise_id: r for r in rows}
+        # Urutkan mengikuti order yang dipilih host
+        challenges = [
+            {"exercise_id": eid, "nama": by_id[eid].nama if eid in by_id else "Latihan"}
+            for eid in ex_ids if eid in by_id
+        ]
     return {
         "room_id": room.room_id,
         "room_code": room.room_code,
         "nama": room.nama,
         "status": room.status,
         "max_score": room.max_score,
+        "challenge_exercise_ids": ex_ids,
+        "challenges": challenges,
         "host_player_id": room.host_player_id,
-        "players": [{"player_id": p.player_id, "display_name": p.display_name, "warna": p.warna, "is_host": bool(p.is_host), "user_id": p.user_id} for p in room.players],
+        "players": [{"player_id": p.player_id, "display_name": p.display_name, "warna": p.warna, "is_host": bool(p.is_host), "user_id": p.user_id, "guest_key": p.guest_key} for p in room.players],
     }
 
 
@@ -142,6 +154,32 @@ def room_taken_colors(room_code: str, db: Session = Depends(get_db)):
     players = db.query(RoomPlayer).filter_by(room_id=room.room_id).all()
     taken = [p.warna for p in players]
     return {"taken": taken, "available": [c for c in AVAILABLE_COLORS if c not in taken]}
+
+
+class SetChallengeRequest(BaseModel):
+    challenge_exercise_ids: List[int] = []
+
+
+@router.put("/rooms/{room_code}/challenges")
+def set_room_challenges(room_code: str, payload: SetChallengeRequest, request: Request, db: Session = Depends(get_db)):
+    """Host mengatur daftar gerakan latihan yang akan ditantangkan di room (bisa lebih dari satu)."""
+    room = db.query(Room).filter_by(room_code=room_code.strip().upper()).first()
+    if not room:
+        raise HTTPException(404, "Room tidak ditemukan.")
+    guest_key = guest_key_from_request(request)
+    # Verifikasi bahwa yang request adalah host
+    host_player = db.query(RoomPlayer).filter_by(room_id=room.room_id, player_id=room.host_player_id).first()
+    if not host_player or (host_player.guest_key != guest_key and host_player.user_id is None):
+        raise HTTPException(403, "Hanya host room yang bisa mengatur tantangan.")
+    # Validasi exercise_ids exist
+    if payload.challenge_exercise_ids:
+        count = db.query(Exercise).filter(Exercise.exercise_id.in_(payload.challenge_exercise_ids)).count()
+        if count != len(payload.challenge_exercise_ids):
+            raise HTTPException(400, "Beberapa ID latihan tidak ditemukan.")
+    room.exercises_json = payload.challenge_exercise_ids
+    db.commit()
+    db.refresh(room)
+    return room_dict(db, room)
 
 
 def transfer_host_fifo(db: Session, room: Room, leaving_key: str | None = None):
@@ -307,6 +345,21 @@ async def multiplayer_ws(websocket: WebSocket, room_code: str):
                     "points": msg.get("points", 0),
                     "move_name": msg.get("move_name", ""),
                 }, exclude=client)
+                continue
+            if msg_type == "challenge_update":
+                # Host mengatur daftar gerakan tantangan; simpan ke DB dan broadcast ke semua.
+                ids = msg.get("challenge_exercise_ids", [])
+                room = db.query(Room).filter_by(room_code=code).first()
+                if room and room.host_player_id:
+                    host_player = db.query(RoomPlayer).filter_by(room_id=room.room_id, player_id=room.host_player_id).first()
+                    if host_player and host_player.guest_key == guest_key:
+                        room.exercises_json = ids
+                        db.commit()
+                await hub.broadcast(code, {
+                    "type": "challenge_update",
+                    "guest_key": guest_key,
+                    "challenge_exercise_ids": ids,
+                })
                 continue
             landmarks = msg.get("landmarks", [])
             if landmarks:

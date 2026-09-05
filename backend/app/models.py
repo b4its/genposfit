@@ -75,10 +75,24 @@ class PostureLog(Base):
     )
 
 
+class ExerciseType(Base):
+    __tablename__ = "exercise_types"
+
+    type_id = Column(Integer, primary_key=True, autoincrement=True)
+    nama = Column(String(100), nullable=False)  # nama jenis latihan (parent)
+    deskripsi = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    children = relationship(
+        "Exercise", back_populates="parent_type", cascade="all, delete-orphan"
+    )
+
+
 class Exercise(Base):
     __tablename__ = "exercises"
 
     exercise_id = Column(Integer, primary_key=True, autoincrement=True)
+    type_id = Column(Integer, ForeignKey("exercise_types.type_id", ondelete="CASCADE"), nullable=True, index=True)
     nama = Column(String(100), nullable=False)
     deskripsi = Column(Text, nullable=True)
     target_otot = Column(String(150), nullable=True)
@@ -92,6 +106,7 @@ class Exercise(Base):
     is_battle = Column(SmallInteger, default=0)  # 1 = bisa dipakai gerakan battle multiplayer
 
     sessions = relationship("ExerciseSession", back_populates="exercise")
+    parent_type = relationship("ExerciseType", back_populates="children")
 
 
 class ExerciseSession(Base):
@@ -122,6 +137,7 @@ class Room(Base):
     )
     status = Column(String(20), default="waiting")  # 'waiting', 'playing', 'ended'
     max_score = Column(Integer, default=10, nullable=False)  # batas poin pemenang battle (ditetapkan host)
+    exercises_json = Column(JSON, nullable=True)  # daftar exercise_id untuk challenge dipilih host
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

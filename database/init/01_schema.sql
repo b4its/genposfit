@@ -55,9 +55,18 @@ CREATE TABLE IF NOT EXISTS posture_logs (
     INDEX idx_user_time (user_id, timestamp)
 ) ENGINE=InnoDB;
 
+-- ------------------- JENIS LATIHAN (Parent) ------------------
+CREATE TABLE IF NOT EXISTS exercise_types (
+    type_id INT AUTO_INCREMENT PRIMARY KEY,
+    nama VARCHAR(100) NOT NULL,
+    deskripsi TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
 -- ------------------- LATIHAN (Mode B) -----------------------
 CREATE TABLE IF NOT EXISTS exercises (
     exercise_id INT AUTO_INCREMENT PRIMARY KEY,
+    type_id INT,
     nama VARCHAR(100) NOT NULL,
     deskripsi TEXT,
     target_otot VARCHAR(150),
@@ -68,7 +77,9 @@ CREATE TABLE IF NOT EXISTS exercises (
     durasi_detik SMALLINT,
     reps TINYINT DEFAULT 10,
     tingkat ENUM('pemula','menengah','lanjut') DEFAULT 'pemula',
-    is_battle TINYINT DEFAULT 0
+    is_battle TINYINT DEFAULT 0,
+    FOREIGN KEY (type_id) REFERENCES exercise_types(type_id) ON DELETE CASCADE,
+    INDEX idx_type_id (type_id)
 ) ENGINE=InnoDB;
 
 -- ------------------ SESSION LATIHAN -------------------------
@@ -92,6 +103,7 @@ CREATE TABLE IF NOT EXISTS rooms (
     host_player_id INT,
     status VARCHAR(20) DEFAULT 'waiting',
     max_score INT DEFAULT 10 NOT NULL,
+    exercises_json JSON DEFAULT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_room_code (room_code)
