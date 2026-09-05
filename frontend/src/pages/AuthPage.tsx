@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Activity, UserPlus, LogIn, Eye, EyeOff, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { UserPlus, LogIn, Eye, EyeOff, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { Button, Card, Input, Pill, PillContent } from '@/components/ui';
+import { Button, Card, Input, Label, Pill, PillIndicator, PillContent } from '../components/ui';
+import LogoSvg from '@/assets/logo.svg';
 
 type AuthMode = 'login' | 'register';
 
@@ -63,7 +64,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
         <div className="text-center mb-8">
           <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 via-emerald-500 to-teal-400 p-[2px] mx-auto mb-4 shadow-lg shadow-blue-500/25">
             <div className="w-full h-full rounded-[14px] bg-white dark:bg-slate-900 flex items-center justify-center">
-              <Activity className="w-7 h-7 text-emerald-500" />
+              <img src={LogoSvg} alt="GenPosFit Logo" className="w-8 h-8" />
             </div>
           </div>
           <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">

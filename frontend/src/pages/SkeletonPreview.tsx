@@ -325,7 +325,7 @@ export const SkeletonPreview: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-10">
-      <div className="max-w-4xl mx-auto mb-8 text-left">
+      <div className="mb-8 text-left">
         <Pill variant="info" size="md" className="mb-2">
           <Eye size={14} />
           <PillContent>RIGGING BIOMEKANIKA VISION-AWARE</PillContent>
@@ -338,7 +338,7 @@ export const SkeletonPreview: React.FC = () => {
         </p>
       </div>
 
-      <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-7">
           <Card
             className={cn(

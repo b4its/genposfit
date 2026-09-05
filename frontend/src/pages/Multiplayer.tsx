@@ -599,6 +599,17 @@ const loadBattleMoves = async () => {
           )}
         </div>
 
+        {/* Sumber frame tersembunyi utk MediaPipe Camera saat webcam aktif
+            (detektor butuh elemen <video>; tanpa ini landmark tidak mengalir). */}
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className="absolute h-px w-px opacity-0 pointer-events-none"
+          aria-hidden
+        />
+
         {/* Battle Panel */}
         <Card className="p-5 mb-6 border-purple-500/30">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
