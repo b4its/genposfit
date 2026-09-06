@@ -10,7 +10,7 @@ def utcnow() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
 from typing import List, Optional, Any
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.database import get_db
@@ -45,14 +45,13 @@ class ExerciseTypeCreate(BaseModel):
 
 
 class ExerciseTypeOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     type_id: int
     nama: str
     deskripsi: Optional[str] = None
     created_at: Optional[datetime] = None
     children: List["ExerciseOut"] = []
-
-    class Config:
-        from_attributes = True
 
 
 class ExerciseCreate(BaseModel):
@@ -82,6 +81,8 @@ class ExerciseUpdate(BaseModel):
 
 
 class ExerciseOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     exercise_id: int
     type_id: Optional[int] = None
     nama: str
@@ -95,9 +96,6 @@ class ExerciseOut(BaseModel):
     reps: Optional[int] = 10
     tingkat: Optional[str] = "pemula"
     is_battle: bool = False
-
-    class Config:
-        from_attributes = True
 
 
 @router.get("/exercises", response_model=List[ExerciseOut])

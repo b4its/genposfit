@@ -5,7 +5,7 @@ Manajemen profil pengguna, pengaturan jam kerja, dan pencarian profil.
 import secrets
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import User
@@ -23,6 +23,8 @@ class UserCreate(BaseModel):
 
 
 class UserResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     user_id: int
     username: str
     nama: str
@@ -32,9 +34,6 @@ class UserResponse(BaseModel):
     poin: int = 0
     saldo: float = 0.0
     role: str = "user"
-
-    class Config:
-        from_attributes = True
 
 
 @router.get("", response_model=List[UserResponse])

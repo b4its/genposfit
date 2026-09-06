@@ -10,7 +10,7 @@ def utcnow() -> datetime:
     """Naive UTC now, cocok untuk kolom MySQL DATETIME."""
     return datetime.now(timezone.utc).replace(tzinfo=None)
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Exercise, ExerciseSession, ExerciseType, User
@@ -21,6 +21,8 @@ router = APIRouter(prefix="/api/exercises", tags=["Latihan Postur"])
 
 
 class ExerciseOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     exercise_id: int
     type_id: Optional[int] = None
     nama: str
@@ -35,18 +37,14 @@ class ExerciseOut(BaseModel):
     tingkat: Optional[str] = "pemula"
     is_battle: bool = False
 
-    class Config:
-        from_attributes = True
-
 
 class ExerciseTypeOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     type_id: int
     nama: str
     deskripsi: Optional[str] = None
     children: List["ExerciseOut"] = []
-
-    class Config:
-        from_attributes = True
 
 
 class SessionCreate(BaseModel):
