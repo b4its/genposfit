@@ -3,7 +3,7 @@ import {
   Award, Clock, Crown, Loader2, Medal, Target,
   Trophy, Wallet, XCircle,
 } from 'lucide-react';
-import { Badge, Button, Card, Progress } from '../components/ui';
+import { Badge, Button, Card, Progress, toast } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { DEFAULT_COMMUNITY_WALLET, alamatPendek, hasWallet, sambungkanAkun, tandaTanganPesan } from '../lib/wallet';
 import coinIcon from '../assets/coin.svg';
@@ -89,7 +89,6 @@ export const MisiPeringkat: React.FC = () => {
   const [profil, setProfil] = useState<Profil | null>(null);
 
   const [mengklaim, setMengklaim] = useState<number | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
   const [walletLoading, setWalletLoading] = useState(false);
 
   const headers = useCallback(() => ({
@@ -150,12 +149,18 @@ export const MisiPeringkat: React.FC = () => {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.detail || 'Klaim gagal.');
-      setToast(`Hadiah +${data.reward_poin} poin diterima!`);
-      setTimeout(() => setToast(null), 4000);
+      toast({
+        title: 'Klaim Berhasil! 🎉',
+        description: `Hadiah +${data.reward_poin} poin berhasil diterima.`,
+        variant: 'success',
+      });
       await muatSemua();
-    } catch (e: any) {
-      setToast(e.message || 'Klaim gagal');
-      setTimeout(() => setToast(null), 4000);
+    } catch (e: unknown) {
+      toast({
+        title: 'Klaim Gagal',
+        description: e instanceof Error ? e.message : 'Klaim gagal.',
+        variant: 'destructive',
+      });
     } finally {
       setMengklaim(null);
     }
@@ -172,7 +177,11 @@ export const MisiPeringkat: React.FC = () => {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data?.detail || 'Gagal mengatur dompet.');
-        setToast('Berhasil terhubung ke Dompet Bersama (0x6Edc…2b48)! Tidak butuh MetaMask.');
+        toast({
+          title: 'Dompet Terhubung',
+          description: 'Berhasil terhubung ke Dompet Bersama (0x6Edc…2b48)! Tidak butuh MetaMask.',
+          variant: 'success',
+        });
         await muatSemua();
         return;
       }
@@ -191,13 +200,20 @@ export const MisiPeringkat: React.FC = () => {
       });
       const v = await vRes.json();
       if (!vRes.ok) throw new Error(v?.detail || 'Verifikasi signature gagal.');
-      setToast('Wallet pribadi terhubung! Reward GPC dapat dikirim ke alamat ini.');
+      toast({
+        title: 'Wallet Pribadi Terhubung',
+        description: 'Wallet pribadi terhubung! Reward GPC dapat dikirim ke alamat ini.',
+        variant: 'success',
+      });
       await muatSemua();
-    } catch (e: any) {
-      setToast(e.message || 'Koneksi wallet gagal.');
+    } catch (e: unknown) {
+      toast({
+        title: 'Koneksi Wallet Gagal',
+        description: e instanceof Error ? e.message : 'Koneksi wallet gagal.',
+        variant: 'destructive',
+      });
     } finally {
       setWalletLoading(false);
-      setTimeout(() => setToast(null), 5000);
     }
   };
 
@@ -205,7 +221,17 @@ export const MisiPeringkat: React.FC = () => {
     setWalletLoading(true);
     try {
       await fetch(`${apiUrl()}/api/wallet/me`, { method: 'DELETE', headers: headers() });
+      toast({
+        title: 'Dompet Dilepas',
+        description: 'Koneksi dompet berhasil dilepas.',
+      });
       await muatSemua();
+    } catch {
+      toast({
+        title: 'Gagal Melepas Dompet',
+        description: 'Terjadi kesalahan saat melepas dompet.',
+        variant: 'destructive',
+      });
     } finally {
       setWalletLoading(false);
     }
@@ -389,12 +415,6 @@ export const MisiPeringkat: React.FC = () => {
           </button>
         ))}
       </div>
-
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-slate-900 px-4 py-2 text-sm text-white shadow-lg dark:bg-white dark:text-slate-900">
-          {toast}
-        </div>
-      )}
 
       {loading ? (
         <div className="flex justify-center py-20">

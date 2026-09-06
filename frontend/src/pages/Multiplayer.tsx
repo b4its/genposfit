@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { getApiUrl, getWsUrl } from '../lib/api';
 import { SkeletonOverlay, type Landmark } from '../components/SkeletonOverlay';
 import { usePoseDetector } from '../hooks/usePoseDetector';
-import { Button, Card, Input, Pill, PillIndicator, PillContent, Badge, Select, Progress } from '@/components/ui';
+import { Button, Card, Input, Pill, PillIndicator, PillContent, Badge, Select, Progress, toast } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { Crown } from 'lucide-react';
 import mascotGreen from '../assets/mascot/green-happy.webp';
@@ -723,10 +723,26 @@ const loadBattleMoves = async () => {
 
   const handleCreate = async () => {
     setError(null);
-    if (!roomName.trim()) { setError('Nama room wajib diisi.'); return; }
-    if (password.length < 4) { setError('Password minimal 4 karakter.'); return; }
-    if (password !== confirmPassword) { setError('Konfirmasi password tidak cocok.'); return; }
-    if (!displayName.trim()) { setError('Nama tampilan wajib diisi.'); return; }
+    if (!roomName.trim()) {
+      setError('Nama room wajib diisi.');
+      toast({ title: 'Gagal Membuat Room', description: 'Nama room wajib diisi.', variant: 'destructive' });
+      return;
+    }
+    if (password.length < 4) {
+      setError('Password minimal 4 karakter.');
+      toast({ title: 'Gagal Membuat Room', description: 'Password minimal 4 karakter.', variant: 'destructive' });
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError('Konfirmasi password tidak cocok.');
+      toast({ title: 'Gagal Membuat Room', description: 'Konfirmasi password tidak cocok.', variant: 'destructive' });
+      return;
+    }
+    if (!displayName.trim()) {
+      setError('Nama tampilan wajib diisi.');
+      toast({ title: 'Gagal Membuat Room', description: 'Nama tampilan wajib diisi.', variant: 'destructive' });
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch(`${API_URL()}/api/multiplayer/rooms`, {
@@ -735,7 +751,11 @@ const loadBattleMoves = async () => {
         body: JSON.stringify({ nama: roomName, password, display_name: displayName, warna: createColor, user_id: user?.user_id || null, max_score: maxScore, client_id: clientIdRef.current }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data?.detail || 'Gagal membuat room.'); return; }
+      if (!res.ok) {
+        setError(data?.detail || 'Gagal membuat room.');
+        toast({ title: 'Gagal Membuat Room', description: data?.detail || 'Gagal membuat room.', variant: 'destructive' });
+        return;
+      }
       setGuestKey(data.guest_key);
       setMyPlayerKey(data.guest_key);
       setRoom(data);
@@ -743,13 +763,29 @@ const loadBattleMoves = async () => {
       setChallengeIds(data.challenge_exercise_ids || []);
       connectWS(data.room_code, data.guest_key, displayName, createColor);
       loadBattleMoves();
-    } catch { setError('Tidak dapat terhubung ke server.'); } finally { setLoading(false); }
+      toast({
+        title: 'Room Berhasil Dibuat! 🚀',
+        description: `Kode Room: ${data.room_code}. Selamat bertanding!`,
+        variant: 'success',
+      });
+    } catch {
+      setError('Tidak dapat terhubung ke server.');
+      toast({ title: 'Koneksi Gagal', description: 'Tidak dapat terhubung ke server.', variant: 'destructive' });
+    } finally { setLoading(false); }
   };
 
   const handleJoin = async () => {
     setError(null);
-    if (!roomCode.trim()) { setError('Kode room wajib diisi.'); return; }
-    if (!password) { setError('Password wajib diisi.'); return; }
+    if (!roomCode.trim()) {
+      setError('Kode room wajib diisi.');
+      toast({ title: 'Gagal Masuk Room', description: 'Kode room wajib diisi.', variant: 'destructive' });
+      return;
+    }
+    if (!password) {
+      setError('Password wajib diisi.');
+      toast({ title: 'Gagal Masuk Room', description: 'Password wajib diisi.', variant: 'destructive' });
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch(`${API_URL()}/api/multiplayer/join`, {
@@ -758,7 +794,11 @@ const loadBattleMoves = async () => {
         body: JSON.stringify({ room_code: roomCode, password, display_name: displayName, warna: joinColor, user_id: user?.user_id || null, client_id: clientIdRef.current }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data?.detail || 'Gagal masuk room.'); return; }
+      if (!res.ok) {
+        setError(data?.detail || 'Gagal masuk room.');
+        toast({ title: 'Gagal Masuk Room', description: data?.detail || 'Gagal masuk room.', variant: 'destructive' });
+        return;
+      }
       setGuestKey(data.guest_key);
       setMyPlayerKey(data.guest_key);
       setRoom(data);
@@ -773,7 +813,15 @@ const loadBattleMoves = async () => {
       });
       setPlayers(seed);
       loadBattleMoves();
-    } catch { setError('Tidak dapat terhubung ke server.'); } finally { setLoading(false); }
+      toast({
+        title: 'Berhasil Masuk Room! 🎉',
+        description: `Bergabung ke ${data.nama || 'Room'}.`,
+        variant: 'success',
+      });
+    } catch {
+      setError('Tidak dapat terhubung ke server.');
+      toast({ title: 'Koneksi Gagal', description: 'Tidak dapat terhubung ke server.', variant: 'destructive' });
+    } finally { setLoading(false); }
   };
 
   // ---------- RENDER ----------
@@ -814,7 +862,13 @@ const loadBattleMoves = async () => {
               <Wifi size={14} className="text-emerald-500" />
               <span className="hidden sm:inline font-mono">{room.room_code}</span>
               <button
-                onClick={() => navigator.clipboard?.writeText(room.room_code)}
+                onClick={() => {
+                  navigator.clipboard?.writeText(room.room_code);
+                  toast({
+                    title: 'Kode Disalin! 📋',
+                    description: `Kode room ${room.room_code} berhasil disalin ke clipboard.`,
+                  });
+                }}
                 className="text-blue-500 hover:underline font-semibold cursor-pointer"
               >Salin</button>
             </div>

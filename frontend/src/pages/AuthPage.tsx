@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { UserPlus, LogIn, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { Button, Card, Input } from '../components/ui';
+import { Button, Card, Input, toast } from '../components/ui';
 import LogoSvg from '@/assets/logo.svg';
 
 type AuthMode = 'login' | 'register';
@@ -29,11 +29,15 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
     setError(null);
 
     if (!username.trim() || !password.trim()) {
-      setError('Username dan password wajib diisi.');
+      const msg = 'Username dan password wajib diisi.';
+      setError(msg);
+      toast({ title: 'Validasi Gagal', description: msg, variant: 'destructive' });
       return;
     }
     if (mode === 'register' && !nama.trim()) {
-      setError('Nama lengkap wajib diisi.');
+      const msg = 'Nama lengkap wajib diisi.';
+      setError(msg);
+      toast({ title: 'Validasi Gagal', description: msg, variant: 'destructive' });
       return;
     }
 
@@ -41,13 +45,16 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
     try {
       if (mode === 'login') {
         await login(username.trim(), password);
+        toast({ title: 'Login Berhasil', description: `Selamat datang kembali, ${username}!`, variant: 'success' });
       } else {
         await register({ username: username.trim(), password, nama: nama.trim(), email: email.trim() || undefined, pekerjaan: pekerjaan.trim() || undefined });
+        toast({ title: 'Pendaftaran Berhasil', description: 'Akun Anda berhasil dibuat. Selamat datang di GenPosFit!', variant: 'success' });
       }
       onSuccess?.();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Terjadi kesalahan. Silakan coba lagi.';
       setError(message);
+      toast({ title: 'Gagal', description: message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }

@@ -6,7 +6,7 @@ import {
   Play, Swords
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { Card, Input, Label, Textarea, Select, Badge, Pill, PillContent, Button } from '@/components/ui';
+import { Card, Input, Label, Textarea, Select, Badge, Pill, PillContent, Button, toast } from '@/components/ui';
 import { SkeletonOverlay, type Landmark } from '../components/SkeletonOverlay';
 import { usePoseDetector } from '../hooks/usePoseDetector';
 import { cn } from '@/lib/utils';
@@ -419,7 +419,11 @@ export const AdminExercises: React.FC = () => {
 
   const handleRemovePoseStep = (idxToRemove: number) => {
     if (childPoseSteps.length <= 1) {
-      alert('Minimal harus ada 1 model skeleton gerakan.');
+      toast({
+        title: 'Aksi Ditolak',
+        description: 'Minimal harus ada 1 model skeleton gerakan.',
+        variant: 'destructive',
+      });
       return;
     }
     const updated = childPoseSteps
@@ -446,7 +450,11 @@ export const AdminExercises: React.FC = () => {
       return;
     }
     if (childPoseSteps.length <= 1) {
-      alert('Tambahkan minimal 2 model skeleton untuk memutar simulasi urutan gerakan.');
+      toast({
+        title: 'Perhatian',
+        description: 'Tambahkan minimal 2 model skeleton untuk memutar simulasi urutan gerakan.',
+        variant: 'warning',
+      });
       return;
     }
     setIsPlayingStepPreview(true);
@@ -817,10 +825,23 @@ export const AdminExercises: React.FC = () => {
         headers: headers(),
         body: JSON.stringify(payload),
       });
-      if (!res.ok) { const d = await res.json().catch(() => ({})); setError(d?.detail || 'Gagal menyimpan gerakan.'); return; }
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setError(d?.detail || 'Gagal menyimpan gerakan.');
+        toast({ title: 'Gagal Menyimpan', description: d?.detail || 'Gagal menyimpan gerakan.', variant: 'destructive' });
+        return;
+      }
       resetChildForm();
       await fetchTypes();
-    } catch { setError('Tidak dapat terhubung ke server.'); }
+      toast({
+        title: isEdit ? 'Gerakan Diperbarui! ✅' : 'Gerakan Ditambahkan! ✅',
+        description: `Gerakan "${payload.nama}" berhasil disimpan.`,
+        variant: 'success',
+      });
+    } catch {
+      setError('Tidak dapat terhubung ke server.');
+      toast({ title: 'Koneksi Gagal', description: 'Tidak dapat terhubung ke server.', variant: 'destructive' });
+    }
     finally { setSaving(false); }
   };
 
@@ -830,9 +851,21 @@ export const AdminExercises: React.FC = () => {
       const res = await fetch(`${apiUrl()}/api/admin/exercises/${child.exercise_id}`, {
         method: 'DELETE', headers: headers(),
       });
-      if (!res.ok) { const d = await res.json().catch(() => ({})); setError(d?.detail || 'Gagal menghapus.'); return; }
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setError(d?.detail || 'Gagal menghapus.');
+        toast({ title: 'Gagal Menghapus', description: d?.detail || 'Gagal menghapus.', variant: 'destructive' });
+        return;
+      }
       await fetchTypes();
-    } catch { setError('Tidak dapat terhubung ke server.'); }
+      toast({
+        title: 'Gerakan Dihapus',
+        description: `Gerakan "${child.nama}" telah dihapus.`,
+      });
+    } catch {
+      setError('Tidak dapat terhubung ke server.');
+      toast({ title: 'Koneksi Gagal', description: 'Tidak dapat terhubung ke server.', variant: 'destructive' });
+    }
   };
 
   if (!token) return <NoAccess message="Anda harus login terlebih dahulu." />;

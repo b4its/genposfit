@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import {
   Button, Card, Badge, Progress, Pill, PillContent,
-  Input, Label, Textarea, Select
+  Input, Label, Textarea, Select, toast
 } from '../components/ui';
 import { cn } from '../lib/utils';
 import { useAuth } from '../context/AuthContext';
@@ -790,7 +790,11 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
 
   const handleRemovePoseStep = (idxToRemove: number) => {
     if (itemFormPoseSteps.length <= 1) {
-      alert('Minimal harus ada 1 model skeleton gerakan.');
+      toast({
+        title: 'Aksi Ditolak',
+        description: 'Minimal harus ada 1 model skeleton gerakan.',
+        variant: 'destructive',
+      });
       return;
     }
     const updated = itemFormPoseSteps
@@ -817,7 +821,11 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
       return;
     }
     if (itemFormPoseSteps.length <= 1) {
-      alert('Tambahkan minimal 2 model skeleton untuk memutar simulasi urutan gerakan.');
+      toast({
+        title: 'Perhatian',
+        description: 'Tambahkan minimal 2 model skeleton untuk memutar simulasi urutan gerakan.',
+        variant: 'warning',
+      });
       return;
     }
     setIsPlayingStepPreview(true);
@@ -890,7 +898,11 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
       return;
     }
     if (selectedPresetIds.length === 0) {
-      alert('Pilih setidaknya satu variasi gerakan.');
+      toast({
+        title: 'Perhatian',
+        description: 'Pilih setidaknya satu variasi gerakan.',
+        variant: 'warning',
+      });
       return;
     }
     const toAdd = presets.filter(p => selectedPresetIds.includes(p.preset_id));

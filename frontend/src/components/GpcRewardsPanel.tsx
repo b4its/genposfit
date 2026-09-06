@@ -14,7 +14,7 @@ import {
   Sparkles,
   Award,
 } from 'lucide-react';
-import { Badge, Button, Card } from '../components/ui';
+import { Badge, Button, Card, toast } from '../components/ui';
 import { getApiUrl } from '../lib/api';
 
 const apiUrl = getApiUrl;
@@ -155,9 +155,22 @@ const GpcRewardsPanel: React.FC = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.detail || `HTTP ${res.status}`);
       setHasil(data);
+      toast({
+        title: kering ? 'Simulasi Berhasil' : 'Distribusi Sukses! 🎉',
+        description: kering
+          ? `Simulasi selesai untuk ${data.total_penerima ?? 0} penerima.`
+          : `Reward GPC berhasil dikirim (${data.dikirim?.length ?? 0} transaksi berhasil).`,
+        variant: 'success',
+      });
       await muat(true);
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : 'Gagal mengeksekusi reward');
+      const msg = e instanceof Error ? e.message : 'Gagal mengeksekusi reward';
+      setErr(msg);
+      toast({
+        title: 'Eksekusi Reward Gagal',
+        description: msg,
+        variant: 'destructive',
+      });
     } finally {
       setSendingShortcut(false);
     }
@@ -181,9 +194,22 @@ const GpcRewardsPanel: React.FC = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.detail || `HTTP ${res.status}`);
       setHasil(data);
+      toast({
+        title: kering ? 'Simulasi Selesai' : 'Distribusi Berhasil! 🎉',
+        description: kering
+          ? `Simulasi custom selesai untuk ${data.total_penerima ?? 0} penerima.`
+          : `Reward GPC berhasil didistribusikan.`,
+        variant: 'success',
+      });
       await muat(true);
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : 'Gagal mendistribusikan reward');
+      const msg = e instanceof Error ? e.message : 'Gagal mendistribusikan reward';
+      setErr(msg);
+      toast({
+        title: 'Distribusi Gagal',
+        description: msg,
+        variant: 'destructive',
+      });
     } finally {
       setSending(false);
     }

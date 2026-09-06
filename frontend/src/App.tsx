@@ -14,6 +14,7 @@ import { AdminExercises } from './pages/AdminExercises';
 import { ShieldCheck } from 'lucide-react';
 import { getApiUrl } from './lib/api';
 import { MisiPeringkat } from './pages/MisiPeringkat';
+import { Toaster } from './components/ui';
 
 function AppContent() {
   const { isAuthenticated, user, loading } = useAuth();
@@ -139,6 +140,7 @@ export function App() {
   return (
     <AuthProvider>
       <AppContent />
+      <Toaster />
     </AuthProvider>
   );
 }

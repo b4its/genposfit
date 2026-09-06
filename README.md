@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🧘 GenPosFit — Genryphem Posture and Fit
+# 🧘 GenPosFit — Gen Posture and Fit
 
 **Sistem Monitoring & Terapi Postur AI Berbasis Personalisasi Baseline, Multi-Step Pose Sequencing, Battle Multiplayer, Gamifikasi, dan Reward Web3 (GPC Token)**
 
