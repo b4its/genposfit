@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🧘 GenPosFit — Gen Posture and Fit
+# GenPosFit — Gen Posture and Fit
 
 **Sistem Monitoring & Terapi Postur AI Berbasis Personalisasi Baseline, Multi-Step Pose Sequencing, Battle Multiplayer, Gamifikasi, dan Reward Web3 (GPC Token)**
 
@@ -18,7 +18,7 @@
 
 ---
 
-## 📑 Daftar Isi
+## Daftar Isi
 
 1. [Konsep Besar & Nilai Tambah](#1-konsep-besar--nilai-tambah)
 2. [Arsitektur Sistem](#2-arsitektur-sistem)
@@ -132,10 +132,10 @@ flowchart TD
   - *Contoh Push-Up:* **Step 1 (Posisi Atas / Plank)** $\rightarrow$ **Step 2 (Turun Dada Rendah / Siku 90°)** $\rightarrow$ **Step 3 (Dorong Naik Kembali)**.
   - Repetisi hanya dihitung **+1** setelah seluruh rangkaian step diselesaikan secara berurutan.
 - **Reaksi Maskot Ekspresi Skor Real-time:** Menampilkan kartu umpan balik emosional berbasis skor akurasi latihan pengguna:
-  - 😄 **Pose Sangat Baik (≥80%):** Maskot ekspresi bahagia (*Happy*).
-  - 😐 **Pose Cukup Baik (60–79%):** Maskot ekspresi datar (*Flat*).
-  - 🙁 **Perlu Diperbaiki (<60%):** Maskot ekspresi sedih (*Sad*).
-  - 🧘 **Siap Latihan (Netral):** Maskot ekspresi siap sebelum latihan dimulai.
+  - **Pose Sangat Baik (≥80%):** Maskot ekspresi bahagia (*Happy*).
+  - **Pose Cukup Baik (60–79%):** Maskot ekspresi datar (*Flat*).
+  - **Perlu Diperbaiki (<60%):** Maskot ekspresi sedih (*Sad*).
+  - **Siap Latihan (Netral):** Maskot ekspresi siap sebelum latihan dimulai.
 - **Ghost Skeleton Panduan:** Canvas menampilkan kerangka referensi ungu milik pelatih untuk step aktif yang sedang dikerjakan.
 - **Perekam Pose Kamera Pelatih:** Admin/Pelatih dapat menambah atau menghapus step gerakan, lalu merekam pose target langsung dari kamera pelatih (snapshot instan maupun multi-frame averaging).
 - **Simulasi Transisi Step:** Tombol *Putar Urutan Step* untuk melihat animasi simulasi transisi fase gerakan skeleton.
@@ -419,6 +419,6 @@ genposfit/
 
 <div align="center">
 
-**GenPosFit** — *Pionir Kesehatan Postur Berbasis AI, Biomekanika Personal, dan Web3.* 🧘✨
+**GenPosFit** — *Gen Posture and Fit untuk memperbaiki postur badan menggunakan Artificial Intelligence, Blockchain, dan Computer Vision*
 
 </div>
