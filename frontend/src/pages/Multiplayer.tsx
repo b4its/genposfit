@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Users, Plus, LogIn, KeyRound, DoorOpen, Check, X,
   Wifi, Monitor, Smartphone, Globe, Server, Camera, Swords, Star, Target as TargetIcon,
-  AlertOctagon, Play, Pause, RotateCcw, Dumbbell, Timer, CheckCircle2, Sparkles, Trophy, Activity, User, Flame
+  AlertOctagon, Play, Pause, RotateCcw, Dumbbell, Timer, Sparkles, Trophy, Activity, User
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getApiUrl, getWsUrl } from '../lib/api';
@@ -113,7 +113,7 @@ export const Multiplayer: React.FC = () => {
   const [roomCode, setRoomCode] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
+  const [displayName, setDisplayName] = useState(() => user?.nama || ('Player_' + Math.floor(1000 + Math.random() * 9000)));
   const [createColor, setCreateColor] = useState('#22c55e');
   const [joinColor, setJoinColor] = useState('#22c55e');
   const [maxScore, setMaxScore] = useState(10);
@@ -150,6 +150,17 @@ export const Multiplayer: React.FC = () => {
   const hasilBattleTerkirim = useRef(false);
   const [myBattleScore, setMyBattleScore] = useState<number>(0);
   const [challengeIds, setChallengeIds] = useState<number[]>([]);
+
+  const currentKey = () => (guestKey || (user ? `u:${user.user_id}` : ''));
+
+  // Sinkronkan challenge (daftar gerakan) yang dipilih host
+  const applyChallengeIds = (ids: number[] | undefined | null) => {
+    if (!ids || !Array.isArray(ids)) return;
+    setChallengeIds(ids);
+    // Set move aktif = gerakan pertama yang dipilih host
+    const first = battleExercises.find(m => m.exercise_id === ids[0]);
+    if (first) setSelectedBattleMove(first);
+  };
 
   // Therapy Exercise Session (Solo & Multiplayer)
   const [isExercising, setIsExercising] = useState(false);
@@ -235,14 +246,6 @@ const loadBattleMoves = async () => {
     fetchColors();
     loadBattleMoves();
   }, []);
-
-  useEffect(() => {
-    if (user) {
-      setDisplayName(user.nama);
-    } else {
-      setDisplayName('Player_' + Math.floor(1000 + Math.random() * 9000));
-    }
-  }, [user]);
 
   // Register local skeleton broadcast via WebSocket timer
   useEffect(() => {
@@ -485,15 +488,6 @@ const loadBattleMoves = async () => {
   };
 
 
-  // Sinkronkan challenge (daftar gerakan) yang dipilih host
-  const applyChallengeIds = (ids: number[] | undefined | null) => {
-    if (!ids || !Array.isArray(ids)) return;
-    setChallengeIds(ids);
-    // Set move aktif = gerakan pertama yang dipilih host
-    const first = battleExercises.find(m => m.exercise_id === ids[0]);
-    if (first) setSelectedBattleMove(first);
-  };
-
   // Host memilih/membatalkan tantangan → simpan ke backend & broadcast
   const persistChallenges = async (ids: number[]) => {
     if (!roomRef.current?.room_code) return;
@@ -510,7 +504,6 @@ const loadBattleMoves = async () => {
     } catch { /* ignore */ }
   };
 
-  const currentKey = () => (guestKey || (user ? `u:${user.user_id}` : ''));
   const playerKey = (p: any) => (p?.guest_key || (p?.user_id ? `u:${p.user_id}` : '') || '');
   const isHost = () => {
     const myKey = currentKey();
@@ -691,7 +684,9 @@ const loadBattleMoves = async () => {
           body: JSON.stringify({ room_code: rc.room_code, guest_key: guestKey, client_id: clientIdRef.current }),
         }).catch(() => {});
       }
-    } catch {}
+    } catch {
+      // Abaikan error saat leave room
+    }
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) wsRef.current.close();
     wsRef.current = null;
     setRoom(null);

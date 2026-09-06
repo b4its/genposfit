@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Award, CheckCircle2, Clock, Crown, Loader2, Medal, Target,
+  Award, Clock, Crown, Loader2, Medal, Target,
   Trophy, Wallet, XCircle,
 } from 'lucide-react';
 import { Badge, Button, Card, Progress } from '../components/ui';
@@ -56,6 +56,16 @@ interface ResponPeringkat {
   jumlah_peserta: number;
 }
 
+export interface RewardItem {
+  id: number;
+  periode: string;
+  rank: number;
+  jumlah: number;
+  tx_hash: string | null;
+  status: string;
+  created_at: string | null;
+}
+
 interface Profil {
   poin?: number;
   wallet_address?: string | null;
@@ -63,15 +73,7 @@ interface Profil {
   default_wallet?: string;
   total_gpc_diterima?: number;
   jumlah_transaksi_sukses?: number;
-  riwayat_reward?: {
-    id: number;
-    periode: string;
-    rank: number;
-    jumlah: number;
-    tx_hash: string | null;
-    status: string;
-    created_at: string | null;
-  }[];
+  riwayat_reward?: RewardItem[];
 }
 
 type Tab = 'misi' | 'peringkat';
@@ -97,7 +99,6 @@ export const MisiPeringkat: React.FC = () => {
 
   const muatSemua = useCallback(async () => {
     setLoading(true);
-    setError(null);
     try {
       const [mRes, pRes, meRes, wallRes] = await Promise.all([
         fetch(`${apiUrl()}/api/quests`, { headers: headers() }),
@@ -108,7 +109,14 @@ export const MisiPeringkat: React.FC = () => {
       if (mRes.ok) setMisiData(await mRes.json());
       if (pRes.ok) setLb(await pRes.json());
 
-      let wallData: any = null;
+      let wallData: {
+        wallet_address?: string | null;
+        is_default?: boolean;
+        default_wallet?: string;
+        total_gpc_diterima?: number;
+        jumlah_transaksi_sukses?: number;
+        riwayat_reward?: unknown[];
+      } | null = null;
       if (wallRes.ok) wallData = await wallRes.json();
 
       if (meRes.ok) {
@@ -120,12 +128,12 @@ export const MisiPeringkat: React.FC = () => {
           default_wallet: wallData?.default_wallet ?? DEFAULT_COMMUNITY_WALLET,
           total_gpc_diterima: wallData?.total_gpc_diterima ?? 0,
           jumlah_transaksi_sukses: wallData?.jumlah_transaksi_sukses ?? 0,
-          riwayat_reward: wallData?.riwayat_reward ?? [],
+          riwayat_reward: (wallData?.riwayat_reward as RewardItem[]) ?? [],
         });
       }
       const gagal = [mRes, pRes].filter((r) => r.status === 401);
       if (gagal.length) setError('Sesi berakhir — silakan login ulang.');
-    } catch (e) {
+    } catch {
       setError('Gagal mengambil data dari server.');
     } finally {
       setLoading(false);

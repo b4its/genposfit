@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
-  BarChart3, TrendingUp, Users, Database, Wallet, Trophy,
+  BarChart3, Users, Database, Wallet, Trophy,
   Medal, Award, Crown, RefreshCw, Shield, Activity, Dumbbell,
-  AlertTriangle, CheckCircle2, Gamepad2
+  Gamepad2
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, AreaChart, Area
+  PieChart, Pie, Cell
 } from 'recharts';
 import { Button, Card, Badge, Pill, PillContent } from '../components/ui';
 import { getApiUrl } from '../lib/api';
@@ -18,13 +18,49 @@ const gtoken = () => ({ Authorization: `Bearer ${localStorage.getItem('genposfit
 
 const PIE_COLORS = ['#10b981', '#f59e0b', '#ef4444'];
 
+interface AdminStats {
+  kpi?: {
+    total_users?: number;
+    new_users?: number;
+    total_saldo?: number;
+    avg_saldo?: number;
+    total_poin?: number;
+    total_logs?: number;
+    logs_since?: number;
+    total_rooms?: number;
+    total_exercises?: number;
+    total_sessions?: number;
+    total_posture_logs?: number;
+    avg_posture_score?: number;
+  };
+  distribusi?: {
+    bagus: number;
+    ringan: number;
+    buruk: number;
+  };
+  exercise_daily?: Array<{ date: string; count: number }>;
+  posture_daily?: Array<{ date: string; count: number; avg_score?: number }>;
+}
+
+interface LeaderboardUser {
+  user_id: number;
+  username: string;
+  nama: string;
+  poin: number;
+  saldo?: number;
+  pekerjaan?: string;
+  role: string;
+  rank: number;
+  email?: string;
+  wallet_address?: string;
+}
+
 export const AdminPage = () => {
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<any>(null);
-  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
 
   const fetchData = async () => {
-    setLoading(true);
     try {
       const [statsRes, lbRes] = await Promise.all([
         fetch(`${apiUrl()}/api/admin/stats?days=30`, { headers: gtoken() }),
@@ -45,7 +81,9 @@ export const AdminPage = () => {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const kpi = stats?.kpi || {};
   const distribusi = stats?.distribusi || { bagus: 0, ringan: 0, buruk: 0 };
@@ -56,7 +94,6 @@ export const AdminPage = () => {
     { name: 'Buruk', value: distribusi.buruk },
   ];
   const exerciseDaily = stats?.exercise_daily || [];
-  const postureDaily = stats?.posture_daily || [];
 
   const rankIcon = (rank: number) => {
     if (rank === 1) return <Crown size={16} className="text-yellow-500" />;

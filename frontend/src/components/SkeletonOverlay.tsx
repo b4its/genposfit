@@ -50,7 +50,7 @@ export const SkeletonOverlay: React.FC<SkeletonOverlayProps> = ({
   status = 'bagus',
   sudutLeher,
   sudutPunggung,
-  levelBahu,
+  levelBahu: _levelBahu,
   orientasi = 'frontal',
   showAngles = true,
   mirror = false,

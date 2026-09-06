@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Play, Pause, RotateCcw, Award, HeartPulse, Camera, CameraOff, Target,
   AlertTriangle, Plus, Pencil, Trash2, ShieldCheck, Swords, CheckCircle2,
-  X, Save, Timer, Square, Search, FolderPlus, RefreshCw, Users, Check,
-  Sparkles, Layers, Sliders, Compass, HelpCircle, CheckSquare, Info
+  X, Save, Timer, Search, FolderPlus, RefreshCw, Users,
+  Sparkles, Layers, CheckSquare, Info
 } from 'lucide-react';
 import {
   Button, Card, Badge, Progress, Pill, PillContent,
@@ -245,7 +245,11 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
   const [adminCamError, setAdminCamError] = useState<string | null>(null);
   const { landmarks: adminLandmarks, errorMsg: adminPoseError } = usePoseDetector(adminVideoRef, adminCamActive);
   const adminLandmarksRef = useRef<Landmark[] | null>(null);
-  adminLandmarksRef.current = (adminLandmarks && adminLandmarks.length >= 25) ? adminLandmarks : adminLandmarksRef.current;
+  useEffect(() => {
+    if (adminLandmarks && adminLandmarks.length >= 25) {
+      adminLandmarksRef.current = adminLandmarks;
+    }
+  }, [adminLandmarks]);
 
   // Timed recording state in admin modal
   const [isRecordingTimer, setIsRecordingTimer] = useState(false);
@@ -699,7 +703,7 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
     } else {
       setItemFormPoseSteps([
         {
-          step_id: `step-${Date.now()}`,
+          step_id: `step-${ex.exercise_id || 'initial'}-1`,
           urutan: 1,
           nama_step: 'Fase 1: Posisi Target Referensi',
           instruksi: st.petunjuk_koreksi || 'Pertahankan postur target',

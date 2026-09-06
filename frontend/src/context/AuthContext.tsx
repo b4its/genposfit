@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useState, ReactNode } from 'react';
 import { getApiUrl } from '../lib/api';
 
 export interface AuthUser {
@@ -26,7 +26,7 @@ interface AuthContextValue {
   logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 const TOKEN_KEY = 'genposfit_token';
 const USER_KEY = 'genposfit_user';
@@ -34,24 +34,24 @@ const USER_KEY = 'genposfit_user';
 const apiUrl = getApiUrl;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-
-  useEffect(() => {
-    const storedToken = localStorage.getItem(TOKEN_KEY);
+  const [user, setUser] = useState<AuthUser | null>(() => {
+    if (typeof window === 'undefined') return null;
     const storedUser = localStorage.getItem(USER_KEY);
-    if (storedToken && storedUser) {
+    if (storedUser) {
       try {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
+        return JSON.parse(storedUser);
       } catch {
-        localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(USER_KEY);
+        localStorage.removeItem(TOKEN_KEY);
       }
     }
-    setLoading(false);
-  }, []);
+    return null;
+  });
+  const [token, setToken] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(TOKEN_KEY);
+  });
+  const [loading] = useState<boolean>(false);
 
   const persist = (nextToken: string, nextUser: AuthUser) => {
     setToken(nextToken);
@@ -120,10 +120,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error('useAuth harus dipakai di dalam <AuthProvider>');
-  }
-  return ctx;
-}
+export { useAuth } from './useAuth';

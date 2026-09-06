@@ -111,9 +111,8 @@ const GpcRewardsPanel: React.FC = () => {
   const [tipePeriode, setTipePeriode] = useState<'bulanan' | 'mingguan'>('bulanan');
   const [showGrouping, setShowGrouping] = useState(false);
 
-  const muat = useCallback(async () => {
-    setLoading(true);
-    setErr(null);
+  const muat = useCallback(async (showLoading = false) => {
+    if (showLoading) setLoading(true);
     try {
       const params = new URLSearchParams({
         hanya_role_user: String(hanyaRoleUser),
@@ -128,8 +127,9 @@ const GpcRewardsPanel: React.FC = () => {
         throw new Error(b?.detail || `HTTP ${res.status}`);
       }
       setPreview(await res.json());
-    } catch (e: any) {
-      setErr(e.message);
+      setErr(null);
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : 'Gagal memuat preview reward');
     } finally {
       setLoading(false);
     }
@@ -143,9 +143,8 @@ const GpcRewardsPanel: React.FC = () => {
   const kirimShortcut = async (kering: boolean) => {
     setSendingShortcut(true);
     setErr(null);
-    setHasil(null);
     try {
-      const res = await fetch(`${apiUrl()}/api/admin/rewards/distribute-users`, {
+      const res = await fetch(`${apiUrl()}/api/admin/rewards/distribute-shortcut`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token() ?? ''}` },
         body: JSON.stringify({
@@ -156,9 +155,9 @@ const GpcRewardsPanel: React.FC = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.detail || `HTTP ${res.status}`);
       setHasil(data);
-      await muat();
-    } catch (e: any) {
-      setErr(e.message);
+      await muat(true);
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : 'Gagal mengeksekusi reward');
     } finally {
       setSendingShortcut(false);
     }
@@ -168,7 +167,6 @@ const GpcRewardsPanel: React.FC = () => {
   const kirimCustom = async (kering: boolean) => {
     setSending(true);
     setErr(null);
-    setHasil(null);
     try {
       const res = await fetch(`${apiUrl()}/api/admin/rewards/distribute`, {
         method: 'POST',
@@ -183,9 +181,9 @@ const GpcRewardsPanel: React.FC = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.detail || `HTTP ${res.status}`);
       setHasil(data);
-      await muat();
-    } catch (e: any) {
-      setErr(e.message);
+      await muat(true);
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : 'Gagal mendistribusikan reward');
     } finally {
       setSending(false);
     }
@@ -219,7 +217,7 @@ const GpcRewardsPanel: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={muat} disabled={loading || isBusy} title="Muat ulang data">
+          <Button size="sm" variant="outline" onClick={() => { muat(true); }} disabled={loading || isBusy} title="Muat ulang data">
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> Refresh
           </Button>
         </div>

@@ -19,19 +19,6 @@ function AppContent() {
   const { isAuthenticated, user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<PageTab>('landing');
   const [apiOnline, setApiOnline] = useState<boolean>(true);
-  const [showAuth, setShowAuth] = useState(true);
-
-  useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      setShowAuth(true);
-    } else if (!loading && isAuthenticated) {
-      setShowAuth(false);
-    }
-  }, [loading, isAuthenticated]);
-
-  const handleAuthSuccess = () => {
-    setShowAuth(false);
-  };
 
   // Check backend health on mount
   useEffect(() => {
@@ -85,10 +72,10 @@ function AppContent() {
     );
   }
 
-  if (showAuth) {
+  if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-        <AuthPage onSuccess={handleAuthSuccess} />
+        <AuthPage />
       </div>
     );
   }

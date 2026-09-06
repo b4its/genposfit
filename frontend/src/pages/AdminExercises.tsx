@@ -2,8 +2,8 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   ShieldCheck, Plus, Pencil, Trash2, Save, X, AlertTriangle, RefreshCw,
   Camera, CameraOff, CheckCircle2, Target, FolderOpen,
-  Timer, Square, Sparkles, Layers, Search, Filter, Check, Eye, ChevronRight,
-  Play, Swords, Info
+  Timer, Square, Sparkles, Layers, Search, Check,
+  Play, Swords
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Card, Input, Label, Textarea, Select, Badge, Pill, PillContent, Button } from '@/components/ui';
@@ -159,7 +159,7 @@ export const AdminExercises: React.FC = () => {
 
   // Presets & multi-variation state
   const [presets, setPresets] = useState<ExercisePreset[]>([]);
-  const [loadingPresets, setLoadingPresets] = useState(false);
+  const [_loadingPresets, setLoadingPresets] = useState(false);
   const [showPresetsModal, setShowPresetsModal] = useState(false);
   const [presetSearch, setPresetSearch] = useState('');
   const [presetCatFilter, setPresetCatFilter] = useState('semua');
@@ -178,7 +178,11 @@ export const AdminExercises: React.FC = () => {
   const { landmarks: realLandmarks, errorMsg: poseError } = usePoseDetector(videoRef, camActive);
   const [camError, setCamError] = useState<string | null>(null);
   const realLandmarksRef = useRef<Landmark[] | null>(null);
-  realLandmarksRef.current = (realLandmarks && realLandmarks.length >= 25) ? realLandmarks : realLandmarksRef.current;
+  useEffect(() => {
+    if (realLandmarks && realLandmarks.length >= 25) {
+      realLandmarksRef.current = realLandmarks;
+    }
+  }, [realLandmarks]);
 
   // Recording state
   const [recording, setRecording] = useState(false);
@@ -319,30 +323,6 @@ export const AdminExercises: React.FC = () => {
     if (recordingTimerRef.current) { clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
   };
 
-  useEffect(() => {
-    if (recording) return;
-    setCapturedFrames(prev => {
-      if (prev.length > 0) {
-        return prev;
-      }
-      return prev;
-    });
-  }, [recording]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (recording) return;
-    if (capturedFrames.length === 0) return;
-    const avg = averageLandmarks(capturedFrames);
-    setChildSkeleton(avg);
-    setChildPoseSteps(prev => {
-      const copy = [...prev];
-      if (copy[activeStepIndex]) {
-        copy[activeStepIndex] = { ...copy[activeStepIndex], landmarks: avg };
-      }
-      return copy;
-    });
-  }, [capturedFrames, recording]); // eslint-disable-line react-hooks/exhaustive-deps
-
   const averageLandmarks = (frames: Landmark[][]): Landmark[] => {
     if (frames.length === 0) return [];
     const result: Landmark[] = [];
@@ -365,6 +345,20 @@ export const AdminExercises: React.FC = () => {
     }
     return result;
   };
+
+  useEffect(() => {
+    if (recording) return;
+    if (capturedFrames.length === 0) return;
+    const avg = averageLandmarks(capturedFrames);
+    setChildSkeleton(avg);
+    setChildPoseSteps(prev => {
+      const copy = [...prev];
+      if (copy[activeStepIndex]) {
+        copy[activeStepIndex] = { ...copy[activeStepIndex], landmarks: avg };
+      }
+      return copy;
+    });
+  }, [capturedFrames, recording, activeStepIndex]);
 
   const stopCamIfActive = () => {
     setCamActive(false);
@@ -598,7 +592,7 @@ export const AdminExercises: React.FC = () => {
     } else {
       setChildPoseSteps([
         {
-          step_id: `step-${Date.now()}`,
+          step_id: `step-${child.exercise_id || 'initial'}-1`,
           urutan: 1,
           nama_step: 'Fase 1: Posisi Target Referensi',
           instruksi: st?.petunjuk_koreksi || 'Pertahankan postur target',

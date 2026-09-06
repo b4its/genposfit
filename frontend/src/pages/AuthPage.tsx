@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { UserPlus, LogIn, Eye, EyeOff, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { UserPlus, LogIn, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { Button, Card, Input, Label, Pill, PillIndicator, PillContent } from '../components/ui';
+import { Button, Card, Input } from '../components/ui';
 import LogoSvg from '@/assets/logo.svg';
 
 type AuthMode = 'login' | 'register';
@@ -45,8 +45,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
         await register({ username: username.trim(), password, nama: nama.trim(), email: email.trim() || undefined, pekerjaan: pekerjaan.trim() || undefined });
       }
       onSuccess?.();
-    } catch (err: any) {
-      setError(err.message || 'Terjadi kesalahan. Silakan coba lagi.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Terjadi kesalahan. Silakan coba lagi.';
+      setError(message);
     } finally {
       setLoading(false);
     }
