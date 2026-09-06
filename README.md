@@ -44,7 +44,8 @@
 
 ---
 
-## 1. Konsep Besar & Nilai Tambah
+## 1. Konsep
+GenPosFit memadukan artificial intelligence, blockchain, dan computer vision untuk memantau serta melatih postur tubuh melalui profil personal yang dibangun sejak tahap Pose Enrollment. Lewat pendekatan gamifikasi interaktif, pengguna ditantang untuk menyelesaikan berbagai misi demi mengumpulkan poin dan menduduki puncak peringkat bulanan. Sebagai apresiasi, pemuncak klasemen setiap bulannya dihadiahi token blockchain dari kami yang dapat dicairkan atau dikonversi menjadi aset digital pribadi.
 
 Sebagian besar aplikasi monitoring postur hanya menggunakan *threshold statis generik* (contoh: *"sudut leher harus selalu 165°"*). Pendekatan tersebut sering menghasilkan alarm palsu (*false alarm*) karena anatomi manusia bervariasi: tinggi badan, bentuk bahu, kelengkungan tulang belakang, serta posisi meja kerja berbeda-beda.
 

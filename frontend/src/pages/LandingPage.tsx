@@ -396,14 +396,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
               >
                 <Camera size={16} /> Buka Live Monitor
               </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => setActiveTab('multiplayer')}
-                className="border-white/40 text-white hover:bg-white/10 font-semibold text-sm"
-              >
-                <Users size={16} /> Mode Multiplayer
-              </Button>
+
             </div>
           </div>
           {/* Subtle decorative background circles */}
@@ -414,4 +407,3 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
     </div>
   );
 };
-
