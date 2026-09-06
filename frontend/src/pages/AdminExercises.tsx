@@ -1,15 +1,27 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
-  ShieldCheck, Plus, Pencil, Trash2, Save, X, AlertTriangle, RefreshCw,
-  Camera, CameraOff, CheckCircle2, Target, FolderOpen,
-  Timer, Square
-} from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { Card, Input, Label, Textarea, Select, Badge, Pill, PillContent, Button } from '@/components/ui';
-import { SkeletonOverlay, type Landmark } from '../components/SkeletonOverlay';
-import { usePoseDetector } from '../hooks/usePoseDetector';
-import { cn } from '@/lib/utils';
-import { getApiUrl } from '../lib/api';
+  ShieldCheck,
+  Plus,
+  Pencil,
+  Trash2,
+  Save,
+  X,
+  AlertTriangle,
+  RefreshCw,
+  Camera,
+  CameraOff,
+  CheckCircle2,
+  Target,
+  FolderOpen,
+  Timer,
+  Square,
+} from "lucide-react";
+import { useAuth } from "../context/AuthContext";
+import { Card, Input, Label, Textarea, Select, Badge, Pill, PillContent, Button } from "@/components/ui";
+import { SkeletonOverlay, type Landmark } from "../components/SkeletonOverlay";
+import { usePoseDetector } from "../hooks/usePoseDetector";
+import { cn } from "@/lib/utils";
+import { getApiUrl } from "../lib/api";
 
 interface ChildExercise {
   exercise_id: number;
@@ -61,18 +73,18 @@ export const AdminExercises: React.FC = () => {
   // Type form
   const [showTypeForm, setShowTypeForm] = useState(false);
   const [editingTypeId, setEditingTypeId] = useState<number | null>(null);
-  const [typeNama, setTypeNama] = useState('');
-  const [typeDeskripsi, setTypeDeskripsi] = useState('');
+  const [typeNama, setTypeNama] = useState("");
+  const [typeDeskripsi, setTypeDeskripsi] = useState("");
 
   // Child form
   const [showChildForm, setShowChildForm] = useState(false);
   const [editingChildId, setEditingChildId] = useState<number | null>(null);
-  const [childNama, setChildNama] = useState('');
-  const [childDeskripsi, setChildDeskripsi] = useState('');
-  const [childTarget, setChildTarget] = useState('');
-  const [childReps, setChildReps] = useState('10');
-  const [childTingkat, setChildTingkat] = useState('pemula');
-  const [childDurasi, setChildDurasi] = useState('5');
+  const [childNama, setChildNama] = useState("");
+  const [childDeskripsi, setChildDeskripsi] = useState("");
+  const [childTarget, setChildTarget] = useState("");
+  const [childReps, setChildReps] = useState("10");
+  const [childTingkat, setChildTingkat] = useState("pemula");
+  const [childDurasi, setChildDurasi] = useState("5");
   const [childIsBattle, setChildIsBattle] = useState(false);
   const [childSkeleton, setChildSkeleton] = useState<Landmark[] | null>(null);
   const [saving, setSaving] = useState(false);
@@ -87,7 +99,7 @@ export const AdminExercises: React.FC = () => {
   const { landmarks: realLandmarks, errorMsg: poseError } = usePoseDetector(videoRef, camActive);
   const [camError, setCamError] = useState<string | null>(null);
   const realLandmarksRef = useRef<Landmark[] | null>(null);
-  realLandmarksRef.current = (realLandmarks && realLandmarks.length >= 25) ? realLandmarks : realLandmarksRef.current;
+  realLandmarksRef.current = realLandmarks && realLandmarks.length >= 25 ? realLandmarks : realLandmarksRef.current;
 
   // Recording state
   const [recording, setRecording] = useState(false);
@@ -117,10 +129,10 @@ export const AdminExercises: React.FC = () => {
     }
   }, [camActive, realLandmarks]);
 
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === "admin";
 
   const headers = () => ({
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
     Authorization: `Bearer ${token}`,
   });
 
@@ -131,7 +143,7 @@ export const AdminExercises: React.FC = () => {
       if (res.ok) {
         const data = await res.json();
         setTypes(data);
-        setSelectedType(prev => {
+        setSelectedType((prev) => {
           if (data.length === 0) return null;
           if (prev) {
             const updated = data.find((t: ExerciseType) => t.type_id === prev.type_id);
@@ -140,10 +152,10 @@ export const AdminExercises: React.FC = () => {
           return data[0];
         });
       } else {
-        setError('Gagal memuat data. Pastikan Anda login sebagai admin.');
+        setError("Gagal memuat data. Pastikan Anda login sebagai admin.");
       }
     } catch {
-      setError('Tidak dapat terhubung ke server.');
+      setError("Tidak dapat terhubung ke server.");
     } finally {
       setLoading(false);
     }
@@ -187,7 +199,7 @@ export const AdminExercises: React.FC = () => {
       if (!recordingRef.current || frames >= maxFrames) return;
       const lms = realLandmarksRef.current;
       if (lms && lms.length >= 25) {
-        setCapturedFrames(prev => [...prev, lms.map(p => ({ ...p }))]);
+        setCapturedFrames((prev) => [...prev, lms.map((p) => ({ ...p }))]);
         frames++;
       }
     }, intervalMs);
@@ -206,13 +218,19 @@ export const AdminExercises: React.FC = () => {
     recordingRef.current = false;
     setRecording(false);
     setRecordingCountdown(0);
-    if (captureTimerRef.current) { clearInterval(captureTimerRef.current); captureTimerRef.current = null; }
-    if (recordingTimerRef.current) { clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
+    if (captureTimerRef.current) {
+      clearInterval(captureTimerRef.current);
+      captureTimerRef.current = null;
+    }
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
   };
 
   useEffect(() => {
     if (recording) return;
-    setCapturedFrames(prev => {
+    setCapturedFrames((prev) => {
       if (prev.length > 0) {
         return prev;
       }
@@ -237,7 +255,9 @@ export const AdminExercises: React.FC = () => {
     if (frames.length === 0) return [];
     const result: Landmark[] = [];
     for (let i = 0; i < frames[0].length; i++) {
-      let x = 0, y = 0, vis = 0;
+      let x = 0,
+        y = 0,
+        vis = 0;
       let count = 0;
       for (const frame of frames) {
         if (frame[i]) {
@@ -260,14 +280,20 @@ export const AdminExercises: React.FC = () => {
     setCamActive(false);
     setRecording(false);
     setRecordingCountdown(0);
-    if (captureTimerRef.current) { clearInterval(captureTimerRef.current); captureTimerRef.current = null; }
-    if (recordingTimerRef.current) { clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
+    if (captureTimerRef.current) {
+      clearInterval(captureTimerRef.current);
+      captureTimerRef.current = null;
+    }
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
   };
 
   const captureSinglePose = () => {
     const lms = realLandmarksRef.current;
     if (camActive && lms && lms.length >= 25) {
-      setChildSkeleton(lms.map(p => ({ ...p })));
+      setChildSkeleton(lms.map((p) => ({ ...p })));
     }
   };
 
@@ -276,12 +302,12 @@ export const AdminExercises: React.FC = () => {
   const resetChildForm = () => {
     setShowChildForm(false);
     setEditingChildId(null);
-    setChildNama('');
-    setChildDeskripsi('');
-    setChildTarget('');
-    setChildReps('10');
-    setChildTingkat('pemula');
-    setChildDurasi('5');
+    setChildNama("");
+    setChildDeskripsi("");
+    setChildTarget("");
+    setChildReps("10");
+    setChildTingkat("pemula");
+    setChildDurasi("5");
     setChildIsBattle(false);
     setChildSkeleton(null);
     stopCamIfActive();
@@ -290,8 +316,8 @@ export const AdminExercises: React.FC = () => {
   const resetTypeForm = () => {
     setShowTypeForm(false);
     setEditingTypeId(null);
-    setTypeNama('');
-    setTypeDeskripsi('');
+    setTypeNama("");
+    setTypeDeskripsi("");
   };
 
   // ---- Type CRUD ----
@@ -303,39 +329,56 @@ export const AdminExercises: React.FC = () => {
   const openEditType = (t: ExerciseType) => {
     setEditingTypeId(t.type_id);
     setTypeNama(t.nama);
-    setTypeDeskripsi(t.deskripsi || '');
+    setTypeDeskripsi(t.deskripsi || "");
     setShowTypeForm(true);
   };
 
   const saveType = async () => {
     setError(null);
-    if (!typeNama.trim()) { setError('Nama jenis latihan wajib diisi.'); return; }
+    if (!typeNama.trim()) {
+      setError("Nama jenis latihan wajib diisi.");
+      return;
+    }
     setSaving(true);
     const isEdit = editingTypeId != null;
     const url = isEdit ? `${apiUrl()}/api/admin/exercise-types/${editingTypeId}` : `${apiUrl()}/api/admin/exercise-types`;
     try {
       const res = await fetch(url, {
-        method: isEdit ? 'PUT' : 'POST',
+        method: isEdit ? "PUT" : "POST",
         headers: headers(),
         body: JSON.stringify({ nama: typeNama.trim(), deskripsi: typeDeskripsi || null }),
       });
-      if (!res.ok) { const d = await res.json().catch(() => ({})); setError(d?.detail || 'Gagal menyimpan.'); return; }
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setError(d?.detail || "Gagal menyimpan.");
+        return;
+      }
       resetTypeForm();
       await fetchTypes();
-    } catch { setError('Tidak dapat terhubung ke server.'); }
-    finally { setSaving(false); }
+    } catch {
+      setError("Tidak dapat terhubung ke server.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const deleteType = async (t: ExerciseType) => {
     if (!window.confirm(`Hapus jenis latihan "${t.nama}" beserta semua gerakannya?`)) return;
     try {
       const res = await fetch(`${apiUrl()}/api/admin/exercise-types/${t.type_id}`, {
-        method: 'DELETE', headers: headers(),
+        method: "DELETE",
+        headers: headers(),
       });
-      if (!res.ok) { const d = await res.json().catch(() => ({})); setError(d?.detail || 'Gagal menghapus.'); return; }
-      setTypes(prev => prev.filter(tt => tt.type_id !== t.type_id));
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setError(d?.detail || "Gagal menghapus.");
+        return;
+      }
+      setTypes((prev) => prev.filter((tt) => tt.type_id !== t.type_id));
       if (selectedType?.type_id === t.type_id) setSelectedType(null);
-    } catch { setError('Tidak dapat terhubung ke server.'); }
+    } catch {
+      setError("Tidak dapat terhubung ke server.");
+    }
   };
 
   // ---- Child CRUD ----
@@ -343,17 +386,17 @@ export const AdminExercises: React.FC = () => {
     resetChildForm();
     setSelectedType(t);
     setShowChildForm(true);
-    setChildDurasi('5');
+    setChildDurasi("5");
   };
 
   const openEditChild = (child: ChildExercise) => {
     setShowChildForm(true);
     setEditingChildId(child.exercise_id);
     setChildNama(child.nama);
-    setChildDeskripsi(child.deskripsi || '');
-    setChildTarget(child.target_otot || '');
+    setChildDeskripsi(child.deskripsi || "");
+    setChildTarget(child.target_otot || "");
     setChildReps(String(child.reps || 10));
-    setChildTingkat(child.tingkat || 'pemula');
+    setChildTingkat(child.tingkat || "pemula");
     setChildDurasi(String(child.durasi_detik || 5));
     setChildIsBattle(!!child.is_battle);
     setChildSkeleton(child.skeleton_data || null);
@@ -361,8 +404,14 @@ export const AdminExercises: React.FC = () => {
 
   const saveChild = async () => {
     setError(null);
-    if (!childNama.trim()) { setError('Nama gerakan wajib diisi.'); return; }
-    if (!selectedType) { setError('Pilih jenis latihan terlebih dahulu.'); return; }
+    if (!childNama.trim()) {
+      setError("Nama gerakan wajib diisi.");
+      return;
+    }
+    if (!selectedType) {
+      setError("Pilih jenis latihan terlebih dahulu.");
+      return;
+    }
     setSaving(true);
     const payload: Record<string, unknown> = {
       type_id: selectedType.type_id,
@@ -383,26 +432,40 @@ export const AdminExercises: React.FC = () => {
       : `${apiUrl()}/api/admin/exercise-types/${selectedType.type_id}/exercises`;
     try {
       const res = await fetch(url, {
-        method: isEdit ? 'PUT' : 'POST',
+        method: isEdit ? "PUT" : "POST",
         headers: headers(),
         body: JSON.stringify(payload),
       });
-      if (!res.ok) { const d = await res.json().catch(() => ({})); setError(d?.detail || 'Gagal menyimpan gerakan.'); return; }
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setError(d?.detail || "Gagal menyimpan gerakan.");
+        return;
+      }
       resetChildForm();
       await fetchTypes();
-    } catch { setError('Tidak dapat terhubung ke server.'); }
-    finally { setSaving(false); }
+    } catch {
+      setError("Tidak dapat terhubung ke server.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const deleteChild = async (child: ChildExercise) => {
     if (!window.confirm(`Hapus gerakan "${child.nama}"?`)) return;
     try {
       const res = await fetch(`${apiUrl()}/api/admin/exercises/${child.exercise_id}`, {
-        method: 'DELETE', headers: headers(),
+        method: "DELETE",
+        headers: headers(),
       });
-      if (!res.ok) { const d = await res.json().catch(() => ({})); setError(d?.detail || 'Gagal menghapus.'); return; }
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setError(d?.detail || "Gagal menghapus.");
+        return;
+      }
       await fetchTypes();
-    } catch { setError('Tidak dapat terhubung ke server.'); }
+    } catch {
+      setError("Tidak dapat terhubung ke server.");
+    }
   };
 
   if (!token) return <NoAccess message="Anda harus login terlebih dahulu." />;
@@ -417,9 +480,7 @@ export const AdminExercises: React.FC = () => {
             <ShieldCheck size={13} />
             <PillContent>KONTROL ADMIN</PillContent>
           </Pill>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-            Kelola Latihan Terapi
-          </h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">Kelola Latihan Terapi</h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Tambah jenis latihan (parent) dan gerakan-gerakan anak (child) dengan skeleton dari kamera.
           </p>
@@ -438,7 +499,9 @@ export const AdminExercises: React.FC = () => {
         <div className="mb-6 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-400 flex items-start gap-2 text-xs">
           <AlertTriangle size={14} className="shrink-0 mt-0.5" />
           <span>{error}</span>
-          <button className="ml-auto text-rose-500 hover:text-rose-700" onClick={() => setError(null)}><X size={14} /></button>
+          <button className="ml-auto text-rose-500 hover:text-rose-700" onClick={() => setError(null)}>
+            <X size={14} />
+          </button>
         </div>
       )}
 
@@ -447,22 +510,24 @@ export const AdminExercises: React.FC = () => {
         <Card className="p-5 mb-6 border-blue-500/30">
           <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2 mb-4">
             {editingTypeId ? <Pencil size={15} className="text-blue-500" /> : <FolderOpen size={15} className="text-emerald-500" />}
-            <span>{editingTypeId ? 'Ubah Jenis Latihan' : 'Tambah Jenis Latihan (Parent)'}</span>
+            <span>{editingTypeId ? "Ubah Jenis Latihan" : "Tambah Jenis Latihan (Parent)"}</span>
           </h2>
           <div className="space-y-4 text-xs">
             <div>
               <Label className="mb-1.5 block">Nama Jenis Latihan *</Label>
-              <Input type="text" value={typeNama} onChange={e => setTypeNama(e.target.value)} placeholder="Contoh: Koreksi Leher" />
+              <Input type="text" value={typeNama} onChange={(e) => setTypeNama(e.target.value)} placeholder="Contoh: Koreksi Leher" />
             </div>
             <div>
               <Label className="mb-1.5 block">Deskripsi</Label>
-              <Textarea value={typeDeskripsi} onChange={e => setTypeDeskripsi(e.target.value)} placeholder="Jelaskan jenis latihan ini" />
+              <Textarea value={typeDeskripsi} onChange={(e) => setTypeDeskripsi(e.target.value)} placeholder="Jelaskan jenis latihan ini" />
             </div>
             <div className="flex gap-2">
               <Button variant="default" size="sm" className="flex-1" onClick={saveType} disabled={saving}>
-                <Save size={14} /> {saving ? 'Menyimpan...' : editingTypeId ? 'Simpan Perubahan' : 'Tambah'}
+                <Save size={14} /> {saving ? "Menyimpan..." : editingTypeId ? "Simpan Perubahan" : "Tambah"}
               </Button>
-              <Button variant="outline" size="sm" onClick={resetTypeForm}><X size={14} /> Batal</Button>
+              <Button variant="outline" size="sm" onClick={resetTypeForm}>
+                <X size={14} /> Batal
+              </Button>
             </div>
           </div>
         </Card>
@@ -472,26 +537,25 @@ export const AdminExercises: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Sidebar: types list */}
         <Card className="lg:col-span-4 p-4 self-start">
-          <h2 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3">
-            Jenis Latihan ({types.length})
-          </h2>
+          <h2 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3">Jenis Latihan ({types.length})</h2>
           {loading ? (
             <div className="text-xs text-slate-400 py-4 text-center">Memuat...</div>
           ) : types.length === 0 ? (
-            <div className="text-xs text-slate-400 py-4 text-center">
-              Belum ada jenis latihan. Klik "Tambah Latihan Terapi" untuk memulai.
-            </div>
+            <div className="text-xs text-slate-400 py-4 text-center">Belum ada jenis latihan. Klik "Tambah Latihan Terapi" untuk memulai.</div>
           ) : (
             <div className="space-y-1">
-              {types.map(t => (
+              {types.map((t) => (
                 <button
                   key={t.type_id}
-                  onClick={() => { setSelectedType(t); resetChildForm(); }}
+                  onClick={() => {
+                    setSelectedType(t);
+                    resetChildForm();
+                  }}
                   className={cn(
-                    'w-full text-left px-3 py-2.5 rounded-xl text-xs flex items-center justify-between transition-all',
+                    "w-full text-left px-3 py-2.5 rounded-xl text-xs flex items-center justify-between transition-all",
                     selectedType?.type_id === t.type_id
-                      ? 'bg-blue-500/10 border border-blue-500/30 text-blue-700 dark:text-blue-300'
-                      : 'hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent text-slate-700 dark:text-slate-300'
+                      ? "bg-blue-500/10 border border-blue-500/30 text-blue-700 dark:text-blue-300"
+                      : "hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent text-slate-700 dark:text-slate-300",
                   )}
                 >
                   <div className="flex items-center gap-2 min-w-0">
@@ -499,9 +563,27 @@ export const AdminExercises: React.FC = () => {
                     <span className="font-semibold truncate">{t.nama}</span>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <Badge variant="info" className="text-[10px] h-4 px-1.5">{t.children?.length || 0}</Badge>
-                    <button onClick={e => { e.stopPropagation(); openEditType(t); }} className="p-1 hover:text-blue-500"><Pencil size={12} /></button>
-                    <button onClick={e => { e.stopPropagation(); deleteType(t); }} className="p-1 hover:text-rose-500"><Trash2 size={12} /></button>
+                    <Badge variant="info" className="text-[10px] h-4 px-1.5">
+                      {t.children?.length || 0}
+                    </Badge>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEditType(t);
+                      }}
+                      className="p-1 hover:text-blue-500"
+                    >
+                      <Pencil size={12} />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteType(t);
+                      }}
+                      className="p-1 hover:text-rose-500"
+                    >
+                      <Trash2 size={12} />
+                    </button>
                   </div>
                 </button>
               ))}
@@ -521,9 +603,7 @@ export const AdminExercises: React.FC = () => {
                       <FolderOpen size={16} className="text-purple-500" />
                       {selectedType.nama}
                     </h2>
-                    {selectedType.deskripsi && (
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{selectedType.deskripsi}</p>
-                    )}
+                    {selectedType.deskripsi && <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{selectedType.deskripsi}</p>}
                   </div>
                   <Button variant="default" size="sm" onClick={() => openAddChild(selectedType)}>
                     <Plus size={14} /> Tambah Gerakan
@@ -536,8 +616,10 @@ export const AdminExercises: React.FC = () => {
                 <Card className="p-5 border-emerald-500/30">
                   <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-4">
                     {editingChildId ? <Pencil size={14} className="text-blue-500" /> : <Plus size={14} className="text-emerald-500" />}
-                    <span>{editingChildId ? 'Ubah Gerakan' : 'Tambah Gerakan Baru'}</span>
-                    <Badge variant="info" className="text-[10px]">Skor: +1 per kecocokan</Badge>
+                    <span>{editingChildId ? "Ubah Gerakan" : "Tambah Gerakan Baru"}</span>
+                    <Badge variant="info" className="text-[10px]">
+                      Skor: +1 per kecocokan
+                    </Badge>
                   </h3>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
@@ -546,20 +628,26 @@ export const AdminExercises: React.FC = () => {
                       <div className="flex items-center justify-between mb-2">
                         <Label className="p-0">Rekam Gerakan dari Kamera</Label>
                         <label className="flex items-center gap-1.5 cursor-pointer">
-                          <input type="checkbox" checked={childIsBattle} onChange={e => setChildIsBattle(e.target.checked)} className="accent-purple-500" />
+                          <input
+                            type="checkbox"
+                            checked={childIsBattle}
+                            onChange={(e) => setChildIsBattle(e.target.checked)}
+                            className="accent-purple-500"
+                          />
                           <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-400">Bisa Battle</span>
                         </label>
                       </div>
 
                       {/* Camera + skeleton */}
-                      <div className="relative w-full h-48 rounded-lg bg-slate-950 border border-slate-800 overflow-hidden mb-2">
-                        <video ref={videoRef} autoPlay playsInline muted className={`w-full h-full object-cover ${camActive ? 'block' : 'hidden'}`} />
+                      <div className="relative w-full h-86 rounded-lg bg-slate-950 border border-slate-800 overflow-hidden mb-2">
+                        <video ref={videoRef} autoPlay playsInline muted className={`w-full h-full object-cover ${camActive ? "block" : "hidden"}`} />
                         <SkeletonOverlay
                           landmarks={childSkeleton || previewLandmarks}
-                          width={320} height={192}
+                          width={320}
+                          height={192}
                           orientasi="frontal"
                           showAngles={false}
-                          color={childSkeleton ? '#10b981' : '#8b5cf6'}
+                          color={childSkeleton ? "#10b981" : "#8b5cf6"}
                           className="absolute inset-0"
                         />
                         {!camActive && !childSkeleton && (
@@ -596,7 +684,13 @@ export const AdminExercises: React.FC = () => {
                             <Button variant="outline" size="sm" className="flex-1" onClick={startDurationModal}>
                               <Timer size={14} /> Rekam Ulang ({recordingDuration}s)
                             </Button>
-                            <Button variant="success" size="sm" className="flex-1" onClick={captureSinglePose} disabled={!realLandmarks || realLandmarks.length < 25}>
+                            <Button
+                              variant="success"
+                              size="sm"
+                              className="flex-1"
+                              onClick={captureSinglePose}
+                              disabled={!realLandmarks || realLandmarks.length < 25}
+                            >
                               <Target size={14} /> Tangkap Sekarang
                             </Button>
                           </>
@@ -625,27 +719,27 @@ export const AdminExercises: React.FC = () => {
                     {/* Child form fields */}
                     <div>
                       <Label className="mb-1.5 block">Nama Gerakan *</Label>
-                      <Input type="text" value={childNama} onChange={e => setChildNama(e.target.value)} placeholder="Contoh: Chin Tuck" />
+                      <Input type="text" value={childNama} onChange={(e) => setChildNama(e.target.value)} placeholder="Contoh: Chin Tuck" />
                     </div>
                     <div>
                       <Label className="mb-1.5 block">Deskripsi</Label>
-                      <Input type="text" value={childDeskripsi} onChange={e => setChildDeskripsi(e.target.value)} placeholder="Instruksi singkat" />
+                      <Input type="text" value={childDeskripsi} onChange={(e) => setChildDeskripsi(e.target.value)} placeholder="Instruksi singkat" />
                     </div>
                     <div>
                       <Label className="mb-1.5 block">Target Otot</Label>
-                      <Input type="text" value={childTarget} onChange={e => setChildTarget(e.target.value)} placeholder="Deep neck flexors" />
+                      <Input type="text" value={childTarget} onChange={(e) => setChildTarget(e.target.value)} placeholder="Deep neck flexors" />
                     </div>
                     <div>
                       <Label className="mb-1.5 block">Durasi (detik)/rep</Label>
-                      <Input type="number" min={1} value={childDurasi} onChange={e => setChildDurasi(e.target.value)} placeholder="5" />
+                      <Input type="number" min={1} value={childDurasi} onChange={(e) => setChildDurasi(e.target.value)} placeholder="5" />
                     </div>
                     <div>
                       <Label className="mb-1.5 block">Repetisi</Label>
-                      <Input type="number" min={1} value={childReps} onChange={e => setChildReps(e.target.value)} placeholder="10" />
+                      <Input type="number" min={1} value={childReps} onChange={(e) => setChildReps(e.target.value)} placeholder="10" />
                     </div>
                     <div>
                       <Label className="mb-1.5 block">Tingkat</Label>
-                      <Select value={childTingkat} onChange={e => setChildTingkat(e.target.value)}>
+                      <Select value={childTingkat} onChange={(e) => setChildTingkat(e.target.value)}>
                         <option value="pemula">Pemula</option>
                         <option value="menengah">Menengah</option>
                         <option value="lanjut">Lanjut</option>
@@ -655,9 +749,11 @@ export const AdminExercises: React.FC = () => {
 
                   <div className="flex gap-2 mt-4">
                     <Button variant="default" size="sm" className="flex-1" onClick={saveChild} disabled={saving}>
-                      <Save size={14} /> {saving ? 'Menyimpan...' : editingChildId ? 'Simpan Perubahan' : 'Tambah Gerakan'}
+                      <Save size={14} /> {saving ? "Menyimpan..." : editingChildId ? "Simpan Perubahan" : "Tambah Gerakan"}
                     </Button>
-                    <Button variant="outline" size="sm" onClick={resetChildForm}><X size={14} /> Batal</Button>
+                    <Button variant="outline" size="sm" onClick={resetChildForm}>
+                      <X size={14} /> Batal
+                    </Button>
                   </div>
                 </Card>
               )}
@@ -673,13 +769,14 @@ export const AdminExercises: React.FC = () => {
                   </p>
                 </div>
                 <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {(!selectedType.children || selectedType.children.length === 0) ? (
-                    <div className="p-8 text-center text-xs text-slate-400">
-                      Belum ada gerakan. Klik "Tambah Gerakan" untuk menambahkan.
-                    </div>
+                  {!selectedType.children || selectedType.children.length === 0 ? (
+                    <div className="p-8 text-center text-xs text-slate-400">Belum ada gerakan. Klik "Tambah Gerakan" untuk menambahkan.</div>
                   ) : (
-                    selectedType.children.map(child => (
-                      <div key={child.exercise_id} className="px-5 py-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-900/40">
+                    selectedType.children.map((child) => (
+                      <div
+                        key={child.exercise_id}
+                        className="px-5 py-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-900/40"
+                      >
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
                             <Target size={14} className="text-purple-500" />
@@ -687,13 +784,19 @@ export const AdminExercises: React.FC = () => {
                           <div className="min-w-0">
                             <div className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                               {child.nama}
-                              {child.is_battle && <Badge variant="warning" className="text-[9px] h-4 px-1">Battle</Badge>}
+                              {child.is_battle && (
+                                <Badge variant="warning" className="text-[9px] h-4 px-1">
+                                  Battle
+                                </Badge>
+                              )}
                             </div>
                             <div className="text-[11px] text-slate-500 dark:text-slate-400 flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
                               {child.target_otot && <span>Otot: {child.target_otot}</span>}
                               <span>Reps: {child.reps}</span>
-                              <span>Durasi: {child.durasi_detik ?? '-'}s</span>
-                              <Badge variant={child.tingkat === 'pemula' ? 'success' : 'info'} className="text-[9px] h-4 px-1">{child.tingkat}</Badge>
+                              <span>Durasi: {child.durasi_detik ?? "-"}s</span>
+                              <Badge variant={child.tingkat === "pemula" ? "success" : "info"} className="text-[9px] h-4 px-1">
+                                {child.tingkat}
+                              </Badge>
                               {child.skeleton_data && child.skeleton_data.length >= 25 && (
                                 <span className="text-emerald-500 font-medium">✓ Skeleton</span>
                               )}
@@ -726,7 +829,10 @@ export const AdminExercises: React.FC = () => {
       {/* Duration modal */}
       {showDurationModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowDurationModal(false)}>
-          <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl border border-slate-200 dark:border-slate-800" onClick={e => e.stopPropagation()}>
+          <div
+            className="bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl border border-slate-200 dark:border-slate-800"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-500">
                 <Timer size={20} />
@@ -746,14 +852,12 @@ export const AdminExercises: React.FC = () => {
                   min={3}
                   max={120}
                   value={recordingDuration}
-                  onChange={e => setRecordingDuration(Math.max(3, Number(e.target.value)))}
+                  onChange={(e) => setRecordingDuration(Math.max(3, Number(e.target.value)))}
                   className="text-2xl font-bold text-center"
                 />
                 <span className="text-sm text-slate-500 font-medium">detik</span>
               </div>
-              <p className="text-[11px] text-slate-400 mt-2">
-                Selama {recordingDuration} detik, skeleton akan ditangkap otomatis & dirata-rata.
-              </p>
+              <p className="text-[11px] text-slate-400 mt-2">Selama {recordingDuration} detik, skeleton akan ditangkap otomatis & dirata-rata.</p>
             </div>
             <div className="flex gap-2">
               <Button variant="default" size="lg" className="flex-1" onClick={beginRecording}>

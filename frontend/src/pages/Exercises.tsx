@@ -1,20 +1,43 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
-  Play, Pause, RotateCcw, Award, HeartPulse, Camera, CameraOff, Target,
-  AlertTriangle, Plus, Pencil, Trash2, ShieldCheck, Swords, CheckCircle2,
-  X, Save, Timer, Square, Search, FolderPlus, RefreshCw, Users, Check,
-  Sparkles, Layers
-} from 'lucide-react';
-import {
-  Button, Card, Badge, Progress, Pill, PillContent,
-  Input, Label, Textarea, Select
-} from '../components/ui';
-import { cn } from '../lib/utils';
-import { useAuth } from '../context/AuthContext';
-import { getApiUrl } from '../lib/api';
-import { SkeletonOverlay, type Landmark } from '../components/SkeletonOverlay';
-import { usePoseDetector } from '../hooks/usePoseDetector';
-import type { PageTab } from '../components/Navbar';
+  Play,
+  Pause,
+  RotateCcw,
+  Award,
+  HeartPulse,
+  Camera,
+  CameraOff,
+  Target,
+  AlertTriangle,
+  Plus,
+  Pencil,
+  Trash2,
+  ShieldCheck,
+  Swords,
+  CheckCircle2,
+  X,
+  Save,
+  Timer,
+  Square,
+  Search,
+  FolderPlus,
+  RefreshCw,
+  Users,
+  Check,
+  Sparkles,
+  Layers,
+} from "lucide-react";
+import { Button, Card, Badge, Progress, Pill, PillContent, Input, Label, Textarea, Select } from "../components/ui";
+import { cn } from "../lib/utils";
+import { useAuth } from "../context/AuthContext";
+import { getApiUrl } from "../lib/api";
+import { SkeletonOverlay, type Landmark } from "../components/SkeletonOverlay";
+import { usePoseDetector } from "../hooks/usePoseDetector";
+import type { PageTab } from "../components/Navbar";
+import ExpressionFlat from "../assets/mascot/expression-flat.webp";
+import ExpressionHappy from "../assets/mascot/expression-happy.webp";
+import ExpressionNeutral from "../assets/mascot/expression-neutral.webp";
+import ExpressionSad from "../assets/mascot/expression-sad.webp";
 
 export interface ExerciseItem {
   exercise_id: number;
@@ -49,17 +72,17 @@ const apiUrl = getApiUrl;
 function generateFallbackSkeleton(): Landmark[] {
   const lms: Landmark[] = [];
   for (let i = 0; i < 33; i++) lms.push({ x: 0.5, y: 0.5, visibility: 0.85 });
-  lms[0] = { x: 0.50, y: 0.22, visibility: 0.98 };
+  lms[0] = { x: 0.5, y: 0.22, visibility: 0.98 };
   lms[7] = { x: 0.44, y: 0.21, visibility: 0.95 };
   lms[8] = { x: 0.56, y: 0.21, visibility: 0.95 };
   lms[11] = { x: 0.38, y: 0.38, visibility: 0.98 };
   lms[12] = { x: 0.62, y: 0.38, visibility: 0.98 };
   lms[13] = { x: 0.32, y: 0.52, visibility: 0.92 };
   lms[14] = { x: 0.68, y: 0.52, visibility: 0.92 };
-  lms[15] = { x: 0.30, y: 0.66, visibility: 0.92 };
-  lms[16] = { x: 0.70, y: 0.66, visibility: 0.92 };
-  lms[23] = { x: 0.43, y: 0.70, visibility: 0.98 };
-  lms[24] = { x: 0.57, y: 0.70, visibility: 0.98 };
+  lms[15] = { x: 0.3, y: 0.66, visibility: 0.92 };
+  lms[16] = { x: 0.7, y: 0.66, visibility: 0.92 };
+  lms[23] = { x: 0.43, y: 0.7, visibility: 0.98 };
+  lms[24] = { x: 0.57, y: 0.7, visibility: 0.98 };
   lms[25] = { x: 0.43, y: 0.85, visibility: 0.92 };
   lms[26] = { x: 0.57, y: 0.85, visibility: 0.92 };
   lms[27] = { x: 0.43, y: 0.97, visibility: 0.92 };
@@ -73,7 +96,9 @@ function averageLandmarks(frames: Landmark[][]): Landmark[] {
   const numPoints = frames[0].length;
   const result: Landmark[] = [];
   for (let i = 0; i < numPoints; i++) {
-    let sx = 0, sy = 0, sv = 0;
+    let sx = 0,
+      sy = 0,
+      sv = 0;
     for (const f of frames) {
       const p = f[i] || { x: 0.5, y: 0.5, visibility: 0.8 };
       sx += p.x;
@@ -91,7 +116,7 @@ function averageLandmarks(frames: Landmark[][]): Landmark[] {
 
 export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
   const { user, token } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === "admin";
   const currentUserId = user?.user_id || 1;
 
   // Data state
@@ -103,8 +128,8 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Filters & search
-  const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [onlyBattleFilter, setOnlyBattleFilter] = useState<boolean>(false);
 
   // Participant Exercise Runner State
@@ -124,26 +149,30 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
   const { landmarks: realLandmarks, errorMsg: runnerPoseError } = usePoseDetector(videoRef, camActive);
   const [playerLandmarks, setPlayerLandmarks] = useState<Landmark[] | null>(null);
   const playerLandmarksRef = useRef(playerLandmarks);
-  useEffect(() => { playerLandmarksRef.current = playerLandmarks; }, [playerLandmarks]);
+  useEffect(() => {
+    playerLandmarksRef.current = playerLandmarks;
+  }, [playerLandmarks]);
   const activeExerciseRef = useRef(activeExercise);
-  useEffect(() => { activeExerciseRef.current = activeExercise; }, [activeExercise]);
+  useEffect(() => {
+    activeExerciseRef.current = activeExercise;
+  }, [activeExercise]);
 
   // Admin Modal: Exercise Type Form
   const [showTypeModal, setShowTypeModal] = useState(false);
-  const [typeFormName, setTypeFormName] = useState('');
-  const [typeFormDesc, setTypeFormDesc] = useState('');
+  const [typeFormName, setTypeFormName] = useState("");
+  const [typeFormDesc, setTypeFormDesc] = useState("");
   const [savingType, setSavingType] = useState(false);
 
   // Admin Modal: Exercise Item Form + Camera Skeleton Recorder
   const [showItemModal, setShowItemModal] = useState(false);
   const [editingExerciseId, setEditingExerciseId] = useState<number | null>(null);
   const [itemFormTypeId, setItemFormTypeId] = useState<number>(1);
-  const [itemFormNama, setItemFormNama] = useState('');
-  const [itemFormDeskripsi, setItemFormDeskripsi] = useState('');
-  const [itemFormTargetOtot, setItemFormTargetOtot] = useState('');
-  const [itemFormDurasi, setItemFormDurasi] = useState('5');
-  const [itemFormReps, setItemFormReps] = useState('10');
-  const [itemFormTingkat, setItemFormTingkat] = useState('pemula');
+  const [itemFormNama, setItemFormNama] = useState("");
+  const [itemFormDeskripsi, setItemFormDeskripsi] = useState("");
+  const [itemFormTargetOtot, setItemFormTargetOtot] = useState("");
+  const [itemFormDurasi, setItemFormDurasi] = useState("5");
+  const [itemFormReps, setItemFormReps] = useState("10");
+  const [itemFormTingkat, setItemFormTingkat] = useState("pemula");
   const [itemFormIsBattle, setItemFormIsBattle] = useState(true);
   const [itemFormSkeleton, setItemFormSkeleton] = useState<Landmark[] | null>(null);
   const [savingItem, setSavingItem] = useState(false);
@@ -154,7 +183,7 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
   const [adminCamError, setAdminCamError] = useState<string | null>(null);
   const { landmarks: adminLandmarks, errorMsg: adminPoseError } = usePoseDetector(adminVideoRef, adminCamActive);
   const adminLandmarksRef = useRef<Landmark[] | null>(null);
-  adminLandmarksRef.current = (adminLandmarks && adminLandmarks.length >= 25) ? adminLandmarks : adminLandmarksRef.current;
+  adminLandmarksRef.current = adminLandmarks && adminLandmarks.length >= 25 ? adminLandmarks : adminLandmarksRef.current;
 
   // Timed recording state in admin modal
   const [isRecordingTimer, setIsRecordingTimer] = useState(false);
@@ -164,10 +193,13 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
   const adminCaptureTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const capturedBufferRef = useRef<Landmark[][]>([]);
 
-  const authHeaders = useCallback(() => ({
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  }), [token]);
+  const authHeaders = useCallback(
+    () => ({
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    }),
+    [token],
+  );
 
   // Load exercises from backend
   const loadExercises = useCallback(async (selectId?: number) => {
@@ -180,8 +212,8 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
         setTypes(typeData);
 
         const flattened: ExerciseItem[] = [];
-        typeData.forEach(t => {
-          (t.children || []).forEach(c => {
+        typeData.forEach((t) => {
+          (t.children || []).forEach((c) => {
             flattened.push({
               ...c,
               type: t.nama,
@@ -204,12 +236,12 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
         // Select active exercise
         if (flattened.length > 0) {
           if (selectId) {
-            const found = flattened.find(e => e.exercise_id === selectId);
+            const found = flattened.find((e) => e.exercise_id === selectId);
             setActiveExercise(found || flattened[0]);
           } else {
-            setActiveExercise(prev => {
+            setActiveExercise((prev) => {
               if (!prev) return flattened[0];
-              const stillExists = flattened.find(e => e.exercise_id === prev.exercise_id);
+              const stillExists = flattened.find((e) => e.exercise_id === prev.exercise_id);
               return stillExists || flattened[0];
             });
           }
@@ -217,10 +249,10 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
           setActiveExercise(null);
         }
       } else {
-        setErrorMsg('Gagal mengambil daftar latihan dari server.');
+        setErrorMsg("Gagal mengambil daftar latihan dari server.");
       }
     } catch {
-      setErrorMsg('Tidak dapat terhubung ke server GenPosFit.');
+      setErrorMsg("Tidak dapat terhubung ke server GenPosFit.");
     } finally {
       setLoading(false);
     }
@@ -246,7 +278,7 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
       return;
     }
     if (!window.isSecureContext) {
-      setCamError('Akses kamera membutuhkan HTTPS — buka via https:// atau localhost.');
+      setCamError("Akses kamera membutuhkan HTTPS — buka via https:// atau localhost.");
       return;
     }
     setCamError(null);
@@ -279,8 +311,8 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
     if (!ex || !lm || lm.length < 25) return 0;
     try {
       const res = await fetch(`${apiUrl()}/api/exercises/score`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ landmarks: lm, exercise_id: ex.exercise_id }),
       });
       if (res.ok) {
@@ -289,19 +321,19 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
         setScoreMessage(data.message || null);
         return data.score || 0;
       }
-    } catch { /* offline */ }
+    } catch {
+      /* offline */
+    }
     return 0;
   };
 
   // Save completed exercise session
   const saveCompletedSession = async (exerciseId: number, totalReps: number) => {
     const scores = poseScores;
-    const avgSkor = scores.length
-      ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10
-      : 92.5;
+    const avgSkor = scores.length ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10 : 92.5;
     try {
       await fetch(`${apiUrl()}/api/exercises/sessions`, {
-        method: 'POST',
+        method: "POST",
         headers: authHeaders(),
         body: JSON.stringify({
           user_id: currentUserId,
@@ -310,14 +342,16 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
           avg_skor: avgSkor,
         }),
       });
-    } catch { /* offline */ }
+    } catch {
+      /* offline */
+    }
   };
 
   // Runner timer
   useEffect(() => {
     if (!isRunning || !activeExerciseRef.current) return;
     const interval = setInterval(() => {
-      setHoldTimer(prev => prev - 1);
+      setHoldTimer((prev) => prev - 1);
     }, 1000);
     return () => clearInterval(interval);
   }, [isRunning, activeExercise]);
@@ -327,7 +361,7 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
     const ex = activeExerciseRef.current;
     if (!ex) return;
 
-    setCurrentRep(r => {
+    setCurrentRep((r) => {
       const nextR = r + 1;
       if (nextR >= (ex.reps || 10)) {
         setTimeout(() => {
@@ -342,10 +376,12 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
 
     setHoldTimer(ex.durasi_detik || 5);
 
-    scorePose().then(s => {
-      setLastScore(s);
-      setPoseScores(prev => [...prev, s]);
-    }).catch(() => {});
+    scorePose()
+      .then((s) => {
+        setLastScore(s);
+        setPoseScores((prev) => [...prev, s]);
+      })
+      .catch(() => {});
   }, [holdTimer, isRunning, activeExercise]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSelectExercise = (ex: ExerciseItem) => {
@@ -392,37 +428,37 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
     setErrorMsg(null);
     try {
       const res = await fetch(`${apiUrl()}/api/admin/exercises/seed-defaults`, {
-        method: 'POST',
+        method: "POST",
         headers: authHeaders(),
       });
       if (res.ok) {
-        setSuccessMsg('Paket latihan standar dengan data skeleton referensi berhasil dimuat.');
+        setSuccessMsg("Paket latihan standar dengan data skeleton referensi berhasil dimuat.");
         await loadExercises();
       } else {
-        setErrorMsg('Gagal memuat paket latihan standar.');
+        setErrorMsg("Gagal memuat paket latihan standar.");
       }
     } catch {
-      setErrorMsg('Tidak dapat terhubung ke server.');
+      setErrorMsg("Tidak dapat terhubung ke server.");
     }
   };
 
   // Category Modal
   const openCreateCategoryModal = () => {
-    setTypeFormName('');
-    setTypeFormDesc('');
+    setTypeFormName("");
+    setTypeFormDesc("");
     setShowTypeModal(true);
   };
 
   const handleSaveCategory = async () => {
     if (!typeFormName.trim()) {
-      setErrorMsg('Nama kategori latihan wajib diisi.');
+      setErrorMsg("Nama kategori latihan wajib diisi.");
       return;
     }
     setSavingType(true);
     setErrorMsg(null);
     try {
       const res = await fetch(`${apiUrl()}/api/admin/exercise-types`, {
-        method: 'POST',
+        method: "POST",
         headers: authHeaders(),
         body: JSON.stringify({
           nama: typeFormName.trim(),
@@ -437,10 +473,10 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
         if (created.type_id) setItemFormTypeId(created.type_id);
       } else {
         const d = await res.json().catch(() => ({}));
-        setErrorMsg(d?.detail || 'Gagal menyimpan kategori latihan.');
+        setErrorMsg(d?.detail || "Gagal menyimpan kategori latihan.");
       }
     } catch {
-      setErrorMsg('Koneksi ke server bermasalah.');
+      setErrorMsg("Koneksi ke server bermasalah.");
     } finally {
       setSavingType(false);
     }
@@ -452,12 +488,12 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
     setCamActive(false);
 
     setEditingExerciseId(null);
-    setItemFormNama('');
-    setItemFormDeskripsi('');
-    setItemFormTargetOtot('');
-    setItemFormDurasi('5');
-    setItemFormReps('10');
-    setItemFormTingkat('pemula');
+    setItemFormNama("");
+    setItemFormDeskripsi("");
+    setItemFormTargetOtot("");
+    setItemFormDurasi("5");
+    setItemFormReps("10");
+    setItemFormTingkat("pemula");
     setItemFormIsBattle(true);
     setItemFormSkeleton(null);
     setAdminCamError(null);
@@ -474,11 +510,11 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
 
     setEditingExerciseId(ex.exercise_id);
     setItemFormNama(ex.nama);
-    setItemFormDeskripsi(ex.deskripsi || '');
-    setItemFormTargetOtot(ex.target_otot || '');
+    setItemFormDeskripsi(ex.deskripsi || "");
+    setItemFormTargetOtot(ex.target_otot || "");
     setItemFormDurasi(String(ex.durasi_detik || 5));
     setItemFormReps(String(ex.reps || 10));
-    setItemFormTingkat(ex.tingkat || 'pemula');
+    setItemFormTingkat(ex.tingkat || "pemula");
     setItemFormIsBattle(Boolean(ex.is_battle));
     setItemFormSkeleton(ex.skeleton_data || null);
     setItemFormTypeId(ex.type_id || (types[0]?.type_id ?? 1));
@@ -499,7 +535,7 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
       return;
     }
     if (!window.isSecureContext) {
-      setAdminCamError('Akses kamera membutuhkan HTTPS atau akses localhost.');
+      setAdminCamError("Akses kamera membutuhkan HTTPS atau akses localhost.");
       return;
     }
     setAdminCamError(null);
@@ -518,11 +554,11 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
   const captureInstantPose = () => {
     const lms = adminLandmarksRef.current;
     if (lms && lms.length >= 25) {
-      setItemFormSkeleton(lms.map(p => ({ ...p })));
-      setSuccessMsg('✓ Pose skeleton berhasil ditangkap langsung dari kamera!');
+      setItemFormSkeleton(lms.map((p) => ({ ...p })));
+      setSuccessMsg("✓ Pose skeleton berhasil ditangkap langsung dari kamera!");
       setTimeout(() => setSuccessMsg(null), 3000);
     } else {
-      setAdminCamError('Pose tubuh belum terdeteksi. Posisikan seluruh tubuh di depan kamera.');
+      setAdminCamError("Pose tubuh belum terdeteksi. Posisikan seluruh tubuh di depan kamera.");
     }
   };
 
@@ -557,7 +593,7 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
     adminCaptureTimerRef.current = setInterval(() => {
       const lms = adminLandmarksRef.current;
       if (lms && lms.length >= 25) {
-        capturedBufferRef.current.push(lms.map(p => ({ ...p })));
+        capturedBufferRef.current.push(lms.map((p) => ({ ...p })));
       }
     }, 200);
 
@@ -579,9 +615,9 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
           setSuccessMsg(`✓ Pose skeleton stabil (${frames.length} frame dirata-rata) berhasil disimpan!`);
           setTimeout(() => setSuccessMsg(null), 4000);
         } else if (adminLandmarksRef.current && adminLandmarksRef.current.length >= 25) {
-          setItemFormSkeleton(adminLandmarksRef.current.map(p => ({ ...p })));
+          setItemFormSkeleton(adminLandmarksRef.current.map((p) => ({ ...p })));
         } else {
-          setAdminCamError('Tidak ada pose yang tertangkap selama perekaman. Coba lagi.');
+          setAdminCamError("Tidak ada pose yang tertangkap selama perekaman. Coba lagi.");
         }
       }
     }, 1000);
@@ -594,11 +630,11 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
   // Save exercise item to backend
   const handleSaveExerciseItem = async () => {
     if (!itemFormNama.trim()) {
-      setAdminCamError('Nama gerakan terapi wajib diisi.');
+      setAdminCamError("Nama gerakan terapi wajib diisi.");
       return;
     }
     if (!itemFormTypeId) {
-      setAdminCamError('Pilih kategori latihan terlebih dahulu.');
+      setAdminCamError("Pilih kategori latihan terlebih dahulu.");
       return;
     }
 
@@ -621,13 +657,11 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
     }
 
     const isEdit = editingExerciseId != null;
-    const url = isEdit
-      ? `${apiUrl()}/api/admin/exercises/${editingExerciseId}`
-      : `${apiUrl()}/api/admin/exercise-types/${itemFormTypeId}/exercises`;
+    const url = isEdit ? `${apiUrl()}/api/admin/exercises/${editingExerciseId}` : `${apiUrl()}/api/admin/exercise-types/${itemFormTypeId}/exercises`;
 
     try {
       const res = await fetch(url, {
-        method: isEdit ? 'PUT' : 'POST',
+        method: isEdit ? "PUT" : "POST",
         headers: authHeaders(),
         body: JSON.stringify(payload),
       });
@@ -639,10 +673,10 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
         await loadExercises(saved.exercise_id);
       } else {
         const d = await res.json().catch(() => ({}));
-        setAdminCamError(d?.detail || 'Gagal menyimpan gerakan latihan.');
+        setAdminCamError(d?.detail || "Gagal menyimpan gerakan latihan.");
       }
     } catch {
-      setAdminCamError('Koneksi ke server terputus.');
+      setAdminCamError("Koneksi ke server terputus.");
     } finally {
       setSavingItem(false);
     }
@@ -654,23 +688,23 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
     if (!window.confirm(`Hapus gerakan latihan "${ex.nama}"?`)) return;
     try {
       const res = await fetch(`${apiUrl()}/api/admin/exercises/${ex.exercise_id}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: authHeaders(),
       });
       if (res.ok) {
         setSuccessMsg(`Gerakan "${ex.nama}" berhasil dihapus.`);
         await loadExercises();
       } else {
-        setErrorMsg('Gagal menghapus gerakan.');
+        setErrorMsg("Gagal menghapus gerakan.");
       }
     } catch {
-      setErrorMsg('Koneksi ke server bermasalah.');
+      setErrorMsg("Koneksi ke server bermasalah.");
     }
   };
 
   // Filter exercises
-  const filteredExercises = exercises.filter(ex => {
-    if (selectedTypeFilter !== 'all') {
+  const filteredExercises = exercises.filter((ex) => {
+    if (selectedTypeFilter !== "all") {
       const matchId = String(ex.type_id) === selectedTypeFilter;
       const matchName = ex.type?.toLowerCase() === selectedTypeFilter.toLowerCase();
       if (!matchId && !matchName) return false;
@@ -686,9 +720,16 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
     return true;
   });
 
-  const hasSkeleton = Boolean(
-    activeExercise?.skeleton_data && activeExercise.skeleton_data.length >= 25
-  );
+  const hasSkeleton = Boolean(activeExercise?.skeleton_data && activeExercise.skeleton_data.length >= 25);
+
+  const scoreEmotion =
+    lastScore == null
+      ? { image: ExpressionNeutral, label: "Siap latihan", color: "text-slate-500 dark:text-slate-400" }
+      : lastScore >= 80
+        ? { image: ExpressionHappy, label: "Pose sangat baik", color: "text-emerald-600 dark:text-emerald-400" }
+        : lastScore >= 60
+          ? { image: ExpressionFlat, label: "Pose cukup baik", color: "text-amber-600 dark:text-amber-400" }
+          : { image: ExpressionSad, label: "Perlu diperbaiki", color: "text-rose-600 dark:text-rose-400" };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-8">
@@ -731,23 +772,17 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
               </Badge>
             )}
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-            Latihan Terapi & Koreksi Postur
-          </h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">Latihan Terapi & Koreksi Postur</h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
-            Gerakan terapeutik bio-mekanika — cocokkan pose Anda secara langsung dengan skeleton referensi pelatih untuk latihan harian atau adu skor di room multiplayer.
+            Gerakan terapeutik bio-mekanika — cocokkan pose Anda secara langsung dengan skeleton referensi pelatih untuk latihan harian atau adu skor
+            di room multiplayer.
           </p>
         </div>
 
         {/* Admin Quick Action Buttons */}
         {isAdmin && (
           <div className="flex items-center gap-2 flex-wrap shrink-0">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={openCreateCategoryModal}
-              className="text-xs font-semibold"
-            >
+            <Button variant="outline" size="sm" onClick={openCreateCategoryModal} className="text-xs font-semibold">
               <FolderPlus size={14} className="text-blue-500" />
               <span>+ Kategori Terapi</span>
             </Button>
@@ -769,17 +804,17 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
         {/* Category tabs */}
         <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none">
           <button
-            onClick={() => setSelectedTypeFilter('all')}
+            onClick={() => setSelectedTypeFilter("all")}
             className={cn(
               "px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer",
-              selectedTypeFilter === 'all'
+              selectedTypeFilter === "all"
                 ? "bg-blue-600 text-white shadow-xs"
-                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700",
             )}
           >
             Semua ({exercises.length})
           </button>
-          {types.map(t => (
+          {types.map((t) => (
             <button
               key={t.type_id}
               onClick={() => setSelectedTypeFilter(String(t.type_id))}
@@ -787,7 +822,7 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                 "px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer",
                 selectedTypeFilter === String(t.type_id)
                   ? "bg-blue-600 text-white shadow-xs"
-                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700",
               )}
             >
               {t.nama} ({t.children?.length || 0})
@@ -803,7 +838,7 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
               type="text"
               placeholder="Cari gerakan / otot..."
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-8 pr-3 py-1.5 rounded-lg text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
@@ -831,9 +866,7 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
               <Layers size={14} className="text-blue-500" />
               <span>Daftar Gerakan Terapi</span>
             </h3>
-            <span className="text-[11px] text-slate-400">
-              {filteredExercises.length} gerakan
-            </span>
+            <span className="text-[11px] text-slate-400">{filteredExercises.length} gerakan</span>
           </div>
 
           {/* Empty State */}
@@ -847,31 +880,19 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
               <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mx-auto mb-3 text-blue-600 dark:text-blue-400">
                 <HeartPulse size={24} />
               </div>
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-1">
-                Belum Ada Gerakan Terapi
-              </h4>
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-1">Belum Ada Gerakan Terapi</h4>
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 max-w-sm mx-auto leading-relaxed">
                 {isAdmin
-                  ? 'Anda dapat menambahkan kategori terapi baru, merekam gerakan langsung dari pose kamera menggunakan skeleton, atau memuat paket latihan standar.'
-                  : 'Belum ada gerakan latihan yang tersedia. Silakan hubungi pelatih atau administrator Anda.'}
+                  ? "Anda dapat menambahkan kategori terapi baru, merekam gerakan langsung dari pose kamera menggunakan skeleton, atau memuat paket latihan standar."
+                  : "Belum ada gerakan latihan yang tersedia. Silakan hubungi pelatih atau administrator Anda."}
               </p>
 
               {isAdmin && (
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => openCreateExerciseModal()}
-                    className="w-full sm:w-auto text-xs font-semibold"
-                  >
+                  <Button variant="default" size="sm" onClick={() => openCreateExerciseModal()} className="w-full sm:w-auto text-xs font-semibold">
                     <Camera size={14} /> + Rekam Gerakan Pose
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSeedDefaults}
-                    className="w-full sm:w-auto text-xs"
-                  >
+                  <Button variant="outline" size="sm" onClick={handleSeedDefaults} className="w-full sm:w-auto text-xs">
                     <RefreshCw size={13} /> Muat Latihan Standar
                   </Button>
                 </div>
@@ -879,7 +900,7 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
             </Card>
           ) : (
             <div className="space-y-2.5 max-h-[calc(100vh-220px)] overflow-y-auto pr-1">
-              {filteredExercises.map(ex => {
+              {filteredExercises.map((ex) => {
                 const isSelected = activeExercise?.exercise_id === ex.exercise_id;
                 const hasSkel = ex.skeleton_data && ex.skeleton_data.length >= 25;
 
@@ -890,23 +911,21 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                     onClick={() => handleSelectExercise(ex)}
                     className={cn(
                       "p-4 cursor-pointer relative group transition-all",
-                      isSelected
-                        ? "border-emerald-500/80 bg-emerald-500/10 shadow-sm"
-                        : "hover:border-slate-300 dark:hover:border-slate-700"
+                      isSelected ? "border-emerald-500/80 bg-emerald-500/10 shadow-sm" : "hover:border-slate-300 dark:hover:border-slate-700",
                     )}
                   >
                     <div className="flex items-start justify-between gap-2 mb-1.5">
                       <div className="min-w-0 flex-1">
-                        <span className={cn(
-                          "text-sm font-bold block truncate",
-                          isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'
-                        )}>
+                        <span
+                          className={cn(
+                            "text-sm font-bold block truncate",
+                            isSelected ? "text-emerald-600 dark:text-emerald-400" : "text-slate-900 dark:text-white",
+                          )}
+                        >
                           {ex.nama}
                         </span>
                         {ex.target_otot && (
-                          <span className="text-[11px] text-slate-500 dark:text-slate-400 block truncate">
-                            Target: {ex.target_otot}
-                          </span>
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 block truncate">Target: {ex.target_otot}</span>
                         )}
                       </div>
 
@@ -931,11 +950,13 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                     </div>
 
                     <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed line-clamp-2">
-                      {ex.deskripsi || 'Latihan peregangan postur terarah.'}
+                      {ex.deskripsi || "Latihan peregangan postur terarah."}
                     </p>
 
                     <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-                      <span>{ex.reps} repetisi · {ex.durasi_detik ?? 5}s tahan</span>
+                      <span>
+                        {ex.reps} repetisi · {ex.durasi_detik ?? 5}s tahan
+                      </span>
                       <span className="capitalize">{ex.tingkat}</span>
                     </div>
 
@@ -944,7 +965,10 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                       <div className="absolute top-2 right-2 hidden group-hover:flex items-center gap-1 bg-white/95 dark:bg-slate-900/95 p-1 rounded-lg border border-slate-200 dark:border-slate-700 shadow-xs z-10">
                         <button
                           type="button"
-                          onClick={(e) => { e.stopPropagation(); openEditExerciseModal(ex); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditExerciseModal(ex);
+                          }}
                           className="p-1 text-slate-500 hover:text-blue-500 rounded cursor-pointer"
                           title="Ubah gerakan & rekam pose"
                         >
@@ -975,11 +999,11 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
               <div className="flex flex-wrap items-start justify-between gap-3 pb-4 mb-4 border-b border-slate-200 dark:border-slate-800">
                 <div>
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                      {activeExercise.nama}
-                    </h2>
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">{activeExercise.nama}</h2>
                     {activeExercise.type && (
-                      <Badge variant="info" className="text-[10px]">{activeExercise.type}</Badge>
+                      <Badge variant="info" className="text-[10px]">
+                        {activeExercise.type}
+                      </Badge>
                     )}
                     {activeExercise.is_battle && (
                       <Badge variant="warning" className="text-[10px] flex items-center gap-1">
@@ -988,17 +1012,13 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                     )}
                   </div>
                   <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                    Fokus Otot: {activeExercise.target_otot || 'Postur & Tulang Belakang'}
+                    Fokus Otot: {activeExercise.target_otot || "Postur & Tulang Belakang"}
                   </p>
-                  {activeExercise.deskripsi && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      {activeExercise.deskripsi}
-                    </p>
-                  )}
+                  {activeExercise.deskripsi && <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{activeExercise.deskripsi}</p>}
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <Badge variant={activeExercise.tingkat === 'pemula' ? 'success' : 'info'} className="capitalize">
+                  <Badge variant={activeExercise.tingkat === "pemula" ? "success" : "info"} className="capitalize">
                     {activeExercise.tingkat}
                   </Badge>
                   {isAdmin && (
@@ -1020,13 +1040,15 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                 <div className="mb-4 p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 text-xs text-purple-700 dark:text-purple-300">
                     <Swords size={16} className="text-purple-500 shrink-0" />
-                    <span>Gerakan ini aktif di mode <strong>Multiplayer Battle</strong>. Cocokkan pose dengan lawan untuk adu skor!</span>
+                    <span>
+                      Gerakan ini aktif di mode <strong>Multiplayer Battle</strong>. Cocokkan pose dengan lawan untuk adu skor!
+                    </span>
                   </div>
                   {setActiveTab && (
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setActiveTab('multiplayer')}
+                      onClick={() => setActiveTab("multiplayer")}
                       className="text-[11px] h-7 whitespace-nowrap bg-purple-600/10 border-purple-500/30 text-purple-600 dark:text-purple-300 hover:bg-purple-600 hover:text-white"
                     >
                       <Users size={12} /> Buka Room Battle
@@ -1037,19 +1059,14 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
 
               {/* Camera & Pose Matching Controls */}
               <div className="flex items-center gap-2 mb-4 flex-wrap">
-                <Button
-                  variant={camActive ? "success" : "outline"}
-                  size="sm"
-                  onClick={toggleRunnerCamera}
-                  className="text-xs font-semibold"
-                >
+                <Button variant={camActive ? "success" : "outline"} size="sm" onClick={toggleRunnerCamera} className="text-xs font-semibold">
                   {camActive ? <CameraOff size={14} /> : <Camera size={14} />}
-                  <span>{camActive ? 'Kamera Aktif (ON)' : 'Nyalakan Kamera'}</span>
+                  <span>{camActive ? "Kamera Aktif (ON)" : "Nyalakan Kamera"}</span>
                 </Button>
                 <span className="text-[11px] text-slate-500 dark:text-slate-400">
                   {hasSkeleton
-                    ? 'Skeleton ungu adalah panduan referensi pelatih. Cocokkan pose Anda!'
-                    : 'Gerakan ini belum memiliki skeleton referensi tersimpan.'}
+                    ? "Skeleton ungu adalah panduan referensi pelatih. Cocokkan pose Anda!"
+                    : "Gerakan ini belum memiliki skeleton referensi tersimpan."}
                 </span>
                 {camError && (
                   <span className="w-full text-[11px] text-rose-600 dark:text-rose-400 flex items-center gap-1 mt-1">
@@ -1061,13 +1078,7 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
               {/* Skeleton Viewport */}
               <div className="relative w-full h-80 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden mb-4 shadow-inner">
                 {/* Live Video Feed */}
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className={`w-full h-full object-cover ${camActive ? 'block' : 'hidden'}`}
-                />
+                <video ref={videoRef} autoPlay playsInline muted className={`w-full h-full object-cover ${camActive ? "block" : "hidden"}`} />
 
                 {/* Camera Inactive Guide */}
                 {!camActive && (
@@ -1099,7 +1110,7 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                   landmarks={playerLandmarks}
                   width={640}
                   height={440}
-                  status={lastScore && lastScore >= 80 ? 'bagus' : lastScore && lastScore >= 60 ? 'ringan' : 'buruk'}
+                  status={lastScore && lastScore >= 80 ? "bagus" : lastScore && lastScore >= 60 ? "ringan" : "buruk"}
                   orientasi="frontal"
                   showAngles={false}
                 />
@@ -1109,9 +1120,10 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                   <div
                     className="absolute top-3 right-3 px-3 py-1.5 rounded-xl text-xs font-bold font-mono backdrop-blur-md z-20 flex items-center gap-1.5 shadow-lg"
                     style={{
-                      backgroundColor: lastScore >= 80 ? 'rgba(16, 185, 129, 0.25)' : lastScore >= 60 ? 'rgba(245, 158, 11, 0.25)' : 'rgba(239, 68, 68, 0.25)',
-                      border: `1px solid ${lastScore >= 80 ? '#10b981' : lastScore >= 60 ? '#f59e0b' : '#ef4444'}`,
-                      color: '#fff',
+                      backgroundColor:
+                        lastScore >= 80 ? "rgba(16, 185, 129, 0.25)" : lastScore >= 60 ? "rgba(245, 158, 11, 0.25)" : "rgba(239, 68, 68, 0.25)",
+                      border: `1px solid ${lastScore >= 80 ? "#10b981" : lastScore >= 60 ? "#f59e0b" : "#ef4444"}`,
+                      color: "#fff",
                     }}
                   >
                     <Target size={13} className="text-white" />
@@ -1129,11 +1141,7 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
               </div>
 
               {/* Feedback status message */}
-              {scoreMessage && (
-                <div className="mb-4 text-xs text-center font-medium text-slate-600 dark:text-slate-300">
-                  {scoreMessage}
-                </div>
-              )}
+              {scoreMessage && <div className="mb-4 text-xs text-center font-medium text-slate-600 dark:text-slate-300">{scoreMessage}</div>}
 
               {/* Score History Pills */}
               {poseScores.length > 0 && (
@@ -1144,11 +1152,7 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                       key={i}
                       className={cn(
                         "text-[10px] font-mono font-bold px-1.5 py-0.5 rounded",
-                        s >= 80
-                          ? "bg-emerald-500/20 text-emerald-400"
-                          : s >= 60
-                          ? "bg-amber-500/20 text-amber-400"
-                          : "bg-rose-500/20 text-rose-400"
+                        s >= 80 ? "bg-emerald-500/20 text-emerald-400" : s >= 60 ? "bg-amber-500/20 text-amber-400" : "bg-rose-500/20 text-rose-400",
                       )}
                     >
                       #{i + 1}: {s}%
@@ -1158,35 +1162,30 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
               )}
 
               {/* Metrics: Reps & Hold Time */}
-              <div className="grid grid-cols-2 gap-4 text-center my-4">
-                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">
-                  <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-                    Repetisi Latihan
-                  </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center my-4">
+                <div className="grid place-content-center p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">
+                  <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Repetisi Latihan</div>
                   <div className="text-3xl sm:text-4xl font-extrabold font-mono text-blue-600 dark:text-blue-400">
-                    {currentRep}{' '}
-                    <span className="text-lg text-slate-500 font-normal">
-                      / {activeExercise.reps || 10}
-                    </span>
+                    {currentRep} <span className="text-lg text-slate-500 font-normal">/ {activeExercise.reps || 10}</span>
                   </div>
                 </div>
 
                 <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">
-                  <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-                    Tahan Posisi
+                  <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Ekspresi Score</div>
+                  <div className="h-16 flex items-center justify-center" title={scoreEmotion.label}>
+                    <img src={scoreEmotion.image} alt={scoreEmotion.label} className="h-16 w-16 object-contain" />
                   </div>
-                  <div className="text-3xl sm:text-4xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">
-                    {holdTimer}s
-                  </div>
+                  <div className={cn("text-[11px] font-medium mt-2", scoreEmotion.color)}>{scoreEmotion.label}</div>
+                </div>
+
+                <div className="grid place-content-center p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">
+                  <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Tahan Posisi</div>
+                  <div className="text-3xl sm:text-4xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">{holdTimer}s</div>
                 </div>
               </div>
 
               {/* Progress Bar */}
-              <Progress
-                value={(currentRep / (activeExercise.reps || 10)) * 100}
-                variant="gradient"
-                className="h-2.5 mb-6"
-              />
+              <Progress value={(currentRep / (activeExercise.reps || 10)) * 100} variant="gradient" className="h-2.5 mb-6" />
 
               {/* Action Buttons */}
               <div className="flex items-center gap-3">
@@ -1195,22 +1194,12 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                   variant={isRunning ? "secondary" : "success"}
                   size="lg"
                   onClick={toggleRun}
-                  className={cn(
-                    "flex-1 font-bold text-xs tracking-wider",
-                    isRunning && "bg-amber-600 hover:bg-amber-700 text-white"
-                  )}
+                  className={cn("flex-1 font-bold text-xs tracking-wider", isRunning && "bg-amber-600 hover:bg-amber-700 text-white")}
                 >
                   {isRunning ? <Pause size={16} /> : <Play size={16} className="fill-current" />}
-                  <span>{isRunning ? 'Jeda Latihan' : sessionCompleted ? 'Ulangi Sesi' : 'Mulai Latihan'}</span>
+                  <span>{isRunning ? "Jeda Latihan" : sessionCompleted ? "Ulangi Sesi" : "Mulai Latihan"}</span>
                 </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="lg"
-                  onClick={resetRoutine}
-                  className="px-4"
-                  title="Reset repetisi"
-                >
+                <Button type="button" variant="outline" size="lg" onClick={resetRoutine} className="px-4" title="Reset repetisi">
                   <RotateCcw size={15} />
                 </Button>
               </div>
@@ -1221,14 +1210,10 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                   <div className="flex items-center gap-3">
                     <Award size={28} className="text-emerald-500 shrink-0" />
                     <div>
-                      <div className="font-bold text-slate-900 dark:text-white text-sm">
-                        Sesi Latihan Selesai!
-                      </div>
+                      <div className="font-bold text-slate-900 dark:text-white text-sm">Sesi Latihan Selesai!</div>
                       <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                        {activeExercise.reps} repetisi tuntas · Skor rata-rata kecocokan:{' '}
-                        {poseScores.length > 0
-                          ? Math.round(poseScores.reduce((a, b) => a + b, 0) / poseScores.length)
-                          : 94}%
+                        {activeExercise.reps} repetisi tuntas · Skor rata-rata kecocokan:{" "}
+                        {poseScores.length > 0 ? Math.round(poseScores.reduce((a, b) => a + b, 0) / poseScores.length) : 94}%
                       </div>
                     </div>
                   </div>
@@ -1257,19 +1242,14 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
         >
           <Card
             className="w-full max-w-md p-6 bg-white dark:bg-slate-900 shadow-2xl border border-slate-200 dark:border-slate-800"
-            onClick={e => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-2">
                 <FolderPlus size={18} className="text-blue-500" />
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                  Tambah Kategori Terapi
-                </h3>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">Tambah Kategori Terapi</h3>
               </div>
-              <button
-                onClick={() => setShowTypeModal(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-              >
+              <button onClick={() => setShowTypeModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                 <X size={16} />
               </button>
             </div>
@@ -1281,7 +1261,7 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                   type="text"
                   placeholder="Contoh: Koreksi Skoliosis & Toraks"
                   value={typeFormName}
-                  onChange={e => setTypeFormName(e.target.value)}
+                  onChange={(e) => setTypeFormName(e.target.value)}
                 />
               </div>
 
@@ -1290,27 +1270,17 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                 <Textarea
                   placeholder="Penjelasan tujuan program terapi ini..."
                   value={typeFormDesc}
-                  onChange={e => setTypeFormDesc(e.target.value)}
+                  onChange={(e) => setTypeFormDesc(e.target.value)}
                   rows={3}
                 />
               </div>
 
               <div className="flex gap-2 pt-2">
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={handleSaveCategory}
-                  disabled={savingType}
-                  className="flex-1"
-                >
+                <Button variant="default" size="sm" onClick={handleSaveCategory} disabled={savingType} className="flex-1">
                   <Save size={14} />
-                  <span>{savingType ? 'Menyimpan...' : 'Simpan Kategori'}</span>
+                  <span>{savingType ? "Menyimpan..." : "Simpan Kategori"}</span>
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowTypeModal(false)}
-                >
+                <Button variant="outline" size="sm" onClick={() => setShowTypeModal(false)}>
                   Batal
                 </Button>
               </div>
@@ -1329,7 +1299,7 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
         >
           <Card
             className="w-full max-w-2xl my-8 p-6 bg-white dark:bg-slate-900 shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh] overflow-y-auto"
-            onClick={e => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-3 mb-5 border-b border-slate-200 dark:border-slate-800">
@@ -1337,17 +1307,14 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                 <Camera size={18} className="text-emerald-500" />
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                    {editingExerciseId ? 'Ubah Gerakan & Skeleton Latihan' : 'Tambah Gerakan Terapi (Rekam Skeleton)'}
+                    {editingExerciseId ? "Ubah Gerakan & Skeleton Latihan" : "Tambah Gerakan Terapi (Rekam Skeleton)"}
                   </h3>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400">
                     Lakukan pose di depan kamera untuk menyimpan skeleton referensi yang akan dicocokkan oleh anggota lain.
                   </p>
                 </div>
               </div>
-              <button
-                onClick={closeItemModal}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-              >
+              <button onClick={closeItemModal} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                 <X size={18} />
               </button>
             </div>
@@ -1373,7 +1340,7 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                     <input
                       type="checkbox"
                       checked={itemFormIsBattle}
-                      onChange={e => setItemFormIsBattle(e.target.checked)}
+                      onChange={(e) => setItemFormIsBattle(e.target.checked)}
                       className="accent-purple-600"
                     />
                     <span className="text-[11px] font-bold text-purple-700 dark:text-purple-300 flex items-center gap-1">
@@ -1389,7 +1356,7 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                     autoPlay
                     playsInline
                     muted
-                    className={`w-full h-full object-cover ${adminCamActive ? 'block' : 'hidden'}`}
+                    className={`w-full h-full object-cover ${adminCamActive ? "block" : "hidden"}`}
                   />
 
                   {/* Live or Captured Skeleton Overlay */}
@@ -1399,7 +1366,7 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                     height={360}
                     orientasi="frontal"
                     showAngles={false}
-                    color={itemFormSkeleton ? '#10b981' : '#8b5cf6'}
+                    color={itemFormSkeleton ? "#10b981" : "#8b5cf6"}
                     className="absolute inset-0"
                   />
 
@@ -1417,7 +1384,7 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                   {isRecordingTimer && (
                     <div className="absolute top-3 left-3 px-3 py-1.5 rounded-xl bg-rose-600/90 text-white font-mono text-xs font-bold flex items-center gap-2 shadow-lg animate-pulse z-20">
                       <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
-                      <span>{countdownVal > 0 ? `Merekam... ${countdownVal}s` : 'Selesai!'}</span>
+                      <span>{countdownVal > 0 ? `Merekam... ${countdownVal}s` : "Selesai!"}</span>
                     </div>
                   )}
 
@@ -1433,13 +1400,7 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                 {/* Recorder Control Buttons */}
                 <div className="flex flex-wrap items-center gap-2">
                   {!adminCamActive ? (
-                    <Button
-                      type="button"
-                      variant="default"
-                      size="sm"
-                      onClick={toggleAdminCamera}
-                      className="flex-1 text-xs font-semibold"
-                    >
+                    <Button type="button" variant="default" size="sm" onClick={toggleAdminCamera} className="flex-1 text-xs font-semibold">
                       <Camera size={14} /> Nyalakan Kamera Pelatih
                     </Button>
                   ) : (
@@ -1468,14 +1429,7 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                         <Timer size={14} /> Rekam 5s (Stabil)
                       </Button>
 
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={stopAdminCam}
-                        className="text-xs"
-                        title="Matikan kamera"
-                      >
+                      <Button type="button" variant="ghost" size="sm" onClick={stopAdminCam} className="text-xs" title="Matikan kamera">
                         <CameraOff size={14} />
                       </Button>
                     </>
@@ -1498,7 +1452,8 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                   <div className="mt-2.5 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[11px] flex items-center gap-2">
                     <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
                     <span>
-                      Pose skeleton berhasil disimpan ({itemFormSkeleton.length} titik sendi). Anggota akan mencocokkan pose ini saat latihan & multiplayer battle.
+                      Pose skeleton berhasil disimpan ({itemFormSkeleton.length} titik sendi). Anggota akan mencocokkan pose ini saat latihan &
+                      multiplayer battle.
                     </span>
                   </div>
                 )}
@@ -1508,11 +1463,8 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="mb-1.5 block">Kategori Terapi *</Label>
-                  <Select
-                    value={String(itemFormTypeId)}
-                    onChange={e => setItemFormTypeId(Number(e.target.value))}
-                  >
-                    {types.map(t => (
+                  <Select value={String(itemFormTypeId)} onChange={(e) => setItemFormTypeId(Number(e.target.value))}>
+                    {types.map((t) => (
                       <option key={t.type_id} value={t.type_id}>
                         {t.nama}
                       </option>
@@ -1526,7 +1478,7 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                     type="text"
                     placeholder="Contoh: Chin Tuck Alignment"
                     value={itemFormNama}
-                    onChange={e => setItemFormNama(e.target.value)}
+                    onChange={(e) => setItemFormNama(e.target.value)}
                   />
                 </div>
 
@@ -1536,16 +1488,13 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                     type="text"
                     placeholder="Contoh: Deep cervical flexors, Rhomboid"
                     value={itemFormTargetOtot}
-                    onChange={e => setItemFormTargetOtot(e.target.value)}
+                    onChange={(e) => setItemFormTargetOtot(e.target.value)}
                   />
                 </div>
 
                 <div>
                   <Label className="mb-1.5 block">Tingkat Kesulitan</Label>
-                  <Select
-                    value={itemFormTingkat}
-                    onChange={e => setItemFormTingkat(e.target.value)}
-                  >
+                  <Select value={itemFormTingkat} onChange={(e) => setItemFormTingkat(e.target.value)}>
                     <option value="pemula">Pemula</option>
                     <option value="menengah">Menengah</option>
                     <option value="lanjut">Lanjut</option>
@@ -1554,24 +1503,12 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
 
                 <div>
                   <Label className="mb-1.5 block">Durasi Tahan per Rep (Detik)</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={120}
-                    value={itemFormDurasi}
-                    onChange={e => setItemFormDurasi(e.target.value)}
-                  />
+                  <Input type="number" min={1} max={120} value={itemFormDurasi} onChange={(e) => setItemFormDurasi(e.target.value)} />
                 </div>
 
                 <div>
                   <Label className="mb-1.5 block">Target Jumlah Repetisi</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={itemFormReps}
-                    onChange={e => setItemFormReps(e.target.value)}
-                  />
+                  <Input type="number" min={1} max={100} value={itemFormReps} onChange={(e) => setItemFormReps(e.target.value)} />
                 </div>
 
                 <div className="sm:col-span-2">
@@ -1579,7 +1516,7 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                   <Textarea
                     placeholder="Tuliskan petunjuk posisi tubuh, arah gerakan, dan teknik bernapas untuk peserta..."
                     value={itemFormDeskripsi}
-                    onChange={e => setItemFormDeskripsi(e.target.value)}
+                    onChange={(e) => setItemFormDeskripsi(e.target.value)}
                     rows={2}
                   />
                 </div>
@@ -1595,13 +1532,9 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                   className="flex-1 font-semibold text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
                 >
                   <Save size={14} />
-                  <span>{savingItem ? 'Menyimpan...' : editingExerciseId ? 'Simpan Perubahan' : 'Terbitkan Gerakan Terapi'}</span>
+                  <span>{savingItem ? "Menyimpan..." : editingExerciseId ? "Simpan Perubahan" : "Terbitkan Gerakan Terapi"}</span>
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={closeItemModal}
-                >
+                <Button variant="outline" size="sm" onClick={closeItemModal}>
                   Batal
                 </Button>
               </div>
