@@ -28,9 +28,11 @@
    - [B. Live Monitoring Real-Time & Evaluasi Biomekanika](#b-live-monitoring-real-time--evaluasi-biomekanika)
    - [C. Latihan Terapi & Multi-Step Pose Skeleton Sequencing](#c-latihan-terapi--multi-step-pose-skeleton-sequencing)
    - [D. Kelola Latihan Admin & Bank Variasi Gerakan (32 Templat)](#d-kelola-latihan-admin--bank-variasi-gerakan-32-templat)
-   - [E. Multiplayer Battle Room (1v1 & Solo Room)](#e-multiplayer-battle-room-1v1--solo-room)
-   - [F. Sistem Gamifikasi: Misi & Leaderboard Musiman](#f-sistem-gamifikasi-misi--leaderboard-musiman)
-   - [G. Reward Token Web3: GenPosFit Coin (GPC) di Sepolia](#g-reward-token-web3-genposfit-coin-gpc-di-sepolia)
+   - [E. Sistem Notifikasi Toast Shadcn (Posisi Kanan Atas)](#e-sistem-notifikasi-toast-shadcn-posisi-kanan-atas)
+   - [F. Navigasi Terpadu & Favicon Modern](#f-navigasi-terpadu--favicon-modern)
+   - [G. Multiplayer Battle Room (1v1 & Solo Room)](#g-multiplayer-battle-room-1v1--solo-room)
+   - [H. Sistem Gamifikasi: Misi & Leaderboard Musiman](#h-sistem-gamifikasi-misi--leaderboard-musiman)
+   - [I. Reward Token Web3: GenPosFit Coin (GPC) di Sepolia](#i-reward-token-web3-genposfit-coin-gpc-di-sepolia)
 5. [Struktur Database MySQL (13 Tabel)](#5-struktur-database-mysql-13-tabel)
 6. [Backend API & WebSocket (FastAPI)](#6-backend-api--websocket-fastapi)
 7. [Frontend SPA (React 19 + TypeScript)](#7-frontend-spa-react-19--typescript)
@@ -97,7 +99,8 @@ flowchart TD
 | Layer | Teknologi | Versi / Keterangan |
 |---|---|---|
 | **Frontend** | React 19, Vite, TypeScript | SPA modern dengan performa tinggi & type safety penuh |
-| **Styling & UI** | Tailwind CSS, Lucide React, Recharts | Desain adaptif dengan dukungan Dark/Light mode otomatis |
+| **Styling & UI** | Tailwind CSS v4, Lucide React, Recharts | Desain adaptif dengan dukungan Dark/Light mode otomatis |
+| **Komponen Notifikasi** | Shadcn UI Toast (Top-Right Viewport) | Queue dispatcher terpusat, auto-dismiss, dan 5 varian semantik |
 | **Vision AI** | Google MediaPipe Pose (33 Landmarks) | Ekstraksi skeleton tubuh real-time langsung di browser client |
 | **Backend** | FastAPI, Uvicorn, Python 3.11 | REST API asinkron berkinerja tinggi + WebSockets |
 | **ORM & DB Driver** | SQLAlchemy 2.0, PyMySQL, Cryptography | Pemetaan relasional persisten & keamanan kredensial |
@@ -127,16 +130,31 @@ flowchart TD
 - **Siklus Gerakan Multi-Step:** Gerakan latihan tidak lagi dibatasi hanya 1 pose statis. Latihan kompleks dapat dipecah menjadi beberapa fase pose berurutan.
   - *Contoh Push-Up:* **Step 1 (Posisi Atas / Plank)** $\rightarrow$ **Step 2 (Turun Dada Rendah / Siku 90°)** $\rightarrow$ **Step 3 (Dorong Naik Kembali)**.
   - Repetisi hanya dihitung **+1** setelah seluruh rangkaian step diselesaikan secara berurutan.
+- **Reaksi Maskot Ekspresi Skor Real-time:** Menampilkan kartu umpan balik emosional berbasis skor akurasi latihan pengguna:
+  - 😄 **Pose Sangat Baik (≥80%):** Maskot ekspresi bahagia (*Happy*).
+  - 😐 **Pose Cukup Baik (60–79%):** Maskot ekspresi datar (*Flat*).
+  - 🙁 **Perlu Diperbaiki (<60%):** Maskot ekspresi sedih (*Sad*).
+  - 🧘 **Siap Latihan (Netral):** Maskot ekspresi siap sebelum latihan dimulai.
 - **Ghost Skeleton Panduan:** Canvas menampilkan kerangka referensi ungu milik pelatih untuk step aktif yang sedang dikerjakan.
 - **Perekam Pose Kamera Pelatih:** Admin/Pelatih dapat menambah atau menghapus step gerakan, lalu merekam pose target langsung dari kamera pelatih (snapshot instan maupun multi-frame averaging).
 - **Simulasi Transisi Step:** Tombol *Putar Urutan Step* untuk melihat animasi simulasi transisi fase gerakan skeleton.
 
 ### D. Kelola Latihan Admin & Bank Variasi Gerakan (32 Templat)
 - Modul administrasi di halaman **Kelola Latihan** (`/admin/exercises`) dan **Latihan Terapi** (`/exercises`).
+- **Viewport Kamera Pelatih Luas (`h-80 sm:h-96`):** Tampilan kamera perekam pose di admin diperbesar agar pengamatan skeleton saat demonstrasi gerakan terlihat jelas.
 - **Bank Variasi Gerakan:** Menyediakan 32 templat variasi biomekanika siap pakai (kategori Leher & Bahu, Punggung & Pinggang, Ekstremitas Bawah, hingga Multi-Step Reps).
 - Fitur *Tambah Banyak Sekaligus (Batch Add)* untuk mengimpor kumpulan variasi gerakan ke jenis latihan yang dipilih.
 
-### E. Multiplayer Battle Room (1v1 & Solo Room)
+### E. Sistem Notifikasi Toast Shadcn (Posisi Kanan Atas)
+- Arsitektur notifikasi bergaya **Shadcn UI** dengan viewport tetap di sudut kanan atas (`fixed top-4 right-4 z-[100]`).
+- Mendukung 5 varian semantik dengan styling kontras tinggi dan ikon Lucide: `default`, `success`, `destructive`, `info`, dan `warning`.
+- Terintegrasi penuh ke seluruh modul: autentikasi (login/register), klaim reward poin & hubungkan dompet Web3, distribusi token GPC, aksi room multiplayer (buat room, gabung room, salin kode), serta manajemen gerakan latihan.
+
+### F. Navigasi Terpadu & Favicon Modern
+- Menggunakan menu drawer responsif (hamburger menu) untuk tampilan yang bersih dan konsisten di seluruh ukuran layar (desktop, tablet, mobile).
+- Favicon aplikasi dan identitas visual diperbarui dengan logo SVG resmi `public/logo.svg`.
+
+### G. Multiplayer Battle Room (1v1 & Solo Room)
 - Sistem room 6 karakter (contoh: `GPF-9021`) berbasis WebSocket (`/api/multiplayer/ws/{room_code}`).
 - **Pemilihan Mascot & Persona Room:** Pemain dapat memilih avatar maskot ceria (Green, Blue, Red, Black) dengan seleksi independen antara formulir buat room dan gabung room serta pencegahan bentrok warna/maskot antar pemain dalam 1 room.
 - **Vision-Aware Skeleton Rigging:** Mengikuti pergerakan skeleton tubuh pemain secara langsung dan interaktif.
@@ -144,12 +162,12 @@ flowchart TD
 - **Dukungan Solo & Multiplayer:** Pemain dapat berlatih tanding berdua maupun latihan mandiri di dalam room.
 - **Skoring Kompetitif:** Evaluasi sinkron skor kecocokan pose, persentase repetisi selesai, penentuan pemenang (+25 poin) dan peserta (+8 poin) yang otomatis tercatat ke riwayat battle dan misi.
 
-### F. Sistem Gamifikasi: Misi & Leaderboard Musiman
+### H. Sistem Gamifikasi: Misi & Leaderboard Musiman
 - **Misi Harian & Mingguan:** Mengukur aktivitas nyata pengguna (menit monitoring postur, repetisi latihan terapi, kalibrasi baseline, kemenangan battle).
 - **Buku Besar Poin (`point_ledger`):** Setiap klaim hadiah poin dicatat secara transparan dan idempoten.
 - **Papan Peringkat Musiman (Leaderboard):** Menampilkan peringkat Top-N pengguna dengan akumulasi poin tertinggi dalam satu musim aktif.
 
-### G. Reward Token Web3: GenPosFit Coin (GPC) di Sepolia
+### I. Reward Token Web3: GenPosFit Coin (GPC) di Sepolia
 - Smart contract **`GenPosFitCoin`** (ERC-1155) di-deploy pada jaringan **Ethereum Sepolia Testnet**.
 - **Dompet Komunitas Default (Tanpa Syarat MetaMask):** Alamat fallback default `0x6EdcA860c066FCdA6c434095d5901810DCE12b48` disiapkan untuk seluruh pengguna agar siap menerima reward tanpa dipaksa memasang ekstensi browser MetaMask.
 - **Koneksi MetaMask Pribadi (Opsional):** Pengguna yang ingin menggunakan dompet pribadi tetap dapat menghubungkan MetaMask via tanda tangan kriptografis EIP-191 (`personal_sign`).
@@ -331,11 +349,13 @@ docker compose exec backend pytest tests/ -v
 - `test_rewards.py` (Kalkulasi reward musiman & eksekusi transaksi Web3 GPC)
 - `test_wallet.py` (Dompet default komunitas, isolasi pendapatan per-akun, verifikasi signature MetaMask)
 
-### B. Pengujian Frontend Build (TypeScript & Vite)
+### B. Pengujian Frontend Linter & Build (ESLint, TypeScript & Vite)
 ```bash
-cd frontend && npm run build
+cd frontend && npm run lint && npm run build
 ```
-**Hasil:** Kompilasi type-checking (`tsc -b`) dan bundler Vite berhasil tanpa error (**0 error**).
+**Hasil:**
+- Linter ESLint bersih tanpa error (**0 error**).
+- Kompilasi type-checking (`tsc -b`) dan bundler Vite berhasil tanpa error (**0 error**).
 
 ### C. Pengujian Smart Contract (Hardhat)
 ```bash

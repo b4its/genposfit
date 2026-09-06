@@ -1305,11 +1305,11 @@ export const AdminExercises: React.FC = () => {
                         const hasActiveSkeleton = Boolean(activeLandmarks && activeLandmarks.length >= 25);
 
                         return (
-                          <div className="relative w-full h-60 rounded-xl bg-slate-950 border border-slate-800 overflow-hidden mb-3 flex items-center justify-center">
+                          <div className="relative w-full h-80 sm:h-96 rounded-xl bg-slate-950 border border-slate-800 overflow-hidden mb-3 flex items-center justify-center">
                             <video ref={videoRef} autoPlay playsInline muted className={`w-full h-full object-cover ${camActive ? 'block' : 'hidden'}`} />
                             <SkeletonOverlay
                               landmarks={activeLandmarks || previewLandmarks}
-                              width={480} height={240}
+                              width={640} height={384}
                               orientasi={childOrientasi as any}
                               showAngles={true}
                               color={hasActiveSkeleton ? '#10b981' : '#8b5cf6'}

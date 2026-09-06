@@ -5,7 +5,17 @@ import { Pill, PillIndicator, PillContent, Badge } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import LogoSvg from "@/assets/logo.svg";
 
-export type PageTab = "landing" | "monitor" | "register" | "dashboard" | "exercises" | "skeleton" | "multiplayer" | "misi" | "admin" | "admin-exercises";
+export type PageTab =
+  | "landing"
+  | "monitor"
+  | "register"
+  | "dashboard"
+  | "exercises"
+  | "skeleton"
+  | "multiplayer"
+  | "misi"
+  | "admin"
+  | "admin-exercises";
 
 interface NavbarProps {
   activeTab: PageTab;
@@ -91,7 +101,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, apiOnli
             {/* Hamburger (mobile/tablet) */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="lg:hidden p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               aria-label="Menu navigasi"
             >
               {mobileOpen ? <X size={20} /> : <Menu size={20} />}
@@ -99,87 +109,54 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, apiOnli
           </div>
         </div>
 
-        {/* Desktop Bottom Navigation Bar */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 lg:pb-3">
-          <nav className="hidden lg:flex w-full justify-center">
-            <div className="w-full *:flex-1 flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-xs overflow-x-auto">
-              {visibleItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => navigate(item.id as PageTab)}
-                    className={`flex justify-center items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-all duration-150 cursor-pointer ${
-                      isActive
-                        ? "bg-blue-600 text-white shadow-sm shadow-blue-500/25"
-                        : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700"
-                    }`}
-                  >
-                    <Icon size={14} className={isActive ? "text-white" : "text-slate-500 dark:text-slate-400"} />
-                    <span>{item.label}</span>
-                    {item.badge && (
-                      <span
-                        className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${
-                          isActive ? "bg-emerald-400 text-slate-950" : "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
-                        }`}
-                      >
-                        {item.badge}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </nav>
-        </div>
-
         {/* Mobile / Tablet Drawer */}
         {mobileOpen && (
-          <nav className="lg:hidden border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 py-3">
+          <nav className="border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 py-3">
             {/* User row for mobile */}
-            <div className="flex items-center justify-between mb-3 px-1">
-              <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
-                <User size={15} className="text-blue-500" />
-                <span className="font-semibold">{user ? user.nama : "Tamu"}</span>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex items-center justify-between mb-3 px-1">
+                <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                  <User size={15} className="text-blue-500" />
+                  <span className="font-semibold">{user ? user.nama : "Tamu"}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Pill variant={apiOnline ? "success" : "destructive"} size="sm">
+                    <PillContent>{apiOnline ? "Online" : "Offline"}</PillContent>
+                  </Pill>
+                  <button
+                    onClick={logout}
+                    className="flex items-center gap-1 p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                  >
+                    <LogOut size={15} />
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Pill variant={apiOnline ? "success" : "destructive"} size="sm">
-                  <PillContent>{apiOnline ? "Online" : "Offline"}</PillContent>
-                </Pill>
-                <button
-                  onClick={logout}
-                  className="flex items-center gap-1 p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
-                >
-                  <LogOut size={15} />
-                </button>
-              </div>
-            </div>
 
-            <ul className="grid grid-cols-1 gap-1">
-              {visibleItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeTab === item.id;
-                return (
-                  <li key={item.id}>
-                    <button
-                      onClick={() => navigate(item.id as PageTab)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors cursor-pointer ${
-                        isActive ? "bg-blue-600 text-white" : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
-                      }`}
-                    >
-                      <Icon size={16} />
-                      <span>{item.label}</span>
-                      {item.badge && (
-                        <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
-                          {item.badge}
-                        </span>
-                      )}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+              <ul className="grid grid-cols-1 gap-1">
+                {visibleItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeTab === item.id;
+                  return (
+                    <li key={item.id}>
+                      <button
+                        onClick={() => navigate(item.id as PageTab)}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors cursor-pointer ${
+                          isActive ? "bg-blue-600 text-white" : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                        }`}
+                      >
+                        <Icon size={16} />
+                        <span>{item.label}</span>
+                        {item.badge && (
+                          <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+                            {item.badge}
+                          </span>
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           </nav>
         )}
       </header>

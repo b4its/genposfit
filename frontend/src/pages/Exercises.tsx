@@ -15,6 +15,10 @@ import { getApiUrl } from '../lib/api';
 import { SkeletonOverlay, type Landmark } from '../components/SkeletonOverlay';
 import { usePoseDetector } from '../hooks/usePoseDetector';
 import type { PageTab } from '../components/Navbar';
+import ExpressionFlat from '../assets/mascot/expression-flat.webp';
+import ExpressionHappy from '../assets/mascot/expression-happy.webp';
+import ExpressionNeutral from '../assets/mascot/expression-neutral.webp';
+import ExpressionSad from '../assets/mascot/expression-sad.webp';
 
 export interface PoseStep {
   step_id: string;
@@ -170,6 +174,15 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
   const [scoreMessage, setScoreMessage] = useState<string | null>(null);
   const [activeRunnerStepIndex, setActiveRunnerStepIndex] = useState<number>(0);
   const [stepSuccessFlash, setStepSuccessFlash] = useState<string | null>(null);
+
+  const scoreEmotion =
+    lastScore == null
+      ? { image: ExpressionNeutral, label: 'Siap latihan', color: 'text-slate-500 dark:text-slate-400' }
+      : lastScore >= 80
+        ? { image: ExpressionHappy, label: 'Pose sangat baik', color: 'text-emerald-600 dark:text-emerald-400' }
+        : lastScore >= 60
+          ? { image: ExpressionFlat, label: 'Pose cukup baik', color: 'text-amber-600 dark:text-amber-400' }
+          : { image: ExpressionSad, label: 'Perlu diperbaiki', color: 'text-rose-600 dark:text-rose-400' };
 
   // Participant Camera
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -1799,9 +1812,9 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                       </div>
                     )}
 
-                    {/* Metrics: Reps & Hold Time */}
-                    <div className="grid grid-cols-2 gap-4 text-center my-4">
-                      <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">
+                    {/* Metrics: Reps, Score Emotion Reaction, & Hold Time */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center my-4">
+                      <div className="grid place-content-center p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">
                         <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
                           Repetisi Latihan
                         </div>
@@ -1813,7 +1826,19 @@ export const Exercises: React.FC<ExercisesProps> = ({ setActiveTab }) => {
                         </div>
                       </div>
 
-                      <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">
+                      <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center">
+                        <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                          Ekspresi Skor
+                        </div>
+                        <div className="h-16 flex items-center justify-center" title={scoreEmotion.label}>
+                          <img src={scoreEmotion.image} alt={scoreEmotion.label} className="h-16 w-16 object-contain" />
+                        </div>
+                        <div className={cn("text-[11px] font-medium mt-2", scoreEmotion.color)}>
+                          {scoreEmotion.label}
+                        </div>
+                      </div>
+
+                      <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 flex flex-col justify-center">
                         <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1 flex items-center justify-center gap-1">
                           <span>{isMultiStep ? `Tahan Fase ${activeRunnerStepIndex + 1}` : 'Tahan Posisi'}</span>
                         </div>
