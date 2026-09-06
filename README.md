@@ -225,16 +225,17 @@ Antarmuka dibangun dengan React 19, TypeScript, dan Tailwind CSS dengan 11 halam
 
 | Halaman | File Sumber | Deskripsi & Fitur |
 |---|---|---|
-| **Overview** | `LandingPage.tsx` | Beranda informatif, demo simulator biomekanika, dan ringkasan platform |
+| **Overview** | `LandingPage.tsx` | Beranda informatif, demo simulator biomekanika interaktif, 6 pilar inovasi, dan banner CTA |
+| **Navigasi Terpadu**| `Navbar.tsx` | Header sticky, status AI online, indikator halaman aktif, dan drawer menu grid responsif |
 | **Live Monitor** | `Monitor.jsx` | Monitoring postur real-time dengan video kamera, gauge skor, telemetri, dan audio alert |
 | **Kalibrasi Pose** | `RegisterPose.jsx` | Wizard kalibrasi onboarding baseline multi-orientasi dan multi-kondisi |
 | **Dashboard** | `Dashboard.jsx` | Grafik analitik kepatuhan ergonomis, riwayat latihan, status dompet bersama, dan KPI statistik |
-| **Latihan Terapi** | `Exercises.tsx` | Runner latihan terapi, stepper multi-step, ghost skeleton pelatih, dan kamera rekam pelatih |
-| **Kelola Latihan** | `AdminExercises.tsx` | Modul admin CRUD gerakan, Multi-Step Skeleton Manager, dan Bank 32 Variasi Gerakan |
+| **Latihan Terapi** | `Exercises.tsx` | Runner latihan terapi multi-step, ghost skeleton pelatih, reaksi ekspresi maskot skor, dan toast |
+| **Kelola Latihan** | `AdminExercises.tsx` | Modul admin CRUD gerakan, Multi-Step Skeleton Manager, Bank 32 Variasi, dan kamera pelatih luas |
 | **Multiplayer Room** | `Multiplayer.tsx` | Lobby room, ready check, pemilihan avatar maskot unik, tombol Mulai Latihan, dan layar battle sinkron 1v1 / solo |
 | **Misi & Peringkat** | `MisiPeringkat.tsx` | Papan misi harian/mingguan, klaim poin, leaderboard musiman, dompet komunitas bersama, dan reward token GPC |
 | **Admin Panel** | `AdminPage.tsx` | Dashboard distribusi reward token GPC on-chain dan audit ledger |
-| **Autentikasi** | `AuthPage.tsx` | Form login dan registrasi akun (dukungan role Admin & User) |
+| **Autentikasi** | `AuthPage.tsx` | Form login dan registrasi akun (dukungan role Admin & User) dengan toast feedback |
 | **Skeleton Inspector**| `SkeletonPreview.tsx` | Visualisasi 3D dan analisis titik landmark skeleton MediaPipe |
 
 ---

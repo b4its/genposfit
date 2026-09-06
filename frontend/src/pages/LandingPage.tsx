@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import {
   Shield, Cpu, Play,
-  Sparkles, ChevronRight, HeartPulse, RefreshCw
+  Sparkles, ChevronRight, HeartPulse, RefreshCw,
+  Dumbbell, Users, Trophy, Coins, ArrowRight, Camera
 } from 'lucide-react';
 import { type PageTab } from '../components/Navbar';
 import { SkeletonOverlay } from '../components/SkeletonOverlay';
@@ -250,47 +251,164 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
         </div>
       </section>
 
-      {/* Feature Grid: Biomechanics & Healthcare */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-12 border-t border-slate-200 dark:border-slate-800">
-        <div className="text-center max-w-2xl mx-auto mb-10">
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3 text-slate-900 dark:text-white">
-            Fitur Unggulan Ergonomi Modern
+      {/* Feature Grid: 6 Pillars of Innovation */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-14 border-t border-slate-200 dark:border-slate-800">
+        <div className="text-center max-w-2xl mx-auto mb-12">
+          <Pill variant="info" size="sm" className="mb-3 font-semibold">
+            <Sparkles size={13} />
+            <PillContent>EKOSISTEM KESEHATAN TERPADU</PillContent>
+          </Pill>
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-3 text-slate-900 dark:text-white">
+            Pilar Keunggulan Biomekanika & AI
           </h2>
           <p className="text-slate-600 dark:text-slate-400 text-sm sm:text-base leading-relaxed">
-            Teknologi computer vision berstandar medis yang dirancang khusus untuk kenyamanan dan kesehatan tulang belakang pekerja meja.
+            Teknologi computer vision berstandar medis, gamifikasi battle interaktif, dan insentif Web3 yang dirancang untuk produktivitas sehat jangka panjang.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card hoverEffect className="p-6">
-            <div className="w-11 h-11 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400 mb-4 shadow-xs">
-              <Cpu size={22} />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Card hoverEffect className="p-6 flex flex-col justify-between border-slate-200/80 dark:border-slate-800">
+            <div>
+              <div className="w-11 h-11 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400 mb-4 shadow-xs">
+                <Cpu size={22} />
+              </div>
+              <h3 className="text-base font-bold mb-2 text-slate-900 dark:text-white">33-Point MediaPipe Extraction</h3>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                Ekstraksi kinematik lengkap secara real-time via WebAssembly & akselerasi GPU. Melacak sudut servikal, thoraks, dan simetri bahu tanpa latensi server.
+              </p>
             </div>
-            <h3 className="text-base font-bold mb-2 text-slate-900 dark:text-white">33-Point MediaPipe Extraction</h3>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-              Ekstraksi kinematik lengkap secara real-time via WebAssembly & akselerasi GPU. Melacak sudut servikal, thoraks, dan simetri bahu tanpa latensi.
-            </p>
+            <button
+              onClick={() => setActiveTab('monitor')}
+              className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+            >
+              Mulai Monitoring <ArrowRight size={13} />
+            </button>
           </Card>
 
-          <Card hoverEffect className="p-6">
-            <div className="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-4 shadow-xs">
-              <Shield size={22} />
+          <Card hoverEffect className="p-6 flex flex-col justify-between border-slate-200/80 dark:border-slate-800">
+            <div>
+              <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-4 shadow-xs">
+                <Shield size={22} />
+              </div>
+              <h3 className="text-base font-bold mb-2 text-slate-900 dark:text-white">Kalibrasi Baseline Personal</h3>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                Menyesuaikan standar deviasi berdasarkan anatomi unik dan kenyamanan setiap pengguna, bukan memaksakan standar kaku satu ukuran untuk semua.
+              </p>
             </div>
-            <h3 className="text-base font-bold mb-2 text-slate-900 dark:text-white">Kalibrasi Baseline Personal</h3>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-              Menyesuaikan standar deviasi berdasarkan anatomi unik dan kenyamanan setiap pengguna, bukan memaksakan standar kaku satu ukuran untuk semua.
-            </p>
+            <button
+              onClick={() => setActiveTab('register')}
+              className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+            >
+              Kalibrasi Sekarang <ArrowRight size={13} />
+            </button>
           </Card>
 
-          <Card hoverEffect className="p-6">
-            <div className="w-11 h-11 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-600 dark:text-teal-400 mb-4 shadow-xs">
-              <HeartPulse size={22} />
+          <Card hoverEffect className="p-6 flex flex-col justify-between border-slate-200/80 dark:border-slate-800">
+            <div>
+              <div className="w-11 h-11 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-600 dark:text-purple-400 mb-4 shadow-xs">
+                <Dumbbell size={22} />
+              </div>
+              <h3 className="text-base font-bold mb-2 text-slate-900 dark:text-white">Multi-Step Pose Sequencing</h3>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                Siklus latihan multi-fase dengan ghost skeleton panduan pelatih. Repetisi diverifikasi otomatis dan dilengkapi reaksi ekspresi maskot skor.
+              </p>
             </div>
-            <h3 className="text-base font-bold mb-2 text-slate-900 dark:text-white">Terapi & Peregangan Terarah</h3>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-              Program latihan korektif terintegrasi (Chin Tuck, Shoulder Squeeze, Wall Angel) dengan panduan repetisi dan aktivasi kelompok otot target.
-            </p>
+            <button
+              onClick={() => setActiveTab('exercises')}
+              className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-purple-600 dark:text-purple-400 hover:underline cursor-pointer"
+            >
+              Buka Latihan Terapi <ArrowRight size={13} />
+            </button>
           </Card>
+
+          <Card hoverEffect className="p-6 flex flex-col justify-between border-slate-200/80 dark:border-slate-800">
+            <div>
+              <div className="w-11 h-11 rounded-2xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-600 dark:text-teal-400 mb-4 shadow-xs">
+                <HeartPulse size={22} />
+              </div>
+              <h3 className="text-base font-bold mb-2 text-slate-900 dark:text-white">Bank 32 Variasi Gerakan</h3>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                Katalog komprehensif templat terapi biomekanika ergonomis untuk servikal, torakal, lumbar, dan ekstremitas dengan fitur batch-add admin.
+              </p>
+            </div>
+            <button
+              onClick={() => setActiveTab('exercises')}
+              className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-teal-600 dark:text-teal-400 hover:underline cursor-pointer"
+            >
+              Lihat Katalog Gerakan <ArrowRight size={13} />
+            </button>
+          </Card>
+
+          <Card hoverEffect className="p-6 flex flex-col justify-between border-slate-200/80 dark:border-slate-800">
+            <div>
+              <div className="w-11 h-11 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-600 dark:text-rose-400 mb-4 shadow-xs">
+                <Users size={22} />
+              </div>
+              <h3 className="text-base font-bold mb-2 text-slate-900 dark:text-white">Multiplayer Battle Room</h3>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                Tanding postur real-time 1v1 berbasis kode room dengan skeleton rigging interaktif dan seleksi persona maskot ceria (Green, Blue, Red, Black).
+              </p>
+            </div>
+            <button
+              onClick={() => setActiveTab('multiplayer')}
+              className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
+            >
+              Masuk Multiplayer <ArrowRight size={13} />
+            </button>
+          </Card>
+
+          <Card hoverEffect className="p-6 flex flex-col justify-between border-slate-200/80 dark:border-slate-800">
+            <div>
+              <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400 mb-4 shadow-xs">
+                <Coins size={22} />
+              </div>
+              <h3 className="text-base font-bold mb-2 text-slate-900 dark:text-white">Web3 GPC Rewards (Sepolia)</h3>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                Token ERC-1155 on-chain untuk peserta berprestasi. Dilengkapi fallback Dompet Komunitas Bersama tanpa kewajiban memasang ekstensi MetaMask.
+              </p>
+            </div>
+            <button
+              onClick={() => setActiveTab('misi')}
+              className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
+            >
+              Klaim & Lihat Klasemen <ArrowRight size={13} />
+            </button>
+          </Card>
+        </div>
+      </section>
+
+      {/* Bottom CTA Banner */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-4">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 p-8 sm:p-12 text-white shadow-xl shadow-blue-500/15">
+          <div className="relative z-10 max-w-2xl">
+            <h3 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-4 leading-tight">
+              Siap Menjaga Postur Ergonomis Setiap Hari?
+            </h3>
+            <p className="text-blue-100 text-sm sm:text-base mb-8 leading-relaxed">
+              Mulai pemantauan real-time langsung melalui browser Anda tanpa perlu memasang aplikasi tambahan. Privasi 100% aman di perangkat lokal.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                variant="secondary"
+                size="lg"
+                onClick={() => setActiveTab('monitor')}
+                className="bg-white text-blue-900 hover:bg-blue-50 font-bold text-sm shadow-md"
+              >
+                <Camera size={16} /> Buka Live Monitor
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => setActiveTab('multiplayer')}
+                className="border-white/40 text-white hover:bg-white/10 font-semibold text-sm"
+              >
+                <Users size={16} /> Mode Multiplayer
+              </Button>
+            </div>
+          </div>
+          {/* Subtle decorative background circles */}
+          <div className="absolute -right-16 -bottom-16 w-80 h-80 rounded-full bg-white/10 blur-2xl pointer-events-none" />
+          <div className="absolute right-32 top-0 w-60 h-60 rounded-full bg-emerald-400/15 blur-xl pointer-events-none" />
         </div>
       </section>
     </div>

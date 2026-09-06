@@ -23,17 +23,24 @@ interface NavbarProps {
   apiOnline?: boolean;
 }
 
-const NAV_ITEMS = [
-  { id: "landing", label: "Beranda", icon: Home },
-  { id: "monitor", label: "Live Monitor", icon: Camera, badge: "Live" },
-  { id: "register", label: "Kalibrasi", icon: ShieldCheck },
-  { id: "dashboard", label: "Dashboard", icon: BarChart3 },
-  { id: "exercises", label: "Latihan Terapi", icon: Dumbbell },
-  { id: "skeleton", label: "Skeleton", icon: Eye, badge: "Preview" },
-  { id: "multiplayer", label: "Multiplayer", icon: Users, badge: "Room" },
-  { id: "misi", label: "Misi & Peringkat", icon: Trophy },
-  { id: "admin", label: "Dashboard", icon: BarChart3, adminOnly: true, badge: "Admin" },
-  { id: "admin-exercises", label: "Kelola Latihan", icon: Settings, adminOnly: true, badge: "Admin" },
+const NAV_ITEMS: {
+  id: PageTab;
+  label: string;
+  desc: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  badge?: string;
+  adminOnly?: boolean;
+}[] = [
+  { id: "landing", label: "Beranda", desc: "Overview & simulator biomekanika", icon: Home },
+  { id: "monitor", label: "Live Monitor", desc: "Streaming AI deteksi postur kamera", icon: Camera, badge: "Live" },
+  { id: "register", label: "Kalibrasi Baseline", desc: "Onboarding profil ergonomis personal", icon: ShieldCheck },
+  { id: "dashboard", label: "Dashboard", desc: "Grafik kepatuhan & analitik ergonomis", icon: BarChart3 },
+  { id: "exercises", label: "Latihan Terapi", desc: "Runner multi-step & ekspresi maskot", icon: Dumbbell },
+  { id: "skeleton", label: "Skeleton 3D", desc: "Visualisasi 33 titik MediaPipe", icon: Eye, badge: "Inspector" },
+  { id: "multiplayer", label: "Multiplayer", desc: "Duel 1v1 & persona maskot ceria", icon: Users, badge: "Battle" },
+  { id: "misi", label: "Misi & Peringkat", desc: "Quest harian, klasemen & reward GPC", icon: Trophy },
+  { id: "admin", label: "Admin Rewards", desc: "Distribusi token GPC Sepolia on-chain", icon: BarChart3, adminOnly: true, badge: "Admin" },
+  { id: "admin-exercises", label: "Kelola Latihan", desc: "Bank 32 variasi & rekam pose pelatih", icon: Settings, adminOnly: true, badge: "Admin" },
 ];
 
 export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, apiOnline = true }) => {
@@ -47,11 +54,12 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, apiOnli
   };
 
   const visibleItems = NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin);
+  const activeItem = NAV_ITEMS.find((item) => item.id === activeTab);
 
   return (
     <>
-      {/* Top Header - Brand + Controls only */}
-      <header className="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md transition-colors duration-200">
+      {/* Top Header - Brand + Controls */}
+      <header className="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           {/* Brand */}
           <div onClick={() => navigate("landing")} className="flex items-center gap-3 cursor-pointer group shrink-0">
@@ -74,12 +82,20 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, apiOnli
             </div>
           </div>
 
-          {/* Right Side: User Info + Health Status + Theme Toggle */}
+          {/* Active Tab Indicator (Desktop / Tablet) */}
+          {activeItem && (
+            <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-xs font-medium text-slate-700 dark:text-slate-300">
+              <activeItem.icon size={13} className="text-blue-500" />
+              <span>{activeItem.label}</span>
+            </div>
+          )}
+
+          {/* Right Side: User Info + Health Status + Theme Toggle + Menu */}
           <div className="flex items-center gap-2 shrink-0">
             {user && (
               <div className="hidden lg:flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700/60">
                 <User size={13} className="text-blue-500" />
-                <span className="font-semibold text-slate-900 dark:text-white max-w-[80px] truncate">{user.nama}</span>
+                <span className="font-semibold text-slate-900 dark:text-white max-w-[90px] truncate">{user.nama}</span>
               </div>
             )}
 
@@ -98,64 +114,98 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, apiOnli
 
             <ThemeToggle />
 
-            {/* Hamburger (mobile/tablet) */}
+            {/* Menu Trigger Button */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700/70 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-all cursor-pointer text-xs font-semibold shadow-xs"
               aria-label="Menu navigasi"
             >
-              {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+              {mobileOpen ? <X size={16} className="text-rose-500" /> : <Menu size={16} className="text-blue-500" />}
+              <span className="hidden sm:inline">{mobileOpen ? "Tutup" : "Menu"}</span>
             </button>
           </div>
         </div>
 
-        {/* Mobile / Tablet Drawer */}
+        {/* Navigation Drawer */}
         {mobileOpen && (
-          <nav className="border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 py-3">
-            {/* User row for mobile */}
+          <nav className="border-t border-slate-200 dark:border-slate-800 bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl px-4 py-5 shadow-2xl transition-all animate-in slide-in-from-top-2 duration-200">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex items-center justify-between mb-3 px-1">
+              {/* User row for mobile view */}
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
                   <User size={15} className="text-blue-500" />
-                  <span className="font-semibold">{user ? user.nama : "Tamu"}</span>
+                  <span>Masuk sebagai <strong className="text-slate-900 dark:text-white">{user ? user.nama : "Tamu"}</strong></span>
+                  {user?.role && (
+                    <Badge variant={isAdmin ? "warning" : "outline"} className="capitalize text-[10px] py-0">
+                      {user.role}
+                    </Badge>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <Pill variant={apiOnline ? "success" : "destructive"} size="sm">
                     <PillContent>{apiOnline ? "Online" : "Offline"}</PillContent>
                   </Pill>
-                  <button
-                    onClick={logout}
-                    className="flex items-center gap-1 p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
-                  >
-                    <LogOut size={15} />
-                  </button>
+                  {user && (
+                    <button
+                      onClick={logout}
+                      className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-900/40 transition-colors cursor-pointer"
+                    >
+                      <LogOut size={13} />
+                      <span>Keluar</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
-              <ul className="grid grid-cols-1 gap-1">
+              {/* Grid of Navigation Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
                 {visibleItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
                   return (
-                    <li key={item.id}>
-                      <button
-                        onClick={() => navigate(item.id as PageTab)}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors cursor-pointer ${
-                          isActive ? "bg-blue-600 text-white" : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
-                        }`}
-                      >
-                        <Icon size={16} />
-                        <span>{item.label}</span>
+                    <button
+                      key={item.id}
+                      onClick={() => navigate(item.id)}
+                      className={`group relative flex flex-col p-3.5 rounded-2xl border text-left transition-all duration-150 cursor-pointer ${
+                        isActive
+                          ? "border-blue-500/60 bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/40 dark:to-blue-900/20 text-blue-950 dark:text-blue-100 shadow-sm shadow-blue-500/10"
+                          : "border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 hover:bg-white dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-800 dark:text-slate-200"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div
+                          className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
+                            isActive
+                              ? "bg-blue-600 text-white shadow-xs"
+                              : "bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 group-hover:bg-blue-500 group-hover:text-white"
+                          }`}
+                        >
+                          <Icon size={16} />
+                        </div>
                         {item.badge && (
-                          <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+                          <span
+                            className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                              isActive
+                                ? "bg-blue-600 text-white"
+                                : item.badge === "Admin"
+                                ? "bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30"
+                                : "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
+                            }`}
+                          >
                             {item.badge}
                           </span>
                         )}
-                      </button>
-                    </li>
+                      </div>
+                      <div className="font-bold text-sm leading-tight text-slate-900 dark:text-white mb-1">
+                        {item.label}
+                      </div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug line-clamp-2">
+                        {item.desc}
+                      </div>
+                    </button>
                   );
                 })}
-              </ul>
+              </div>
             </div>
           </nav>
         )}
